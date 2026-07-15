@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #086B4F;
+  --color-primary-dark: #054936;
+  --color-primary-hover: #075C44;
+  --color-primary-active: #054936;
+  --color-primary-soft: #E6F4EF;
+  --color-primary-subtle: #F1FAF6;
+  --color-secondary: #11865E;
+  --color-accent: #F5B300;
+  --color-accent-soft: #FFF3CC;
+  --color-cream: #FFF8EA;
+  --color-surface: #FFFFFF;
+  --color-page: #F7F8F7;
+  --color-border: #E5E7EB;
+  --color-charcoal: #1A1C1E;
+  --color-muted: #667085;
+  --color-muted-soft: #F1F3F4;
+  --color-success: #11865E;
+  --color-success-soft: #E8F7EE;
+  --color-warning: #F5B300;
+  --color-warning-soft: #FFF3CC;
+  --color-danger: #E5484D;
+  --color-danger-soft: #FDECEC;
+  --color-info: #2563EB;
+  --color-info-soft: #EAF1FF;
+  --font-sans: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --shadow-sm: 0 4px 12px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 10px 24px rgba(16, 24, 40, 0.08);
+  --transition-fast: 150ms ease;
+  --transition-base: 220ms ease;
+  --z-header: 40;
+  --z-modal: 80;
+  --z-toast: 100;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--color-page);
+  color: var(--color-charcoal);
+  font-family: var(--font-sans);
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--color-page);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
