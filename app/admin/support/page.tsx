@@ -1,5 +1,5 @@
-import { AdminSupportScreen } from "@/components/admin/admin-core-screens";
+import { AdminSupportInboxScreen } from "@/components/support/support-disputes-screens";
 
 export default function AdminSupportPage() {
-  return <AdminSupportScreen />;
+  return <AdminSupportInboxScreen />;
 }

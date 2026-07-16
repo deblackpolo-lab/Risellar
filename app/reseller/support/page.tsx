@@ -1,5 +1,5 @@
-import { ResellerSupportScreen } from "@/components/reseller/screens";
+import { ResellerSupportCenterScreen } from "@/components/support/support-disputes-screens";
 
 export default function ResellerSupportPage() {
-  return <ResellerSupportScreen />;
+  return <ResellerSupportCenterScreen />;
 }

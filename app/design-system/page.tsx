@@ -49,9 +49,11 @@ import {
   Textarea
 } from "@/components/ui";
 import { designTokens } from "@/lib/constants/design-tokens";
+import { EdgeCasePreviewCard } from "@/components/edge-cases/edge-case-screens";
 import { sampleAdminQueues, sampleAuditLogItems, sampleRiskActions, sampleWhatsAppTemplates } from "@/lib/mock/admin";
 import { sampleCommissions, sampleSettlements, sampleWallet } from "@/lib/mock/finance";
 import { sampleDeliveryOptions, sampleOrders, samplePaymentMethods, sampleTimelineEvents } from "@/lib/mock/orders";
+import { getEdgeCaseDefinition } from "@/lib/mock/edge-cases";
 import { sampleCustomers, sampleResellers, sampleSuppliers, sampleTeamMembers } from "@/lib/mock/people";
 import { sampleProducts, sampleStockStates, sampleVariants } from "@/lib/mock/products";
 import { sampleInsights, samplePromotions } from "@/lib/mock/promotions";
@@ -380,6 +382,23 @@ export default function DesignSystemPage() {
             <EmptyState action="Add Products" description="Add products to your shop and start receiving orders." title="Your shop is empty" />
             <ErrorState description="This product is currently unavailable. You can be notified when it is back." title="Product Out of Stock" />
             <LoadingState />
+          </div>
+        </GallerySection>
+
+        <GallerySection title="17b. Empty / Edge States">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              "/edge-cases/customer/empty-cart",
+              "/edge-cases/reseller/commission-pending",
+              "/edge-cases/supplier/settlement-overdue",
+              "/edge-cases/admin/manual-override-warning",
+              "/edge-cases/permission-denied",
+              "/edge-cases/customer/product-out-of-stock",
+              "/edge-cases/customer/support-submitted"
+            ].map((path) => {
+              const state = getEdgeCaseDefinition(path);
+              return state ? <EdgeCasePreviewCard key={path} state={state} /> : null;
+            })}
           </div>
         </GallerySection>
 
