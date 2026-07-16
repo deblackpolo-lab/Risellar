@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Button, Card, Input, StatusBadge, Textarea } from "@/components/ui";
+import { ClipboardList, Home, Package, Settings, Warehouse } from "lucide-react";
+import { Button, Card, Input, ScrollableChipRow, StatusBadge, Textarea } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
 import { formatGhc } from "@/lib/mock/supplier-core";
 import {
@@ -17,14 +18,12 @@ import {
 } from "@/lib/mock/supplier-inventory";
 import { cn } from "@/lib/utils/cn";
 
-type InventoryNavKey = "home" | "products" | "inventory" | "orders" | "more";
-
-const navItems: Array<{ key: InventoryNavKey; label: string; href: string; icon: string }> = [
-  { key: "home", label: "Home", href: "/supplier/dashboard", icon: "H" },
-  { key: "products", label: "Products", href: "/supplier/products", icon: "P" },
-  { key: "inventory", label: "Inventory", href: "/supplier/inventory", icon: "I" },
-  { key: "orders", label: "Orders", href: "/supplier/orders", icon: "O" },
-  { key: "more", label: "More", href: "/supplier/settings", icon: "M" }
+const navItems = [
+  { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
+  { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
+  { key: "inventory" as const, label: "Inventory", href: "/supplier/inventory", icon: Warehouse },
+  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "more" as const, label: "Settings", href: "/supplier/settings", icon: Settings }
 ];
 
 function InventoryShell({ children, title }: { children: ReactNode; title?: string }) {
@@ -39,27 +38,26 @@ function InventoryBottomNav() {
   return (
     <nav aria-label="Supplier inventory navigation" className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-white/95 px-3 py-2 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={cn(
-              "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
-              item.key === "inventory" && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
-            )}
-          >
-            <span
-              aria-hidden="true"
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const selected = item.key === "inventory";
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
               className={cn(
-                "grid h-5 w-5 place-items-center rounded-full border border-[var(--color-border)] text-[10px]",
-                item.key === "inventory" && "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
+                selected && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
               )}
+              href={item.href}
+              key={item.key}
             >
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        ))}
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -529,13 +527,13 @@ export function InventoryActivityScreen() {
   return (
     <InventoryShell title="Activity">
       <InventoryHeader title="Inventory manager activity" description="Audit-style feed for stock, threshold, price, and reservation actions." />
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow>
         {filters.map((filter, index) => (
-          <Button key={filter} variant={index === 0 ? "primary" : "outline"} size="compact">
+          <Button className="flex-none" key={filter} variant={index === 0 ? "primary" : "outline"} size="compact">
             {filter}
           </Button>
         ))}
-      </div>
+      </ScrollableChipRow>
       <div className="mt-4 space-y-3">
         {activities.map((activity) => (
           <InventoryActivityItem key={activity.id} activity={activity} />

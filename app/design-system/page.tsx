@@ -214,7 +214,7 @@ export default function DesignSystemPage() {
               supplierBasePrice={product.supplierBasePrice}
             />
             <div className="grid gap-4 sm:grid-cols-2">
-              <ProductCard name={product.name} price={product.customerPrice} status={product.tag} />
+              <ProductCard imageAlt={product.imageAlt} images={product.images} name={product.name} price={product.customerPrice} status={product.tag} />
               <ProductListItem name={sampleProducts[2].name} price={sampleProducts[2].customerPrice} stock={sampleProducts[2].stock} />
             </div>
           </div>
@@ -406,7 +406,7 @@ export default function DesignSystemPage() {
           <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
             <Card title="Mobile-first PWA card">
               <div className="mx-auto max-w-[320px] rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-md)]">
-                <ProductCard name={product.name} price={product.customerPrice} status={product.stock} />
+                <ProductCard imageAlt={product.imageAlt} images={product.images} name={product.name} price={product.customerPrice} status={product.stock} />
               </div>
             </Card>
             <Card title="Desktop admin density">

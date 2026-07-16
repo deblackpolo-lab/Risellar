@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Button, Card, FileUploadCard, Input, Select, StatusBadge, Textarea } from "@/components/ui";
+import { ClipboardList, Home, Landmark, Receipt, UserRound } from "lucide-react";
+import { Button, Card, FileUploadCard, Input, ScrollableChipRow, Select, StatusBadge, Textarea } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
 import {
   formatGhc,
@@ -19,12 +20,12 @@ import { cn } from "@/lib/utils/cn";
 
 type SettlementNavKey = "home" | "settlements" | "finance" | "orders" | "account";
 
-const navItems: Array<{ key: SettlementNavKey; label: string; href: string; icon: string }> = [
-  { key: "home", label: "Home", href: "/supplier/dashboard", icon: "H" },
-  { key: "settlements", label: "Settle", href: "/supplier/settlements", icon: "S" },
-  { key: "finance", label: "Finance", href: "/supplier/finance", icon: "F" },
-  { key: "orders", label: "Orders", href: "/supplier/orders", icon: "O" },
-  { key: "account", label: "Account", href: "/supplier/settings", icon: "A" }
+const navItems = [
+  { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
+  { key: "settlements" as const, label: "Settle", href: "/supplier/settlements", icon: Receipt },
+  { key: "finance" as const, label: "Finance", href: "/supplier/finance", icon: Landmark },
+  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
 
 function SettlementShell({ active = "settlements", children, title }: { active?: SettlementNavKey; children: ReactNode; title?: string }) {
@@ -39,27 +40,26 @@ function SettlementBottomNav({ active }: { active: SettlementNavKey }) {
   return (
     <nav aria-label="Supplier finance navigation" className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-white/95 px-3 py-2 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={cn(
-              "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
-              active === item.key && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
-            )}
-          >
-            <span
-              aria-hidden="true"
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const selected = active === item.key;
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
               className={cn(
-                "grid h-5 w-5 place-items-center rounded-full border border-[var(--color-border)] text-[10px]",
-                active === item.key && "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
+                selected && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
               )}
+              href={item.href}
+              key={item.key}
             >
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        ))}
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -373,11 +373,11 @@ export function SettlementOverviewScreen() {
         </div>
       </Card>
       <Card title="Settlement obligations">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <ScrollableChipRow>
           {filters.map((item) => (
-            <Button key={item} variant={filter === item ? "primary" : "outline"} size="compact" onClick={() => setFilter(item)}>{item}</Button>
+            <Button className="flex-none" key={item} variant={filter === item ? "primary" : "outline"} size="compact" onClick={() => setFilter(item)}>{item}</Button>
           ))}
-        </div>
+        </ScrollableChipRow>
         <div className="mt-4 space-y-3">
           {settlements.map((settlement) => (
             <SettlementObligationCard key={settlement.id} settlement={settlement} />

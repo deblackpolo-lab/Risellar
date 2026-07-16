@@ -17,7 +17,8 @@ import {
   Wallet
 } from "lucide-react";
 import { BottomNav, MobileShell } from "@/components/layout";
-import { Button, Card, Input, StatusBadge } from "@/components/ui";
+import { ProductBrowseGrid, ProductGridCard, ProductImageFrame, ProductImageGallery } from "@/components/marketplace";
+import { Button, Card, Input, ScrollableChipRow, StatusBadge } from "@/components/ui";
 import {
   formatGhc,
   getResellerCategory,
@@ -313,7 +314,7 @@ export function ResellerProductCatalogScreen({ categoryId }: { categoryId?: stri
         />
       </label>
 
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow className="mt-4">
         <Filter className="mt-2 h-4 w-4 shrink-0 text-[var(--color-muted)]" aria-hidden="true" />
         <button className={filterClass(selectedCategory === "all")} onClick={() => setSelectedCategory("all")} type="button">
           All
@@ -328,7 +329,7 @@ export function ResellerProductCatalogScreen({ categoryId }: { categoryId?: stri
             {categoryOption.name}
           </button>
         ))}
-      </div>
+      </ScrollableChipRow>
 
       <ProductSection products={filteredProducts} title={category ? category.name : "All products"} />
     </ResellerShell>
@@ -337,7 +338,7 @@ export function ResellerProductCatalogScreen({ categoryId }: { categoryId?: stri
 
 function filterClass(active: boolean) {
   return cn(
-    "h-9 shrink-0 rounded-full border px-4 text-sm font-semibold transition",
+    "h-9 flex-none whitespace-nowrap rounded-full border px-4 text-sm font-semibold transition",
     active
       ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
       : "border-[var(--color-border)] bg-white text-[var(--color-muted)]"
@@ -351,63 +352,26 @@ function ProductSection({ products, title }: { products: ResellerProduct[]; titl
         <h2 className="text-base font-bold">{title}</h2>
         <StatusBadge status={`${products.length} products`} tone="neutral" />
       </div>
-      <div className="grid gap-3">
+      <ProductBrowseGrid ariaLabel={`${title} reseller products`}>
         {products.map((product) => (
-          <ProductTile key={product.id} product={product} />
+          <ProductGridCard
+            badges={product.tags}
+            category={product.category}
+            expectedProfit={formatGhc(product.expectedProfit)}
+            href={`/reseller/products/${product.id}`}
+            imageAlt={product.imageAlt}
+            images={product.images}
+            key={product.id}
+            name={product.name}
+            price={formatGhc(product.suggestedSellingPrice)}
+            priceLabel="Suggested price"
+            rating={product.rating}
+            resellerCost={formatGhc(product.resellerCost)}
+            stockStatus={product.stockStatus}
+          />
         ))}
-      </div>
+      </ProductBrowseGrid>
     </section>
-  );
-}
-
-function ProductTile({ product }: { product: ResellerProduct }) {
-  return (
-    <Card className="p-4">
-      <div className="flex gap-4">
-        <ProductImageTile category={product.category} name={product.name} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap gap-2">
-            {product.tags.slice(0, 2).map((tag) => (
-              <StatusBadge key={tag} status={tag} />
-            ))}
-          </div>
-          <h3 className="mt-2 text-sm font-bold leading-5">{product.name}</h3>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">{product.category} • {product.rating}</p>
-          <div className="mt-3 grid gap-1 text-sm">
-            <p className="font-semibold text-[var(--color-primary)]">Reseller cost {formatGhc(product.resellerCost)}</p>
-            <p className="text-[var(--color-muted)]">Suggested {formatGhc(product.suggestedSellingPrice)}</p>
-            <p className="text-[var(--color-muted)]">Profit {formatGhc(product.expectedProfit)}</p>
-          </div>
-          <div className="mt-3">
-            <StatusBadge status={product.stockStatus} />
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ProductImageTile({ category, name, size = "normal" }: { category: string; name: string; size?: "normal" | "large" }) {
-  const initials = category
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <div
-      aria-label={`${name} product image`}
-      className={cn(
-        "grid shrink-0 place-items-center overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[linear-gradient(135deg,#FFF7E6_0%,#E7F4ED_55%,#FFFFFF_100%)] shadow-[var(--shadow-sm)]",
-        size === "large" ? "aspect-[4/3] w-full" : "h-24 w-24"
-      )}
-      role="img"
-    >
-      <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white text-lg font-black text-[var(--color-primary)] shadow-[var(--shadow-sm)]">
-        {initials}
-      </div>
-    </div>
   );
 }
 
@@ -417,7 +381,7 @@ export function ResellerProductDetailScreen({ id }: { id: string }) {
   return (
     <ResellerShell active={navByRoute.shop} title="Product detail">
       <Card className="p-4">
-        <ProductImageTile category={product.category} name={product.name} size="large" />
+        <ProductImageGallery productName={product.name} images={product.images} imageAlt={product.imageAlt} />
         <div className="mt-4 flex flex-wrap gap-2">
           {product.tags.map((tag) => (
             <StatusBadge key={tag} status={tag} />
@@ -601,7 +565,12 @@ export function ResellerShareProductScreen({ productId }: { productId: string })
     <ResellerShell active={navByRoute.shop} title="Share product">
       <Card>
         <div className="flex gap-4">
-          <ProductImageTile category={product.category} name={product.name} />
+          <ProductImageFrame
+            className="h-24 w-24 shrink-0 rounded-[var(--radius-md)]"
+            imageAlt={product.imageAlt}
+            images={product.images}
+            productName={product.name}
+          />
           <div>
             <h1 className="text-xl font-bold">{product.name}</h1>
             <p className="mt-2 text-lg font-bold text-[var(--color-primary)]">{formatGhc(product.suggestedSellingPrice)}</p>
@@ -641,13 +610,13 @@ export function ResellerOrdersScreen() {
           Commission becomes available after supplier settlement is verified.
         </p>
       </header>
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow className="mt-4">
         {["All", "Pending", "Quote Pending", "Completed"].map((filter, index) => (
           <button className={filterClass(index === 0)} key={filter} type="button">
             {filter}
           </button>
         ))}
-      </div>
+      </ScrollableChipRow>
       <div className="mt-5 grid gap-3">
         {resellerOrders.map((order) => (
           <OrderTile key={order.id} orderId={order.id} />

@@ -81,6 +81,8 @@ describe("Phase 6 supplier PWA core", () => {
     expect(screen.getByRole("searchbox", { name: /Search supplier products/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pending Approval" })).toBeInTheDocument();
     expect(screen.getByText(product.name)).toBeInTheDocument();
+    expect(screen.getByLabelText(product.imageAlt)).toHaveClass("h-20", "w-20");
+    expect(screen.getByLabelText(product.imageAlt)).not.toHaveClass("w-full");
     expect(screen.getAllByText("Supplier base price").length).toBeGreaterThan(0);
     expect(screen.getByText("Stock 18")).toBeInTheDocument();
 

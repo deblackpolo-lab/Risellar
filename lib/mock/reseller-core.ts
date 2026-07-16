@@ -1,3 +1,9 @@
+import {
+  getMockProductImages,
+  getPrimaryProductImageAlt,
+  type MockProductImage
+} from "@/lib/mock/product-images";
+
 export type ResellerProduct = {
   id: string;
   name: string;
@@ -11,6 +17,8 @@ export type ResellerProduct = {
   expectedProfit: number;
   rating: string;
   tags: string[];
+  images: MockProductImage[];
+  imageAlt: string;
   variant: string;
   deliveryNote: string;
   settlementNote: string;
@@ -62,6 +70,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 30,
     rating: "4.7 (128)",
     tags: ["Sponsored", "Trending"],
+    images: getMockProductImages("nike-air-force-1-07-green-white"),
+    imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White"),
     variant: "Size 42",
     deliveryNote: "Delivery is separate and confirmed before dispatch.",
     settlementNote: "Your commission becomes available after supplier settlement is verified by Risellar.",
@@ -80,6 +90,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 20,
     rating: "4.8 (64)",
     tags: ["Hot Seller"],
+    images: getMockProductImages("jean-paul-gaultier-le-male-edt-125ml"),
+    imageAlt: getPrimaryProductImageAlt("Jean Paul Gaultier Le Male EDT 125ml"),
     variant: "125ml",
     deliveryNote: "Same-day dispatch is available in Accra after customer confirmation.",
     settlementNote: "Commission is pending until supplier settlement is verified by Risellar.",
@@ -98,6 +110,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 25,
     rating: "4.6 (86)",
     tags: ["Trending"],
+    images: getMockProductImages("anua-niacinamide-serum"),
+    imageAlt: getPrimaryProductImageAlt("Anua Niacinamide Serum"),
     variant: "30ml",
     deliveryNote: "Delivery cost is confirmed with the customer before dispatch.",
     settlementNote: "Pending commission cannot be withdrawn before settlement verification.",
@@ -116,6 +130,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 20,
     rating: "4.5 (74)",
     tags: ["Low Stock"],
+    images: getMockProductImages("oraimo-power-bank-30000mah"),
+    imageAlt: getPrimaryProductImageAlt("Oraimo Power Bank 30000mAh"),
     variant: "30000mAh",
     deliveryNote: "Available for Accra and Kumasi delivery after customer confirmation.",
     settlementNote: "Commission is released after supplier settlement is marked verified.",
@@ -134,6 +150,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 15,
     rating: "4.3 (39)",
     tags: ["Out of Stock"],
+    images: getMockProductImages("iphone-14-pro-max-case"),
+    imageAlt: getPrimaryProductImageAlt("iPhone 14 Pro Max Case"),
     variant: "Clear MagSafe",
     deliveryNote: "This product is hidden from new customer orders until restocked.",
     settlementNote: "No commission can be earned while the product is out of stock.",
@@ -152,6 +170,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 35,
     rating: "4.7 (58)",
     tags: ["Sponsored"],
+    images: getMockProductImages("hostel-essentials-pack"),
+    imageAlt: getPrimaryProductImageAlt("Hostel Essentials Pack"),
     variant: "Student starter kit",
     deliveryNote: "Best for Legon, Madina, UPSA, and nearby hostel deliveries.",
     settlementNote: "Commission stays pending until supplier settlement clears.",
@@ -170,6 +190,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 35,
     rating: "4.4 (51)",
     tags: ["Trending"],
+    images: getMockProductImages("laptop-backpack"),
+    imageAlt: getPrimaryProductImageAlt("Laptop Backpack"),
     variant: "15.6 inch",
     deliveryNote: "Delivery quote is confirmed before dispatch.",
     settlementNote: "Commission is protected until supplier settlement is verified.",
@@ -188,6 +210,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 50,
     rating: "4.8 (92)",
     tags: ["Sponsored"],
+    images: getMockProductImages("skincare-set"),
+    imageAlt: getPrimaryProductImageAlt("Skincare Set"),
     variant: "6-in-1",
     deliveryNote: "Customer pays on delivery after final delivery cost confirmation.",
     settlementNote: "Available balance updates after settlement verification.",
@@ -206,6 +230,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 25,
     rating: "4.6 (44)",
     tags: ["Hot Seller"],
+    images: getMockProductImages("press-on-nails"),
+    imageAlt: getPrimaryProductImageAlt("Press-on Nails"),
     variant: "24-piece set",
     deliveryNote: "Small parcel delivery available around Accra campuses.",
     settlementNote: "Commission becomes available after verified settlement.",
@@ -224,6 +250,8 @@ export const resellerCoreProducts: ResellerProduct[] = [
     expectedProfit: 25,
     rating: "4.5 (37)",
     tags: ["Trending"],
+    images: getMockProductImages("hair-oil"),
+    imageAlt: getPrimaryProductImageAlt("Hair Oil"),
     variant: "Growth blend",
     deliveryNote: "Ready for delivery anywhere in Accra after confirmation.",
     settlementNote: "Pending commission cannot be withdrawn before supplier settlement.",

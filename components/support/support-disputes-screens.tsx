@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowLeft, CheckCircle2, FileText } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardList, FileText, Headphones, Home, Package, UserRound, Wallet } from "lucide-react";
+import { AdminShell } from "@/components/admin/AdminSidebar";
 import { MobileShell } from "@/components/layout";
 import { Button, Card, Input, StatusBadge, Textarea } from "@/components/ui";
 import {
@@ -29,53 +31,51 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 const customerNav = [
-  { label: "Orders", href: "/customer/orders" },
-  { label: "Support", href: "/customer/support" },
-  { label: "Account", href: "/checkout/account" }
+  { label: "Orders", href: "/customer/orders", icon: ClipboardList },
+  { label: "Support", href: "/customer/support", icon: Headphones },
+  { label: "Account", href: "/checkout/account", icon: UserRound }
 ];
 
 const resellerNav = [
-  { label: "Home", href: "/reseller/dashboard" },
-  { label: "Orders", href: "/reseller/orders" },
-  { label: "Wallet", href: "/reseller/wallet" },
-  { label: "Support", href: "/reseller/support" }
+  { label: "Home", href: "/reseller/dashboard", icon: Home },
+  { label: "Orders", href: "/reseller/orders", icon: ClipboardList },
+  { label: "Wallet", href: "/reseller/wallet", icon: Wallet },
+  { label: "Support", href: "/reseller/support", icon: Headphones }
 ];
 
 const supplierNav = [
-  { label: "Home", href: "/supplier/dashboard" },
-  { label: "Products", href: "/supplier/products" },
-  { label: "Orders", href: "/supplier/orders" },
-  { label: "Support", href: "/supplier/support" }
+  { label: "Home", href: "/supplier/dashboard", icon: Home },
+  { label: "Products", href: "/supplier/products", icon: Package },
+  { label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { label: "Support", href: "/supplier/support", icon: Headphones }
 ];
 
-const adminNav = [
-  ["Dashboard", "/admin/dashboard"],
-  ["Support", "/admin/support"],
-  ["Disputes", "/admin/disputes"],
-  ["Returns", "/admin/returns"],
-  ["Refunds", "/admin/refunds"],
-  ["Orders", "/admin/orders"],
-  ["Settings", "/admin/settings"]
-];
+type SupportNavItem = { label: string; href: string; icon: LucideIcon };
 
-function SimpleBottomNav({ items, active }: { items: Array<{ label: string; href: string }>; active: string }) {
+function SimpleBottomNav({ items, active }: { items: SupportNavItem[]; active: string }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-[var(--z-header)] border-t border-[var(--color-border)] bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[var(--shadow-md)] backdrop-blur">
       <div className={cn("mx-auto grid max-w-md gap-2", items.length === 3 ? "grid-cols-3" : "grid-cols-4")}>
-        {items.map((item) => (
-          <Link
-            aria-current={item.label === active ? "page" : undefined}
-            className={cn(
-              "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]",
-              item.label === active && "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-            )}
-            href={item.href}
-            key={item.label}
-          >
-            <span className="mb-1 h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
-            {item.label}
-          </Link>
-        ))}
+        {items.map((item) => {
+          const Icon = item.icon;
+          const selected = item.label === active;
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
+              className={cn(
+                "flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]",
+                selected && "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+              )}
+              href={item.href}
+              key={item.label}
+            >
+              <Icon className="mb-1 h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -93,7 +93,7 @@ function MobileSupportShell({
   backHref?: string;
   children: ReactNode;
   eyebrow?: string;
-  nav: Array<{ label: string; href: string }>;
+  nav: SupportNavItem[];
   title: string;
 }) {
   return (
@@ -115,38 +115,6 @@ function MobileSupportShell({
       </header>
       <div className="space-y-4">{children}</div>
     </MobileShell>
-  );
-}
-
-function AdminShell({ active, children }: { active: string; children: ReactNode }) {
-  return (
-    <div className="min-h-screen bg-[var(--color-page)] p-4 text-[var(--color-charcoal)] lg:p-6">
-      <div className="grid min-h-[calc(100vh-3rem)] gap-5 lg:grid-cols-[260px_1fr]">
-        <aside className="rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] p-5 text-white shadow-[var(--shadow-md)]">
-          <Link className="block text-2xl font-bold" href="/admin/support">Risellar</Link>
-          <p className="mt-1 text-sm font-semibold text-[var(--color-accent)]">Support Operations</p>
-          <nav aria-label="Admin support navigation" className="mt-8 space-y-1">
-            {adminNav.map(([label, href]) => (
-              <Link
-                className={cn(
-                  "block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold text-white/78 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30",
-                  active === label && "bg-white/15 text-white"
-                )}
-                href={href}
-                key={href}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-8 rounded-[var(--radius-md)] border border-white/15 bg-white/10 p-4">
-            <p className="text-sm font-bold">Mock-only controls</p>
-            <p className="mt-2 text-xs leading-5 text-white/80">No real refunds, uploads, commission release, or settlement verification are connected.</p>
-          </div>
-        </aside>
-        <main className="min-w-0 space-y-5">{children}</main>
-      </div>
-    </div>
   );
 }
 

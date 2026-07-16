@@ -42,7 +42,7 @@ export function Button({
     <button
       aria-busy={loading || undefined}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold transition-[var(--transition-fast)] disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] font-semibold transition-[var(--transition-fast)] disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],
         sizes[size],
         className

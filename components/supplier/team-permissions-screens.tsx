@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Button, Card, Input, StatusBadge } from "@/components/ui";
+import { ClipboardList, Home, Package, UserRound, Users } from "lucide-react";
+import { Button, Card, Input, ScrollableChipRow, StatusBadge } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
 import {
   getTeamMember,
@@ -17,12 +18,12 @@ import { cn } from "@/lib/utils/cn";
 
 type TeamNavKey = "home" | "products" | "orders" | "team" | "account";
 
-const teamNavItems: Array<{ key: TeamNavKey; label: string; href: string; icon: string }> = [
-  { key: "home", label: "Home", href: "/supplier/dashboard", icon: "H" },
-  { key: "products", label: "Products", href: "/supplier/products", icon: "P" },
-  { key: "orders", label: "Orders", href: "/supplier/orders", icon: "O" },
-  { key: "team", label: "Team", href: "/supplier/team", icon: "T" },
-  { key: "account", label: "Account", href: "/supplier/settings", icon: "S" }
+const teamNavItems = [
+  { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
+  { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
+  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "team" as const, label: "Team", href: "/supplier/team", icon: Users },
+  { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
 
 function TeamShell({ children, title }: { children: ReactNode; title?: string }) {
@@ -45,27 +46,26 @@ function TeamBottomNav({ active }: { active: TeamNavKey }) {
   return (
     <nav aria-label="Supplier team navigation" className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-white/95 px-3 py-2 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-        {teamNavItems.map((item) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={cn(
-              "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
-              active === item.key && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
-            )}
-          >
-            <span
-              aria-hidden="true"
+        {teamNavItems.map((item) => {
+          const Icon = item.icon;
+          const selected = active === item.key;
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
               className={cn(
-                "grid h-5 w-5 place-items-center rounded-full border border-[var(--color-border)] text-[10px]",
-                active === item.key && "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
+                selected && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
               )}
+              href={item.href}
+              key={item.key}
             >
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        ))}
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -410,9 +410,9 @@ export function SupplierTeamActivityScreen() {
   return (
     <TeamShell title="Team activity">
       <TeamHeader title="Team Activity Log" description="Audit-style activity for stock, order, product, role, and price changes." />
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-        {filters.map((filter, index) => <Button key={filter} size="compact" type="button" variant={index === 0 ? "primary" : "outline"}>{filter}</Button>)}
-      </div>
+      <ScrollableChipRow className="mb-4">
+        {filters.map((filter, index) => <Button className="flex-none" key={filter} size="compact" type="button" variant={index === 0 ? "primary" : "outline"}>{filter}</Button>)}
+      </ScrollableChipRow>
       <div className="space-y-3">{supplierTeamMock.activity.map((activity) => <ActivityItem key={activity.id} activity={activity} />)}</div>
     </TeamShell>
   );

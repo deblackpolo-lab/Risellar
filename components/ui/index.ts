@@ -11,6 +11,7 @@ export * from "./LoadingState";
 export * from "./ModalDrawerPlaceholder";
 export * from "./RadioCard";
 export * from "./SearchBar";
+export * from "./ScrollableChipRow";
 export * from "./Select";
 export * from "./StatusBadge";
 export * from "./Tabs";

@@ -1,3 +1,9 @@
+import {
+  getMockProductImages,
+  getPrimaryProductImageAlt,
+  type MockProductImage
+} from "@/lib/mock/product-images";
+
 export type MockProduct = {
   id: string;
   name: string;
@@ -11,6 +17,8 @@ export type MockProduct = {
   status: string;
   stock: string;
   tag: string;
+  images: MockProductImage[];
+  imageAlt: string;
 };
 
 export const sampleProducts: MockProduct[] = [
@@ -26,7 +34,9 @@ export const sampleProducts: MockProduct[] = [
     customerPrice: "GH₵340",
     status: "Approved",
     stock: "Only 1 left",
-    tag: "Sponsored"
+    tag: "Sponsored",
+    images: getMockProductImages("nike-air-force-1-07-green-white"),
+    imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White")
   },
   {
     id: "PRD-SKIN-SET",
@@ -40,7 +50,9 @@ export const sampleProducts: MockProduct[] = [
     customerPrice: "GH₵310",
     status: "Pending Approval",
     stock: "In stock",
-    tag: "Trending"
+    tag: "Trending",
+    images: getMockProductImages("ordinary-skincare-set"),
+    imageAlt: getPrimaryProductImageAlt("The Ordinary Skincare Set")
   },
   {
     id: "PRD-PWR-20K",
@@ -54,7 +66,9 @@ export const sampleProducts: MockProduct[] = [
     customerPrice: "GH₵165",
     status: "Out of Stock",
     stock: "Out of Stock",
-    tag: "Needs Reseller Review"
+    tag: "Needs Reseller Review",
+    images: getMockProductImages("oraimo-power-bank-30000mah"),
+    imageAlt: getPrimaryProductImageAlt("Oraimo Power Bank 20000mAh")
   }
 ];
 

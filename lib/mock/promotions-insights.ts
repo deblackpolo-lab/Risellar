@@ -1,3 +1,9 @@
+import {
+  getMockProductImages,
+  getPrimaryProductImageAlt,
+  type MockProductImage
+} from "@/lib/mock/product-images";
+
 export type PromotionStatus = "Pending Payment" | "Pending Approval" | "Active" | "Paused" | "Completed" | "Rejected" | "Cancelled";
 
 export type PromotionPackage = {
@@ -41,6 +47,8 @@ export type InsightProduct = {
   labels: string[];
   insight: string;
   imageLabel: string;
+  images: MockProductImage[];
+  imageAlt: string;
 };
 
 export const formatGhc = (amount: number) => `GH₵${amount.toLocaleString("en-GH")}`;
@@ -148,7 +156,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Trusted supplier",
     labels: ["Hot Seller", "Trending in Accra", "High Profit", "Good for WhatsApp", "Only Few Left"],
     insight: "Fast-moving sneaker pick for students and casual buyers.",
-    imageLabel: "AF1"
+    imageLabel: "AF1",
+    images: getMockProductImages("nike-air-force-1-07-green-white"),
+    imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White")
   },
   {
     id: "jean-paul-gaultier-le-male-edt-125ml",
@@ -164,7 +174,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Verified supplier",
     labels: ["Sponsored", "High Profit", "Trending", "Good for WhatsApp"],
     insight: "Premium fragrance with strong gifting demand around campus.",
-    imageLabel: "JPG"
+    imageLabel: "JPG",
+    images: getMockProductImages("jean-paul-gaultier-le-male-edt-125ml"),
+    imageAlt: getPrimaryProductImageAlt("Jean Paul Gaultier Le Male EDT 125ml")
   },
   {
     id: "anua-niacinamide-serum",
@@ -180,7 +192,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Low complaint rate",
     labels: ["Recently Restocked", "Low Competition", "Hot Seller"],
     insight: "Beauty products are trending in Legon this week.",
-    imageLabel: "AN"
+    imageLabel: "AN",
+    images: getMockProductImages("anua-niacinamide-serum"),
+    imageAlt: getPrimaryProductImageAlt("Anua Niacinamide Serum")
   },
   {
     id: "oraimo-power-bank",
@@ -196,7 +210,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Supplier review active",
     labels: ["Low Competition", "High Profit", "Good for WhatsApp"],
     insight: "Phone accessories have high repeat demand.",
-    imageLabel: "PB"
+    imageLabel: "PB",
+    images: getMockProductImages("oraimo-power-bank"),
+    imageAlt: getPrimaryProductImageAlt("Oraimo Power Bank")
   },
   {
     id: "hostel-essentials-pack",
@@ -212,7 +228,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Verified supplier",
     labels: ["Low Competition", "Good for students", "Trending"],
     insight: "Useful campus bundle with fewer resellers pushing it.",
-    imageLabel: "HE"
+    imageLabel: "HE",
+    images: getMockProductImages("hostel-essentials-pack"),
+    imageAlt: getPrimaryProductImageAlt("Hostel Essentials Pack")
   },
   {
     id: "iphone-14-pro-max-case",
@@ -228,7 +246,9 @@ export const insightProducts: InsightProduct[] = [
     trust: "Verified supplier",
     labels: ["Fast moving", "Popular in Accra", "Recently Restocked"],
     insight: "Small-ticket phone accessory with repeat demand.",
-    imageLabel: "14"
+    imageLabel: "14",
+    images: getMockProductImages("iphone-14-pro-max-case"),
+    imageAlt: getPrimaryProductImageAlt("iPhone 14 Pro Max Case")
   }
 ];
 

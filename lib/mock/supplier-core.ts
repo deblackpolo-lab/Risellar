@@ -1,3 +1,9 @@
+import {
+  getMockProductImages,
+  getPrimaryProductImageAlt,
+  type MockProductImage
+} from "@/lib/mock/product-images";
+
 export type SupplierProductStatus = "Active" | "Pending Approval" | "Needs Changes" | "Out of Stock" | "Needs Reseller Review";
 export type SupplierOrderStatus = "Customer Confirmed" | "Preparing" | "Ready" | "Delivered" | "Payment Collected" | "Settlement Due";
 
@@ -17,6 +23,8 @@ export type SupplierProduct = {
   name: string;
   category: string;
   imageLabel: string;
+  images: MockProductImage[];
+  imageAlt: string;
   basePrice: number;
   stock: number;
   lowStockThreshold: number;
@@ -64,6 +72,8 @@ export const supplierCoreMock = {
       name: "Samsung Galaxy A14",
       category: "Mobile Phones",
       imageLabel: "A14",
+      images: getMockProductImages("samsung-galaxy-a14"),
+      imageAlt: getPrimaryProductImageAlt("Samsung Galaxy A14"),
       basePrice: 300,
       stock: 18,
       lowStockThreshold: 5,
@@ -77,6 +87,8 @@ export const supplierCoreMock = {
       name: "Nike Air Force 1 '07 Green & White",
       category: "Sneakers",
       imageLabel: "AF1",
+      images: getMockProductImages("nike-air-force-1-07-green-white"),
+      imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White"),
       basePrice: 300,
       stock: 7,
       lowStockThreshold: 3,
@@ -90,6 +102,8 @@ export const supplierCoreMock = {
       name: "Jean Paul Gaultier Le Male EDT",
       category: "Perfumes",
       imageLabel: "JPG",
+      images: getMockProductImages("jean-paul-gaultier-le-male-edt"),
+      imageAlt: getPrimaryProductImageAlt("Jean Paul Gaultier Le Male EDT"),
       basePrice: 210,
       stock: 3,
       lowStockThreshold: 5,
@@ -103,6 +117,8 @@ export const supplierCoreMock = {
       name: "iPhone 14 Pro Max Case",
       category: "Phone Accessories",
       imageLabel: "14",
+      images: getMockProductImages("iphone-14-pro-max-case"),
+      imageAlt: getPrimaryProductImageAlt("iPhone 14 Pro Max Case"),
       basePrice: 60,
       stock: 0,
       lowStockThreshold: 6,
@@ -116,6 +132,8 @@ export const supplierCoreMock = {
       name: "Hostel Essentials Pack",
       category: "Home & Living",
       imageLabel: "HE",
+      images: getMockProductImages("hostel-essentials-pack"),
+      imageAlt: getPrimaryProductImageAlt("Hostel Essentials Pack"),
       basePrice: 150,
       stock: 15,
       lowStockThreshold: 5,

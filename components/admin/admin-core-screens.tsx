@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { AdminShell } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { SearchBar } from "@/components/ui/SearchBar";
 import {
   adminCommissions,
   adminCustomers,
@@ -26,65 +26,7 @@ import {
   type MoneyBreakdown
 } from "@/lib/mock/admin-core";
 
-const navItems = [
-  ["Dashboard", "/admin/dashboard"],
-  ["Orders", "/admin/orders"],
-  ["Products", "/admin/products"],
-  ["Suppliers", "/admin/suppliers"],
-  ["Resellers", "/admin/resellers"],
-  ["Customers", "/admin/customers"],
-  ["Settlements", "/admin/settlements"],
-  ["Commissions", "/admin/commissions"],
-  ["Withdrawals", "/admin/withdrawals"],
-  ["Support", "/admin/support"],
-  ["Settings", "/admin/settings"]
-];
-
 const orderFilters = ["All", "Pending Confirmation", "Preparing", "Delivery Quote Pending", "Completed", "Settlement Due"];
-
-function AdminShell({ active, children }: { active: string; children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-[var(--color-page)] p-4 text-[var(--color-charcoal)] lg:p-6">
-      <div className="grid min-h-[calc(100vh-3rem)] grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
-        <aside className="rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] p-5 text-white shadow-[var(--shadow-md)]">
-          <Link className="block text-2xl font-bold" href="/admin/dashboard">Risellar</Link>
-          <p className="mt-1 text-sm font-semibold text-[var(--color-accent)]">Admin Core</p>
-          <nav className="mt-8 space-y-1" aria-label="Admin navigation">
-            {navItems.map(([label, href]) => (
-              <Link
-                className={`block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold transition-[var(--transition-fast)] ${
-                  active === label ? "bg-white/15 text-white" : "text-white/78 hover:bg-white/10 hover:text-white"
-                }`}
-                href={href}
-                key={href}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-8 rounded-[var(--radius-md)] border border-white/15 bg-white/10 p-4">
-            <p className="text-sm font-bold">Operations status</p>
-            <p className="mt-2 text-xs leading-5 text-white/80">Mock-only admin dashboard. No integrations, payment actions, or verification workflow are connected.</p>
-          </div>
-        </aside>
-
-        <main className="min-w-0 space-y-5">
-          <div className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-sm)] xl:flex-row xl:items-center xl:justify-between">
-            <SearchBar placeholder="Search orders, resellers, suppliers, customers..." />
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-10 w-10 rounded-full bg-[var(--color-primary-soft)] text-center font-bold leading-10 text-[var(--color-primary)]">KA</div>
-              <div>
-                <p className="font-bold">Kwame Admin</p>
-                <p className="text-xs text-[var(--color-muted)]">Operations Manager</p>
-              </div>
-            </div>
-          </div>
-          {children}
-        </main>
-      </div>
-    </div>
-  );
-}
 
 function AdminPageHeader({ title, eyebrow, children }: { title: string; eyebrow: string; children?: React.ReactNode }) {
   return (

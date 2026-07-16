@@ -6,7 +6,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Check,
-  ChevronRight,
   Clock,
   HelpCircle,
   Mail,
@@ -17,40 +16,19 @@ import {
   Plus,
   Search,
   ShieldCheck,
-  ShoppingBag,
   Truck,
 } from "lucide-react";
 import { MobileShell } from "@/components/layout/MobileShell";
+import { ProductBrowseGrid, ProductGridCard, ProductImageFrame, ProductImageGallery } from "@/components/marketplace";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
+import { ScrollableChipRow } from "@/components/ui/ScrollableChipRow";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils/cn";
 import { customerCheckoutMock, formatGhc, getCustomerProduct, type CustomerProduct } from "@/lib/mock/customer-checkout";
-
-function ProductImageTile({ product, className }: { product: CustomerProduct; className?: string }) {
-  const theme = {
-    shoe: "from-emerald-900 via-emerald-700 to-white",
-    beauty: "from-emerald-100 via-white to-amber-100",
-    tech: "from-slate-900 via-slate-500 to-white",
-    hostel: "from-amber-100 via-white to-emerald-100"
-  }[product.imageTone];
-
-  return (
-    <div
-      aria-label={`${product.name} product image`}
-      className={cn("relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[var(--radius-lg)] bg-gradient-to-br", theme, className)}
-      role="img"
-    >
-      <div className="absolute inset-x-8 bottom-8 h-5 rounded-full bg-black/10 blur-md" />
-      <div className="relative grid h-24 w-36 place-items-center rounded-[var(--radius-lg)] border border-white/70 bg-white/75 shadow-[var(--shadow-md)]">
-        <ShoppingBag className="h-12 w-12 text-[var(--color-primary)]" aria-hidden="true" />
-      </div>
-    </div>
-  );
-}
 
 function CustomerHeader({ title, eyebrow, backHref }: { title: string; eyebrow?: string; backHref?: string }) {
   return (
@@ -122,25 +100,18 @@ export function PublicShopHeader() {
 
 function CustomerProductCard({ product }: { product: CustomerProduct }) {
   return (
-    <Link
-      className="grid grid-cols-[92px_1fr] gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-3 shadow-[var(--shadow-sm)]"
+    <ProductGridCard
+      badges={[product.stockLabel]}
+      category={product.category}
       href={`/shop/${customerCheckoutMock.shop.slug}/product/${product.id}`}
-    >
-      <ProductImageTile product={product} className="aspect-square rounded-[var(--radius-md)]" />
-      <div className="min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-sm font-bold leading-5 text-[var(--color-charcoal)]">{product.name}</h2>
-          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-muted)]" aria-hidden="true" />
-        </div>
-        <p className="mt-1 text-xs text-[var(--color-muted)]">{product.category}</p>
-        <p className="mt-2 text-xs text-[var(--color-muted)]">Final customer price</p>
-        <div className="mt-1 flex items-center justify-between">
-          <strong className="text-base text-[var(--color-primary)]">{formatGhc(product.price)}</strong>
-          <span className="text-xs font-semibold text-[var(--color-success)]">{product.stockLabel}</span>
-        </div>
-        <p className="mt-2 text-xs text-[var(--color-muted)]">{product.rating} rating</p>
-      </div>
-    </Link>
+      imageAlt={product.imageAlt}
+      images={product.images}
+      name={product.name}
+      price={formatGhc(product.price)}
+      priceLabel="Final customer price"
+      rating={`${product.rating} rating`}
+      stockStatus={product.stockLabel}
+    />
   );
 }
 
@@ -166,17 +137,17 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
           value={query}
         />
       </label>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow>
         {["All", "Sneakers", "Beauty", "Phone Accessories", "Hostel Essentials"].map((category) => (
           <button
-            className="h-9 shrink-0 rounded-full border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-charcoal)] first:bg-[var(--color-primary)] first:text-white"
+            className="h-9 flex-none whitespace-nowrap rounded-full border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-charcoal)] first:bg-[var(--color-primary)] first:text-white"
             key={category}
             type="button"
           >
             {category}
           </button>
         ))}
-      </div>
+      </ScrollableChipRow>
       <Card className="bg-[var(--color-accent-soft)]">
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-5 w-5 text-[var(--color-primary)]" aria-hidden="true" />
@@ -191,9 +162,11 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
           <h2 className="text-lg font-extrabold text-[var(--color-charcoal)]">Featured products</h2>
           <span className="text-sm font-semibold text-[var(--color-primary)]">{shopSlug === customerCheckoutMock.shop.slug ? "Trusted shop" : "Preview"}</span>
         </div>
-        {products.map((product) => (
-          <CustomerProductCard key={product.id} product={product} />
-        ))}
+        <ProductBrowseGrid ariaLabel="Customer storefront products">
+          {products.map((product) => (
+            <CustomerProductCard key={product.id} product={product} />
+          ))}
+        </ProductBrowseGrid>
       </section>
     </MobileShell>
   );
@@ -202,7 +175,7 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
 export function PublicProductHero({ product }: { product: CustomerProduct }) {
   return (
     <section className="grid gap-4">
-      <ProductImageTile product={product} />
+      <ProductImageGallery productName={product.name} images={product.images} imageAlt={product.imageAlt} />
       <div className="space-y-2">
         <StatusBadge tone={product.stockLabel.includes("Only") ? "warning" : "success"}>{product.stockLabel}</StatusBadge>
         <h1 className="text-2xl font-extrabold leading-tight text-[var(--color-charcoal)]">{product.name}</h1>
@@ -250,7 +223,12 @@ function CheckoutProductRow({ quantity = 1 }: { quantity?: number }) {
 
   return (
     <div className="grid grid-cols-[72px_1fr] gap-3">
-      <ProductImageTile product={product} className="aspect-square rounded-[var(--radius-md)]" />
+      <ProductImageFrame
+        className="rounded-[var(--radius-md)]"
+        imageAlt={product.imageAlt}
+        images={product.images}
+        productName={product.name}
+      />
       <div>
         <h2 className="text-sm font-bold text-[var(--color-charcoal)]">{product.name}</h2>
         <p className="mt-1 text-xs text-[var(--color-muted)]">Size: {customerCheckoutMock.cart.size} • Qty: {quantity}</p>

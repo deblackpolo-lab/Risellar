@@ -79,6 +79,7 @@ body {
   min-height: 100%;
   margin: 0;
   background: var(--color-page);
+  overflow-x: hidden;
 }
 
 a {
@@ -91,4 +92,30 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.line-clamp-2,
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.line-clamp-3 {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }

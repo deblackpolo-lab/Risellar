@@ -1,3 +1,9 @@
+import {
+  getMockProductImages,
+  getPrimaryProductImageAlt,
+  type MockProductImage
+} from "@/lib/mock/product-images";
+
 export function formatGhc(amount: number) {
   return `GH₵${amount.toLocaleString("en-GH")}`;
 }
@@ -8,6 +14,8 @@ export type CustomerProduct = {
   category: string;
   price: number;
   imageTone: "shoe" | "beauty" | "tech" | "hostel";
+  images: MockProductImage[];
+  imageAlt: string;
   stockLabel: string;
   rating: string;
   description: string;
@@ -44,6 +52,8 @@ export const customerCheckoutMock = {
       category: "Sneakers",
       price: 340,
       imageTone: "shoe",
+      images: getMockProductImages("nike-air-force-1-07-green-white"),
+      imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White"),
       stockLabel: "In stock",
       rating: "4.8 (128)",
       description: "Clean green and white sneaker for casual wear, campus days, and weekend plans."
@@ -54,6 +64,8 @@ export const customerCheckoutMock = {
       category: "Perfumes",
       price: 430,
       imageTone: "beauty",
+      images: getMockProductImages("jean-paul-gaultier-le-male"),
+      imageAlt: getPrimaryProductImageAlt("Jean Paul Gaultier Le Male"),
       stockLabel: "Only 2 left",
       rating: "4.7 (92)",
       description: "Long-lasting fragrance pick from a verified reseller."
@@ -64,6 +76,8 @@ export const customerCheckoutMock = {
       category: "Beauty",
       price: 145,
       imageTone: "beauty",
+      images: getMockProductImages("anua-niacinamide-serum-30ml"),
+      imageAlt: getPrimaryProductImageAlt("Anua Niacinamide Serum 30ml"),
       stockLabel: "In stock",
       rating: "4.6 (64)",
       description: "Lightweight skincare serum for everyday routines."
@@ -74,6 +88,8 @@ export const customerCheckoutMock = {
       category: "Phone Accessories",
       price: 165,
       imageTone: "tech",
+      images: getMockProductImages("oraimo-power-bank-30000mah"),
+      imageAlt: getPrimaryProductImageAlt("Oraimo Power Bank 30000mAh"),
       stockLabel: "In stock",
       rating: "4.5 (83)",
       description: "Reliable backup power for phones, campus, and travel."
@@ -84,6 +100,8 @@ export const customerCheckoutMock = {
       category: "Hostel Essentials",
       price: 150,
       imageTone: "hostel",
+      images: getMockProductImages("hostel-essentials-pack"),
+      imageAlt: getPrimaryProductImageAlt("Hostel Essentials Pack"),
       stockLabel: "In stock",
       rating: "4.5 (41)",
       description: "Practical hostel starter kit for students in Accra."

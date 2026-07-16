@@ -3,7 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Button, Card, Checkbox, Input, StatusBadge, Textarea } from "@/components/ui";
+import { Bell, ClipboardList, Home, Package, UserRound } from "lucide-react";
+import { ProductImageFrame, ProductImageGallery, ProductImagePreviewGrid } from "@/components/marketplace";
+import { Button, Card, Checkbox, Input, ScrollableChipRow, StatusBadge, Textarea } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
 import {
   formatGhc,
@@ -18,39 +20,38 @@ import { cn } from "@/lib/utils/cn";
 type OnboardingStep = "welcome" | "business" | "category" | "verification" | "payout" | "agreement" | "pending" | "rejected";
 type SupplierNavKey = "home" | "products" | "orders" | "alerts" | "account";
 
-const navItems: Array<{ key: SupplierNavKey; label: string; href: string; icon: string }> = [
-  { key: "home", label: "Home", href: "/supplier/dashboard", icon: "H" },
-  { key: "products", label: "Products", href: "/supplier/products", icon: "P" },
-  { key: "orders", label: "Orders", href: "/supplier/orders", icon: "O" },
-  { key: "alerts", label: "Alerts", href: "/supplier/notifications", icon: "A" },
-  { key: "account", label: "Account", href: "/supplier/settings", icon: "S" }
+const navItems = [
+  { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
+  { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
+  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "alerts" as const, label: "Alerts", href: "/supplier/notifications", icon: Bell },
+  { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
 
 function SupplierBottomNav({ active }: { active: SupplierNavKey }) {
   return (
     <nav aria-label="Supplier navigation" className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-white/95 px-3 py-2 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={cn(
-              "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
-              active === item.key && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
-            )}
-          >
-            <span
-              aria-hidden="true"
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const selected = active === item.key;
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
               className={cn(
-                "grid h-5 w-5 place-items-center rounded-full border border-[var(--color-border)] text-[10px]",
-                active === item.key && "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-soft)]",
+                selected && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]"
               )}
+              href={item.href}
+              key={item.key}
             >
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
-        ))}
+              <Icon className="h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -137,31 +138,41 @@ function SupplierProductCard({ product, compact = false }: { product: SupplierPr
   const stockTone = product.stock === 0 ? "danger" : product.stock <= product.lowStockThreshold ? "warning" : "success";
 
   return (
-    <Card className="p-4">
-      <div className="flex gap-3">
-        <ProductImageTile product={product} className="h-20 w-20 shrink-0" />
+    <Card className="overflow-hidden p-4">
+      <div className="flex items-start gap-3">
+        <ProductImageFrame
+          className="h-20 w-20 flex-none shrink-0 rounded-[var(--radius-md)]"
+          imageAlt={product.imageAlt}
+          images={product.images}
+          productName={product.name}
+        />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h3 className="text-base font-bold leading-5 text-[var(--color-charcoal)]">{product.name}</h3>
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="line-clamp-2 text-base font-bold leading-5 text-[var(--color-charcoal)]">{product.name}</h3>
               <p className="mt-1 text-xs text-[var(--color-muted)]">{product.category}</p>
             </div>
-            <StatusBadge status={product.status} />
+            <div className="shrink-0">
+              <StatusBadge status={product.status} />
+            </div>
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            <div>
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+            <div className="min-w-0">
               <dt className="text-xs text-[var(--color-muted)]">Supplier base price</dt>
               <dd className="font-bold text-[var(--color-primary)]">{formatGhc(product.basePrice)}</dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-xs text-[var(--color-muted)]">Stock</dt>
               <dd className="font-bold text-[var(--color-charcoal)]">Stock {product.stock}</dd>
             </div>
           </dl>
           {!compact ? (
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <StatusBadge tone={stockTone}>{product.stock === 0 ? "Out of Stock" : product.stock <= product.lowStockThreshold ? "Low Stock" : "In Stock"}</StatusBadge>
-              <Link className="text-sm font-bold text-[var(--color-primary)]" href={`/supplier/products/${product.id}`}>
+              <Link
+                className="inline-flex min-h-10 items-center text-sm font-bold text-[var(--color-primary)]"
+                href={`/supplier/products/${product.id}`}
+              >
                 View
               </Link>
             </div>
@@ -454,13 +465,13 @@ export function SupplierProductsScreen() {
         value={query}
         onChange={(event) => setQuery(event.currentTarget.value)}
       />
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow className="mt-3">
         {filters.map((filter) => (
-          <Button key={filter} variant={filter === "Active" ? "primary" : "outline"} size="compact">
+          <Button className="flex-none px-5" key={filter} variant={filter === "Active" ? "primary" : "outline"} size="compact">
             {filter}
           </Button>
         ))}
-      </div>
+      </ScrollableChipRow>
       <Button className="mt-4 w-full">Add Product</Button>
       <div className="mt-4 space-y-3">
         {filteredProducts.map((product) => (
@@ -492,9 +503,11 @@ export function SupplierAddProductScreen() {
           <Field label="Stock quantity">
             <Input defaultValue="18" />
           </Field>
-          <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-page)] p-4 text-center text-sm text-[var(--color-muted)]">
-            Product image placeholder. Uploads will connect in a later integration phase.
-          </div>
+          <ProductImagePreviewGrid
+            imageAlt={supplierCoreMock.products[0].imageAlt}
+            images={supplierCoreMock.products[0].images}
+            productName="Samsung Galaxy A14"
+          />
           <ProductApprovalBanner>Your base price is what you expect to receive before Risellar and reseller selling amounts are calculated.</ProductApprovalBanner>
           <ProductApprovalBanner>Admin must approve products before resellers can sell them.</ProductApprovalBanner>
           <ProductApprovalBanner tone="success">Variant setup is a placeholder in this phase. Detailed inventory arrives in Phase 7.</ProductApprovalBanner>
@@ -512,7 +525,12 @@ export function SupplierProductDetailScreen({ id }: { id: string }) {
 
   return (
     <SupplierMobileShell active="products" title="Product detail">
-      <ProductImageTile product={product} className="mb-4 w-full" />
+      <ProductImageGallery
+        className="mb-4"
+        imageAlt={product.imageAlt}
+        images={product.images}
+        productName={product.name}
+      />
       <div className="mb-4 flex items-start justify-between gap-3">
         <h1 className="text-2xl font-extrabold text-[var(--color-charcoal)]">{product.name}</h1>
         <StatusBadge status={product.status} />
@@ -576,6 +594,11 @@ export function SupplierEditProductScreen({ id }: { id: string }) {
           <Field label="Approval status">
             <Input defaultValue={product.status} />
           </Field>
+          <ProductImagePreviewGrid
+            imageAlt={product.imageAlt}
+            images={product.images}
+            productName={product.name}
+          />
           <ProductApprovalBanner>Price changes may require admin approval before resellers can use the updated amount.</ProductApprovalBanner>
           <ProductApprovalBanner>Existing orders keep their original price.</ProductApprovalBanner>
           <Button className="w-full" onClick={() => setSaved(true)}>
@@ -605,13 +628,13 @@ export function SupplierOrdersScreen() {
           </div>
         </div>
       </Card>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <ScrollableChipRow>
         {filters.map((filter, index) => (
-          <Button key={filter} variant={index === 0 ? "primary" : "outline"} size="compact">
+          <Button className="flex-none px-5" key={filter} variant={index === 0 ? "primary" : "outline"} size="compact">
             {filter}
           </Button>
         ))}
-      </div>
+      </ScrollableChipRow>
       <div className="mt-4 space-y-3">
         {supplierCoreMock.orders.map((order) => (
           <SupplierOrderCard key={order.id} order={order} />

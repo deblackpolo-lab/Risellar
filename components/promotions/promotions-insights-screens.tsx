@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BarChart3, Copy, Lock } from "lucide-react";
+import { BarChart3, ClipboardList, Copy, Home, Lock, Megaphone, Package, UserRound } from "lucide-react";
+import { AdminShell } from "@/components/admin/AdminSidebar";
 import { BottomNav, MobileShell } from "@/components/layout";
+import { ProductImageFrame } from "@/components/marketplace";
 import { Button, Card, Input, StatusBadge } from "@/components/ui";
 import {
   captionTemplates,
@@ -23,27 +25,33 @@ type InsightType = "top-selling" | "high-profit" | "low-competition";
 
 function SupplierNav({ active }: { active: string }) {
   const items = [
-    ["Home", "/supplier/dashboard"],
-    ["Products", "/supplier/products"],
-    ["Orders", "/supplier/orders"],
-    ["Promos", "/supplier/promotions"],
-    ["Account", "/supplier/settings"]
+    { label: "Home", href: "/supplier/dashboard", icon: Home },
+    { label: "Products", href: "/supplier/products", icon: Package },
+    { label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+    { label: "Promos", href: "/supplier/promotions", icon: Megaphone },
+    { label: "Account", href: "/supplier/settings", icon: UserRound }
   ];
 
   return (
     <nav aria-label="Supplier navigation" className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-border)] bg-white/95 px-3 py-2 backdrop-blur">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-        {items.map(([label, href]) => (
-          <Link
-            aria-current={label === active ? "page" : undefined}
-            className={cn("flex min-h-12 flex-col items-center justify-center rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)]", label === active && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]")}
-            href={href}
-            key={label}
-          >
-            <span className="mb-1 h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
-            {label}
-          </Link>
-        ))}
+        {items.map((item) => {
+          const Icon = item.icon;
+          const selected = item.label === active;
+
+          return (
+            <Link
+              aria-current={selected ? "page" : undefined}
+              aria-label={item.label}
+              className={cn("flex min-h-12 flex-col items-center justify-center rounded-[var(--radius-md)] text-[11px] font-semibold text-[var(--color-muted)]", selected && "bg-[var(--color-primary-subtle)] text-[var(--color-primary)]")}
+              href={item.href}
+              key={item.label}
+            >
+              <Icon className="mb-1 h-4 w-4" aria-hidden />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
@@ -67,38 +75,6 @@ function ResellerShell({ children, title }: { children: ReactNode; title: string
   );
 }
 
-function AdminShell({ children, active = "Promotions" }: { children: ReactNode; active?: string }) {
-  const navItems = [
-    ["Dashboard", "/admin/dashboard"],
-    ["Operations", "/admin/operations"],
-    ["Promotions", "/admin/promotions"],
-    ["Risk", "/admin/risk"],
-    ["Audit Logs", "/admin/audit-logs"],
-    ["Settings", "/admin/settings"]
-  ];
-
-  return (
-    <div className="min-h-screen bg-[var(--color-page)] p-4 text-[var(--color-charcoal)] lg:p-6">
-      <div className="grid min-h-[calc(100vh-3rem)] grid-cols-1 gap-5 lg:grid-cols-[260px_1fr]">
-        <aside className="rounded-[var(--radius-lg)] bg-[var(--color-primary-dark)] p-5 text-white shadow-[var(--shadow-md)]">
-          <Link className="block text-2xl font-bold" href="/admin/dashboard">Risellar</Link>
-          <p className="mt-1 text-sm font-semibold text-[var(--color-accent)]">Admin Promotions</p>
-          <nav aria-label="Admin navigation" className="mt-8 space-y-1">
-            {navItems.map(([label, href]) => (
-              <Link className={cn("block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-semibold", active === label ? "bg-white/15 text-white" : "text-white/78 hover:bg-white/10 hover:text-white")} href={href} key={label}>{label}</Link>
-            ))}
-          </nav>
-          <div className="mt-8 rounded-[var(--radius-md)] border border-white/15 bg-white/10 p-4">
-            <p className="text-sm font-bold">Mock-only controls</p>
-            <p className="mt-2 text-xs leading-5 text-white/80">Promotion approval, pause, and package edits are placeholders only.</p>
-          </div>
-        </aside>
-        <main className="min-w-0 space-y-5">{children}</main>
-      </div>
-    </div>
-  );
-}
-
 function PageHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
   return (
     <header className="mb-5">
@@ -119,11 +95,14 @@ function MetricCard({ label, value, note }: { label: string; value: string; note
   );
 }
 
-function ProductTile({ product }: { product: Pick<InsightProduct, "name" | "imageLabel"> }) {
+function ProductTile({ product }: { product: Pick<InsightProduct, "name" | "imageLabel" | "images" | "imageAlt"> }) {
   return (
-    <div className="grid h-20 w-20 shrink-0 place-items-center rounded-[var(--radius-lg)] bg-[linear-gradient(135deg,var(--color-primary-subtle),var(--color-accent-soft))] text-lg font-extrabold text-[var(--color-primary)]" aria-label={`${product.name} image placeholder`}>
-      {product.imageLabel}
-    </div>
+    <ProductImageFrame
+      className="h-20 w-20 shrink-0 rounded-[var(--radius-md)]"
+      imageAlt={product.imageAlt}
+      images={product.images}
+      productName={product.name}
+    />
   );
 }
 
