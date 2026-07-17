@@ -1,19 +1,29 @@
 export type PreviewSection =
   | "Design System"
-  | "Public/Auth / General"
-  | "Reseller PWA"
+  | "Public/Auth"
   | "Customer Checkout"
+  | "Customer Account/Orders"
+  | "Reseller PWA"
+  | "Reseller Insights/Promotions"
   | "Supplier PWA"
+  | "Supplier Inventory"
+  | "Supplier Settlements/Finance"
+  | "Supplier Promotions"
+  | "Supplier Team/Inventory Manager"
   | "Admin Core"
   | "Admin Operations / Risk"
+  | "Admin Promotions"
+  | "Admin Support/Disputes/Returns/Refunds"
   | "Edge Cases";
+
+type PreviewSourceSection = PreviewSection | "Public/Auth / General";
 
 export type PreviewStatus = "Built" | "Mock" | "Frontend only";
 
 export type PreviewRoute = {
   title: string;
   path: string;
-  section: PreviewSection;
+  section: PreviewSourceSection;
   status: PreviewStatus;
   note?: string;
 };
@@ -218,17 +228,82 @@ export const previewRoutes: PreviewRoute[] = [
 
 export const previewSections: PreviewSection[] = [
   "Design System",
-  "Public/Auth / General",
-  "Reseller PWA",
+  "Public/Auth",
   "Customer Checkout",
+  "Customer Account/Orders",
+  "Reseller PWA",
+  "Reseller Insights/Promotions",
   "Supplier PWA",
+  "Supplier Inventory",
+  "Supplier Settlements/Finance",
+  "Supplier Promotions",
+  "Supplier Team/Inventory Manager",
   "Admin Core",
   "Admin Operations / Risk",
+  "Admin Promotions",
+  "Admin Support/Disputes/Returns/Refunds",
   "Edge Cases"
 ];
 
 export function getPreviewRoutesBySection(section: PreviewSection) {
-  return previewRoutes.filter((route) => route.section === section);
+  return previewRoutes.filter((route) => getPreviewDisplaySection(route) === section);
+}
+
+export function getPreviewDisplaySection(route: PreviewRoute): PreviewSection {
+  if (route.section === "Public/Auth / General") return "Public/Auth";
+
+  if (
+    route.path.startsWith("/customer") ||
+    route.title.includes("Customer Orders") ||
+    route.title.includes("Customer Order") ||
+    route.title.includes("Confirm Order") ||
+    route.title.includes("Delivery Quote") ||
+    route.title.includes("Report Issue") ||
+    route.title.includes("Return Request") ||
+    route.title.includes("Refund Status")
+  ) {
+    return "Customer Account/Orders";
+  }
+
+  if (
+    route.path.startsWith("/reseller/insights") ||
+    route.path.startsWith("/reseller/promotions") ||
+    route.path === "/reseller/trending"
+  ) {
+    return "Reseller Insights/Promotions";
+  }
+
+  if (route.path.startsWith("/supplier/inventory") && !route.path.startsWith("/supplier/inventory-manager")) {
+    return "Supplier Inventory";
+  }
+
+  if (route.path.startsWith("/supplier/settlements") || route.path.startsWith("/supplier/finance")) {
+    return "Supplier Settlements/Finance";
+  }
+
+  if (route.path.startsWith("/supplier/promotions")) {
+    return "Supplier Promotions";
+  }
+
+  if (route.path.startsWith("/supplier/team") || route.path.startsWith("/supplier/inventory-manager")) {
+    return "Supplier Team/Inventory Manager";
+  }
+
+  if (route.path.startsWith("/admin/promotions")) {
+    return "Admin Promotions";
+  }
+
+  if (
+    route.path.startsWith("/admin/support") ||
+    route.path.startsWith("/admin/disputes") ||
+    route.path.startsWith("/admin/returns") ||
+    route.path.startsWith("/admin/refunds")
+  ) {
+    return "Admin Support/Disputes/Returns/Refunds";
+  }
+
+  if (route.section === "Public/Auth") return "Public/Auth";
+  return route.section;
 }
 
 export const requiredPhase15RouteChecks = [
