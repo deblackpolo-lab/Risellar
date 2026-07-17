@@ -18,7 +18,7 @@ No secret values were printed.
 
 ## B. RPC Test Result
 
-Result: failed.
+Result: passed on approved rerun after fixing admin-context audit-log verification.
 
 Command executed:
 
@@ -26,23 +26,66 @@ Command executed:
 npx supabase db query --linked --file scripts/rpc/rpc-boundary-tests-dev-only.sql
 ```
 
-The RPC script reached the final assertion summary and failed with 8 assertion failures.
+The RPC script returned all assertion rows with `passed: true`.
 
 ## C. Storage Test Result
 
-Result: not run.
+Result: passed on approved rerun after fixing the bucket metadata verification context.
 
-The storage test was intentionally not executed because the RPC test failed first and the approved instructions required stopping immediately on the first failure.
+Command executed after RPC passed:
+
+```bash
+npx supabase db query --linked --file scripts/storage/storage-boundary-tests-dev-only.sql
+```
+
+Historical result: the storage script previously reached final assertion aggregation and failed with one assertion failure. A follow-up diagnostic confirmed the `product-images` bucket exists in the development project and is private; the failure came from checking `storage.buckets` while impersonating `anon`.
+
+Approved rerun result: passed. The storage script returned all assertion rows with `passed: true`.
 
 ## D. Passed Assertions
 
-The RPC script progressed far enough to execute multiple RPC paths and reach final assertion aggregation. The returned error only included failed assertion rows, not the full result table.
+RPC passed assertions included:
 
-No storage assertions were run.
+- anonymous cannot create audit log through RPC
+- customer can confirm own order
+- customer cannot confirm another customer order
+- customer can approve own delivery quote
+- customer cannot directly mutate order price totals or order item price snapshots
+- customer/reseller/supplier owner cannot read audit logs directly
+- reseller cannot release own commission
+- reseller cannot approve own withdrawal
+- reseller cannot over-request withdrawal beyond available commission
+- supplier owner cannot verify own settlement
+- supplier owner can submit private settlement proof path
+- supplier owner cannot submit public settlement proof URL
+- inventory manager cannot verify settlement or release commission
+- support can release expired reservation and record delivery quote
+- support cannot verify settlement through finance RPC
+- finance can verify settlement, release commission, and approve withdrawal
+- all audited RPC audit-log assertions passed from admin verification context
+- safe product image review queue does not expose `base_price_amount`
+
+Storage passed assertions included:
+
+- `product-images` bucket is private
+- anonymous cannot read product image objects through SQL
+- anonymous cannot insert product image object metadata
+- customer cannot read product image objects through SQL
+- customer cannot insert product image object metadata
+- supplier owner can insert own supplier product image object metadata
+- supplier owner cannot insert other supplier product image object metadata
+- supplier owner cannot overwrite other supplier object metadata
+- supplier owner can update own product image object metadata
+- supplier owner cannot insert settlement proof object without explicit bucket policy
+- permitted inventory manager can insert own supplier product image object metadata
+- permitted inventory manager cannot insert other supplier product image object metadata
+- inventory manager cannot read other supplier product image object metadata
+- admin can read product image object metadata
+- no direct delete path for product image objects
 
 ## E. Failed Assertion/Error
 
-Exact RPC failure returned by Supabase:
+Historical RPC failure returned by Supabase before the test assertion fix:
 
 ```text
 ERROR: P0001: RPC boundary tests failed: 8 failure(s): commission release writes audit row - expected=1, observed=0
@@ -56,9 +99,30 @@ withdrawal approval writes audit row - expected=1, observed=0
 CONTEXT: PL/pgSQL function inline_code_block line 16 at RAISE
 ```
 
+Current storage failure returned by Supabase:
+
+```text
+ERROR: P0001: Storage boundary tests failed: 1 failure(s): product-images bucket is private - expected=1, observed=0
+CONTEXT: PL/pgSQL function inline_code_block line 16 at RAISE
+```
+
+Current storage rerun: no failed assertion or SQL error.
+
 ## F. Failure Classification
 
-Classification: test assertion bug.
+Current classification: test assertion/context bug.
+
+Reason:
+
+- The Phase 1 migration and reports intentionally define `product-images` as private (`public = false`).
+- A read-only linked development diagnostic confirmed `storage.buckets` contains `product-images` with `public: false`.
+- The failed assertion ran after `set local role anon`, so it tested anonymous visibility into bucket metadata rather than actual bucket privacy.
+- This does not prove a real storage policy gap for product image object access.
+- `scripts/storage/storage-boundary-tests-dev-only.sql` now verifies bucket privacy before role impersonation and preserves anonymous object denial assertions under `anon`.
+- No storage policy, RLS policy, RPC, grant, or migration was changed.
+- Approved storage rerun passed after this fix.
+
+Historical RPC failure classification: test assertion bug.
 
 Reason:
 
@@ -80,15 +144,16 @@ Fix status:
 - A guard assertion was added: `test setup/admin verification context cannot read audit logs`.
 - Existing audit-log assertions were preserved.
 - No RLS policy, RPC function, grant, or migration was changed.
-- The RPC and storage boundary tests still require explicit approval before rerun.
+- The RPC rerun passed.
+- The approved storage rerun passed.
 
 ## G. Whether Fixture/Test Data Was Rolled Back/Cleaned Up
 
-The RPC script uses an explicit transaction and rollback strategy. It failed by raising an exception inside that transaction before reaching the explicit `rollback`.
+The RPC script uses an explicit transaction and rollback strategy. The approved rerun passed and reached rollback, so RPC fixture/test data should not have been committed.
 
-Because the query failed inside the open transaction, the transaction was aborted and should not commit fixture/test data. A follow-up rerun after fixing the test assertion should still confirm cleanup behavior.
+The storage script uses an explicit transaction and rollback strategy. The approved rerun passed and reached its final `rollback`, so fixture/test data should not have been committed.
 
-The storage script was not run, so it created no fixture data.
+No production data was used.
 
 ## H. Commands Run/Results
 
@@ -96,34 +161,44 @@ The storage script was not run, so it created no fixture data.
 - `npx supabase --version` - `2.109.1`.
 - `.env.local` / `supabase/.temp/` precheck - passed without printing values.
 - `npx supabase projects list` - confirmed linked project named `Risellar`.
-- `npx supabase db query --linked --file scripts/rpc/rpc-boundary-tests-dev-only.sql` - failed with 8 audit-row visibility assertions.
-
-Not run because RPC test failed first:
-
-- `npx supabase db query --linked --file scripts/storage/storage-boundary-tests-dev-only.sql`
-- `npm test`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build`
-- final secret scan
+- `npx supabase db query --linked --file scripts/rpc/rpc-boundary-tests-dev-only.sql` - historical run failed with 8 audit-row visibility assertions.
+- `npx supabase db query --linked --file scripts/rpc/rpc-boundary-tests-dev-only.sql` - approved rerun passed; all returned assertion rows had `passed: true`.
+- `npx supabase db query --linked --file scripts/storage/storage-boundary-tests-dev-only.sql` - failed with `product-images bucket is private - expected=1, observed=0`.
+- `npx supabase db query --help` - confirmed linked read query support.
+- `npx supabase db query --linked "select id, name, public, file_size_limit, allowed_mime_types from storage.buckets ..."` - passed; returned `product-images` with `public: false`.
+- `npx supabase db query --linked --file <temporary diagnostic sql>` - passed; returned expected `product-images` policies on `storage.objects`.
+- `git status --short` - showed expected modified storage test/report files and new diagnostic report.
+- `npx supabase --version` - `2.109.1`.
+- Linked project precheck - confirmed project name `Risellar`.
+- `.env.local` / `supabase/.temp/` precheck - passed without printing values.
+- `npx supabase db query --linked --file scripts/storage/storage-boundary-tests-dev-only.sql` - approved rerun passed; all returned assertion rows had `passed: true`.
+- `npm test` - passed; 19 test files and 85 tests.
+- `npm run typecheck` - passed.
+- `npm run lint` - passed.
+- `npm run build` - passed.
+- final secret scan - passed.
 
 ## I. Secret Scan Result
 
-Final secret scan was not run because execution stopped immediately after the RPC failure.
+Final secret scan passed after repository verification for the diagnostic fix.
 
 Precheck confirmed:
 
 - `.env.local` is ignored.
 - `.env.local` was not staged.
 - `supabase/.temp/` is ignored.
+- `.env.local` is not tracked.
+- No high-confidence real Clerk/Supabase/service-role values, bearer tokens, passwords, API keys, or production data were found in tracked docs/scripts/source files by the scan.
 
 No secret values were printed.
 
 ## J. Current Git Status
 
-After creating this report, the working tree contains one untracked file:
+After updating this report, the working tree contains modified/untracked diagnostic files:
 
 - `docs/RISELLAR_RPC_STORAGE_BOUNDARY_TEST_EXECUTION_REPORT.md`
+- `docs/RISELLAR_STORAGE_BUCKET_DIAGNOSTIC_REPORT.md`
+- `scripts/storage/storage-boundary-tests-dev-only.sql`
 
 ## K. Whether Production Remains Blocked
 
@@ -131,16 +206,17 @@ Production remains blocked.
 
 Reasons:
 
-- RPC boundary tests did not pass.
-- Storage boundary tests were not run.
-- The current failure appears to be a test assertion bug, but it still requires correction and an approved rerun before production can advance.
+- RPC boundary tests passed.
+- Storage boundary tests passed in the confirmed development project.
+- Production Supabase was not connected to, no production migration was applied, and no production approval has been given.
+- Storage HTTP/API behavior still needs manual development verification for binary upload/download and browser SDK behavior before production planning.
 
-## Required Fix Prompt
+## Recommended Next Prompt
 
 ```text
 You are working on Risellar.
 
-Task: fix the development-only RPC boundary test audit-row visibility assertions.
+Task: commit the passing RPC/storage boundary execution and diagnostic reports.
 
 Do NOT connect to production Supabase.
 Do NOT apply migrations.
@@ -150,36 +226,15 @@ Do NOT print secrets.
 Do NOT commit .env.local.
 Do NOT weaken RLS policies.
 Do NOT weaken RPC/storage policies to make tests pass.
-Do NOT grant normal users audit log read access.
 Do NOT run npm audit fix --force.
 
-Context:
-The development-only RPC boundary test failed with 8 audit-row assertions:
+Files to commit:
+- scripts/storage/storage-boundary-tests-dev-only.sql
+- docs/RISELLAR_RPC_STORAGE_BOUNDARY_TEST_EXECUTION_REPORT.md
+- docs/RISELLAR_STORAGE_BUCKET_DIAGNOSTIC_REPORT.md
 
-- commission release writes audit row - expected=1, observed=0
-- customer confirmation RPC writes audit row - expected=1, observed=0
-- delivery quote approval writes audit row - expected=1, observed=0
-- reseller withdrawal request writes audit row - expected=1, observed=0
-- reservation release writes audit row - expected=1, observed=0
-- settlement proof submission writes audit row - expected=1, observed=0
-- settlement verification writes audit row - expected=1, observed=0
-- withdrawal approval writes audit row - expected=1, observed=0
-
-Classification:
-This appears to be a test assertion bug, not a confirmed RPC/security gap.
-
-Reason:
-The test checks `public.audit_logs` while running as non-admin roles. RLS correctly hides audit logs from those roles, so observed count is 0 even if the SECURITY DEFINER RPC inserted the audit row.
-
-Required:
-1. Update `scripts/rpc/rpc-boundary-tests-dev-only.sql` only.
-2. Keep all audited RPC/action assertions.
-3. Move audit-log existence checks into an admin context, or add a safe development-only admin verification block after the audited actions.
-4. Do not weaken production RLS, RPC authorization, grants, or audit-log policies.
-5. Do not remove audit assertions just to pass.
-6. Update `docs/RISELLAR_RPC_STORAGE_BOUNDARY_TEST_EXECUTION_REPORT.md` with the failure classification and fix status.
-7. Run normal repo checks and secret scan.
-8. Do not rerun RPC/storage boundary scripts until explicitly approved.
-
-Commit after verification if requested.
+Before commit, run git status --short, git diff --check, npm test, npm run typecheck, npm run lint, npm run build, and secret scan.
+Stage only the files listed above.
+Commit with: git commit -m "Document passing RPC and storage boundary tests"
+Push to origin main.
 ```

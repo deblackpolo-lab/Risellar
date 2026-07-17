@@ -200,10 +200,11 @@ values (
   '{"devOnly": true, "source": "storage-boundary-test-fixture"}'::jsonb
 );
 
+select pg_temp.storage_expect_count('product-images bucket is private', $$select count(*) from storage.buckets where id = 'product-images' and public = false$$, 1);
+
 reset role;
 set local role anon;
 set local "request.jwt.claims" = '{}';
-select pg_temp.storage_expect_count('product-images bucket is private', $$select count(*) from storage.buckets where id = 'product-images' and public = false$$, 1);
 select pg_temp.storage_expect_count('anonymous cannot read product image objects through SQL', $$select count(*) from storage.objects where bucket_id = 'product-images'$$, 0);
 select pg_temp.storage_expect_blocked_or_zero('anonymous cannot insert product image object metadata', $$with changed as (insert into storage.objects (bucket_id, name, metadata) values ('product-images', (select fixture_id::text from storage_fixture_ids where fixture_key = 'supplier_a') || '/' || (select fixture_id::text from storage_fixture_ids where fixture_key = 'product_a') || '/anon-blocked.jpg', '{}'::jsonb) returning 1) select count(*) from changed$$);
 
