@@ -37,7 +37,26 @@ The script was reviewed before execution:
 
 ## C. RLS Test Execution Result
 
-Result: failed with one RLS boundary assertion failure.
+Result: passed.
+
+Sixth approved execution after the safe other-supplier RPC test assertion fix:
+
+```text
+npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql
+```
+
+The development-only RLS boundary test returned result rows with every assertion marked `passed: true`.
+
+Key passing assertions included:
+
+- `inventory manager cannot read staff permission data - expected=0, observed=0`
+- `inventory manager can read safe own team operational data - expected=1, observed=1`
+- `inventory manager cannot read safe other supplier team data - expected=0, observed=0`
+- `safe team RPC does not expose permissions column - blocked with 42703: column "permissions" does not exist`
+- `supplier owner A can read direct team permissions - expected=1, observed=1`
+- `admin can read direct supplier team permissions - expected>0, observed=1`
+
+The original `supplier_inventory_manager` direct `supplier_team_members.permissions` exposure gap is fixed in the development project.
 
 Fifth approved execution after applying the supplier team permission patch migration:
 
@@ -130,17 +149,15 @@ LINE 187: insert into public.resellers (profile_id, business_name, approval_stat
 
 ## D. Passed Assertions
 
-No individual passing assertions were captured from the fourth run output. The final summary only returned the failed assertion.
-
-The fourth run reached the final failure-count block and reported one failed assertion.
+The latest approved run returned all assertions as passed. The output included anonymous, customer, reseller, supplier owner, supplier inventory manager, support, finance, and admin boundary assertions.
 
 ## E. Failed Assertions
 
-One assertion failed:
-
-- `inventory manager cannot read staff permission data - expected=0, observed=1`
+None in the latest approved run.
 
 ## F. Test-Simulation Issue Or Real RLS Gap
+
+Final latest-run classification: no active failure.
 
 Prior confirmed classification: real RLS policy/table-exposure gap.
 
@@ -205,9 +222,7 @@ Follow-up fix applied:
 
 ## G. Fixture Data Rollback/Cleanup
 
-The script uses an explicit transaction and rollback strategy, and the query failed before completion. Because the failed statement occurred inside the transaction submitted by the script, fixture data is expected not to be permanently committed.
-
-No additional SQL was run to inspect or clean data after the third failure, to avoid repeated database execution without a clear fix.
+The script uses an explicit transaction and rollback strategy. The latest approved run completed successfully and reached the final `rollback`, so development fixture data was not permanently committed.
 
 ## H. Commands Run/Results
 
@@ -221,7 +236,12 @@ No additional SQL was run to inspect or clean data after the third failure, to a
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - fourth approved run failed with exact assertion: `inventory manager cannot read staff permission data - expected=0, observed=1`.
 - `npx supabase db push` - applied `20260717184516_harden_supplier_team_member_permissions.sql` to the confirmed development project.
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - fifth approved run failed with exact assertion: `inventory manager cannot read safe other supplier team data - expected=0, observed=1`.
-- Normal repo verification (`npm test`, `npm run typecheck`, `npm run lint`, `npm run build`) was not run after the RLS failure because the instruction was to stop immediately if tests fail.
+- `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - sixth approved run passed; all returned assertion rows had `passed: true`.
+- Normal repo verification after latest pass:
+  - `npm test` - passed, 19 test files and 85 tests.
+  - `npm run typecheck` - passed.
+  - `npm run lint` - passed with `--max-warnings=0`.
+  - `npm run build` - passed; Next.js generated 160 static pages.
 - Helper fix verification:
   - `git diff --check` - passed; Git reported line-ending normalization warnings only.
   - `npm test` - passed, 19 test files and 85 tests.
@@ -250,21 +270,14 @@ At latest report update time, this execution report is modified in the working t
 
 ## L. Whether Production Remains Blocked
 
-Production remains blocked.
+Production remains blocked until an explicit production migration plan/approval exists.
 
 Reasons:
 
-- RLS boundary tests did not complete.
-- Test helper parameter names were corrected after the second failure.
-- One assertion failed on the third approved run, but the exact assertion name was not captured in the returned output.
-- The test script diagnostic improvement has been applied so failed assertion names/details are included in the final raised exception.
-- The fourth approved run confirmed the failing assertion: inventory managers can read staff permission data.
-- Patch migration was applied to development.
-- The original direct `supplier_team_members.permissions` exposure assertion did not recur in the fifth run.
-- The safe other-supplier RPC test assertion bug has been fixed in the development-only RLS test script.
-- RLS tests must be rerun only after explicit development-only approval.
-- RLS assertions still need to execute and pass against the development project.
-- No production migration/apply should occur until development RLS testing is complete.
+- The patch migration has been applied to development only.
+- Development RLS boundary tests now pass.
+- No production Supabase apply has been requested or approved.
+- Production migration/apply still requires separate production-readiness review and explicit approval.
 
 ## Required Fix Prompt
 
