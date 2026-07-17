@@ -20,16 +20,16 @@ create temp table rls_test_results (
 grant select, insert, update on rls_test_results to public;
 
 create or replace function pg_temp.rls_record_result(
-  test_name text,
-  passed boolean,
-  details text default ''
+  p_test_name text,
+  p_passed boolean,
+  p_details text default ''
 )
 returns void
 language plpgsql
 as $$
 begin
   insert into rls_test_results (test_name, passed, details)
-  values (test_name, passed, coalesce(details, ''))
+  values (p_test_name, p_passed, coalesce(p_details, ''))
   on conflict (test_name) do update
     set passed = excluded.passed,
         details = excluded.details;
@@ -37,9 +37,9 @@ end;
 $$;
 
 create or replace function pg_temp.rls_expect_count(
-  test_name text,
-  sql_text text,
-  expected_count integer
+  p_test_name text,
+  p_sql_text text,
+  p_expected_count integer
 )
 returns void
 language plpgsql
@@ -47,21 +47,21 @@ as $$
 declare
   observed_count integer;
 begin
-  execute sql_text into observed_count;
+  execute p_sql_text into observed_count;
   perform pg_temp.rls_record_result(
-    test_name,
-    observed_count = expected_count,
-    'expected=' || expected_count || ', observed=' || coalesce(observed_count::text, '<null>')
+    p_test_name,
+    observed_count = p_expected_count,
+    'expected=' || p_expected_count || ', observed=' || coalesce(observed_count::text, '<null>')
   );
 exception
   when others then
-    perform pg_temp.rls_record_result(test_name, false, sqlstate || ': ' || sqlerrm);
+    perform pg_temp.rls_record_result(p_test_name, false, sqlstate || ': ' || sqlerrm);
 end;
 $$;
 
 create or replace function pg_temp.rls_expect_positive(
-  test_name text,
-  sql_text text
+  p_test_name text,
+  p_sql_text text
 )
 returns void
 language plpgsql
@@ -69,21 +69,21 @@ as $$
 declare
   observed_count integer;
 begin
-  execute sql_text into observed_count;
+  execute p_sql_text into observed_count;
   perform pg_temp.rls_record_result(
-    test_name,
+    p_test_name,
     observed_count > 0,
     'expected>0, observed=' || coalesce(observed_count::text, '<null>')
   );
 exception
   when others then
-    perform pg_temp.rls_record_result(test_name, false, sqlstate || ': ' || sqlerrm);
+    perform pg_temp.rls_record_result(p_test_name, false, sqlstate || ': ' || sqlerrm);
 end;
 $$;
 
 create or replace function pg_temp.rls_expect_blocked_or_zero(
-  test_name text,
-  sql_text text
+  p_test_name text,
+  p_sql_text text
 )
 returns void
 language plpgsql
@@ -91,21 +91,21 @@ as $$
 declare
   affected_count integer;
 begin
-  execute sql_text into affected_count;
+  execute p_sql_text into affected_count;
   perform pg_temp.rls_record_result(
-    test_name,
+    p_test_name,
     coalesce(affected_count, 0) = 0,
     'expected blocked or 0 affected, observed=' || coalesce(affected_count::text, '<null>')
   );
 exception
   when others then
-    perform pg_temp.rls_record_result(test_name, true, 'blocked with ' || sqlstate || ': ' || sqlerrm);
+    perform pg_temp.rls_record_result(p_test_name, true, 'blocked with ' || sqlstate || ': ' || sqlerrm);
 end;
 $$;
 
 create or replace function pg_temp.rls_expect_allowed(
-  test_name text,
-  sql_text text
+  p_test_name text,
+  p_sql_text text
 )
 returns void
 language plpgsql
@@ -113,15 +113,15 @@ as $$
 declare
   affected_count integer;
 begin
-  execute sql_text into affected_count;
+  execute p_sql_text into affected_count;
   perform pg_temp.rls_record_result(
-    test_name,
+    p_test_name,
     coalesce(affected_count, 0) > 0,
     'expected allowed with affected rows, observed=' || coalesce(affected_count::text, '<null>')
   );
 exception
   when others then
-    perform pg_temp.rls_record_result(test_name, false, sqlstate || ': ' || sqlerrm);
+    perform pg_temp.rls_record_result(p_test_name, false, sqlstate || ': ' || sqlerrm);
 end;
 $$;
 
