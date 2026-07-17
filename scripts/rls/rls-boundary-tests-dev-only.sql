@@ -500,6 +500,7 @@ select pg_temp.rls_expect_count('supplier owner A sees one supplier row', $$sele
 select pg_temp.rls_expect_count('supplier owner A cannot see supplier B row', $$select count(*) from public.suppliers where business_name = 'Dev Supplier B'$$, 0);
 select pg_temp.rls_expect_count('supplier owner A sees own product row', $$select count(*) from public.products$$, 1);
 select pg_temp.rls_expect_count('supplier owner A sees own settlement row', $$select count(*) from public.settlements$$, 1);
+select pg_temp.rls_expect_count('supplier owner A can read direct team permissions', $$select count(*) from public.supplier_team_members where permissions <> '{}'::jsonb$$, 1);
 select pg_temp.rls_expect_blocked_or_zero('supplier owner A cannot self-verify supplier', $$with changed as (update public.suppliers set verification_status = 'approved' returning 1) select count(*) from changed$$);
 select pg_temp.rls_expect_blocked_or_zero('supplier owner A cannot edit price snapshot fields', $$with changed as (update public.order_items set supplier_base_price_snapshot_amount = supplier_base_price_snapshot_amount + 1 returning 1) select count(*) from changed$$);
 select pg_temp.rls_expect_blocked_or_zero('supplier owner A cannot delete products', $$with changed as (delete from public.products returning 1) select count(*) from changed$$);
@@ -511,6 +512,9 @@ select pg_temp.rls_expect_count('inventory manager sees supplier A product row',
 select pg_temp.rls_expect_count('inventory manager cannot see settlement data', $$select count(*) from public.settlements$$, 0);
 select pg_temp.rls_expect_count('inventory manager cannot see payout withdrawal data', $$select count(*) from public.withdrawals$$, 0);
 select pg_temp.rls_expect_count('inventory manager cannot read staff permission data', $$select count(*) from public.supplier_team_members where permissions <> '{}'::jsonb$$, 0);
+select pg_temp.rls_expect_count('inventory manager can read safe own team operational data', $$select count(*) from public.get_supplier_operational_team_members((select id from public.suppliers where business_name = 'Dev Supplier A'))$$, 1);
+select pg_temp.rls_expect_count('inventory manager cannot read safe other supplier team data', $$select count(*) from public.get_supplier_operational_team_members((select id from public.suppliers where business_name = 'Dev Supplier B'))$$, 0);
+select pg_temp.rls_expect_blocked_or_zero('safe team RPC does not expose permissions column', $$select count(*) from public.get_supplier_operational_team_members() where permissions is not null$$);
 select pg_temp.rls_expect_blocked_or_zero('inventory manager cannot mutate settlement status', $$with changed as (update public.settlements set settlement_status = 'paid' returning 1) select count(*) from changed$$);
 select pg_temp.rls_expect_blocked_or_zero('inventory manager cannot mutate supplier permissions', $$with changed as (update public.supplier_team_members set permissions = '{"stock.adjust": false}'::jsonb returning 1) select count(*) from changed$$);
 select pg_temp.rls_expect_blocked_or_zero('inventory manager cannot delete inventory movement targets', $$with changed as (delete from public.product_variants returning 1) select count(*) from changed$$);
@@ -535,6 +539,7 @@ set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_clerk_admin"}';
 select pg_temp.rls_expect_positive('admin can read profiles', $$select count(*) from public.profiles$$);
 select pg_temp.rls_expect_positive('admin can read admin staff', $$select count(*) from public.admin_staff$$);
+select pg_temp.rls_expect_positive('admin can read direct supplier team permissions', $$select count(*) from public.supplier_team_members where permissions <> '{}'::jsonb$$);
 select pg_temp.rls_expect_positive('admin can read audit logs', $$select count(*) from public.audit_logs$$);
 select pg_temp.rls_expect_allowed('admin can insert admin action', $$with changed as (insert into public.admin_actions (actor_profile_id, action_type, action_status, target_entity_type, target_entity_id, reason) values ((select id from public.profiles where clerk_user_id = 'dev_clerk_admin'), 'dev.rls.admin.action', 'requested', 'fixture', (select id from public.orders where order_number = 'RLS-DEV-ORDER-A'), 'Development-only admin action boundary') returning 1) select count(*) from changed$$);
 

@@ -37,7 +37,23 @@ The script was reviewed before execution:
 
 ## C. RLS Test Execution Result
 
-Result: failed with one RLS boundary assertion failure, but the exact assertion name was not returned by the Supabase Management API response.
+Result: failed with one RLS boundary assertion failure.
+
+Fourth approved execution after failure diagnostics were improved:
+
+```text
+LegacyDbQueryUnexpectedStatusError
+unexpected status 400
+Failed to run sql query:
+ERROR: P0001: RLS boundary tests failed: 1 failure(s): inventory manager cannot read staff permission data - expected=0, observed=1
+CONTEXT: PL/pgSQL function inline_code_block line 16 at RAISE
+```
+
+The failing assertion is now visible:
+
+- `inventory manager cannot read staff permission data`
+- Expected visible row count: `0`
+- Observed visible row count: `1`
 
 Third approved execution after helper ambiguity fix:
 
@@ -85,21 +101,38 @@ LINE 187: insert into public.resellers (profile_id, business_name, approval_stat
 
 ## D. Passed Assertions
 
-No individual assertions can be counted as passed from the captured output.
+No individual passing assertions were captured from the fourth run output. The final summary only returned the failed assertion.
 
-The third run reached the final failure-count block, but the error response did not include the assertion result rows.
+The fourth run reached the final failure-count block and reported one failed assertion.
 
 ## E. Failed Assertions
 
-One assertion failed.
+One assertion failed:
 
-The exact failing assertion was not included in the Supabase CLI/Management API error output.
+- `inventory manager cannot read staff permission data - expected=0, observed=1`
 
 ## F. Test-Simulation Issue Or Real RLS Gap
 
-Latest classification: unknown.
+Latest classification: real RLS policy/table-exposure gap.
 
-Reason: the third execution proves one pass/fail assertion failed, but the error response did not expose the `rls_test_results` row that names the failed assertion. This could be a real RLS policy gap, a role/JWT simulation issue, or a test assertion bug. It should not be treated as a confirmed RLS policy gap until the script reports the failed assertion details in the exception message or another approved diagnostic run captures them.
+Reason: the `supplier_inventory_manager` development fixture can read one row from `public.supplier_team_members where permissions <> '{}'::jsonb`. Since `supplier_team_members.permissions` is sensitive staff permission data, exposing that table/column to an inventory manager violates the intended boundary. This is not a fixture/schema mismatch; the assertion reached the actual RLS visibility check.
+
+Important implementation note: PostgreSQL RLS is row-level, not column-level. If inventory managers need to see team membership rows but not the `permissions` JSON, the secure fix should likely use one of these patterns:
+
+- tighten direct `supplier_team_members` table access so only supplier owners/admins can read rows containing permission data; or
+- expose a safe view/RPC for inventory managers that omits sensitive permission fields; or
+- split sensitive staff permission data into an owner/admin-only table.
+
+Do not weaken the assertion to pass.
+
+Patch migration prepared:
+
+- `supabase/migrations/20260717184516_harden_supplier_team_member_permissions.sql`
+- Drops and replaces the direct `supplier_team_members` SELECT policy.
+- Direct `supplier_team_members` SELECT is now limited to supplier owners and support/admin roles.
+- Adds `public.get_supplier_operational_team_members(uuid)` as a safe authenticated RPC that omits `permissions`.
+- RLS boundary tests were updated to keep the direct permission-data denial and add safe RPC coverage.
+- Development apply is still required before rerunning the RLS boundary test.
 
 Follow-up diagnostic fix applied:
 
@@ -156,6 +189,7 @@ No additional SQL was run to inspect or clean data after the third failure, to a
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - first approved run failed with missing `resellers.business_name` column.
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - second approved run failed with ambiguous `test_name` reference in the PL/pgSQL test helper.
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - third approved run failed with `RLS boundary tests failed: 1 failure(s)`; exact assertion row was not included in the returned error output.
+- `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - fourth approved run failed with exact assertion: `inventory manager cannot read staff permission data - expected=0, observed=1`.
 - Normal repo verification (`npm test`, `npm run typecheck`, `npm run lint`, `npm run build`) was not run after the RLS failure because the instruction was to stop immediately if tests fail.
 - Helper fix verification:
   - `git diff --check` - passed; Git reported line-ending normalization warnings only.
@@ -193,6 +227,8 @@ Reasons:
 - Test helper parameter names were corrected after the second failure.
 - One assertion failed on the third approved run, but the exact assertion name was not captured in the returned output.
 - The test script diagnostic improvement has been applied so failed assertion names/details are included in the final raised exception.
+- The fourth approved run confirmed the failing assertion: inventory managers can read staff permission data.
+- Patch migration has been prepared but not applied to development in this report state.
 - RLS tests must be rerun only after explicit development-only approval.
 - RLS assertions still need to execute and pass against the development project.
 - No production migration/apply should occur until development RLS testing is complete.
@@ -202,7 +238,7 @@ Reasons:
 ```text
 You are working on Risellar.
 
-Task: improve the development-only RLS boundary test failure reporting after the third approved execution failed.
+Task: fix the RLS/table exposure gap where supplier inventory managers can read staff permission data.
 
 Do NOT weaken RLS policies.
 Do NOT connect to production Supabase.
@@ -217,27 +253,31 @@ The first approved development-only RLS test execution failed because public.res
 
 The second approved development-only RLS test execution failed because the PL/pgSQL helper had an ambiguous test_name reference. That was fixed in commit 6c135dcb.
 
-The third approved development-only RLS test execution reached the final assertion summary and failed with:
-ERROR P0001: RLS boundary tests failed: 1 failure(s). Review rls_test_results output above.
+The fourth approved development-only RLS test execution failed with:
+ERROR P0001: RLS boundary tests failed: 1 failure(s): inventory manager cannot read staff permission data - expected=0, observed=1.
 
-The Supabase linked query error response did not include the rls_test_results rows, so the failing assertion is unknown.
+Classification: real RLS policy/table-exposure gap.
 
-Fix only development-only test diagnostics. Do not change RLS policies or migrations.
+The inventory manager can read one supplier_team_members row where permissions <> '{}'::jsonb. Staff permission data must not be directly visible to supplier_inventory_manager users.
+
+Fix the schema/RLS design without weakening tests.
 
 Review:
 - scripts/rls/rls-boundary-tests-dev-only.sql
-- scripts/rls/rls-fixtures-dev-only.sql
 - supabase/migrations/20260717000000_risellar_schema_rls_foundation.sql
+- docs/RISELLAR_RLS_BOUNDARY_TEST_EXECUTION_REPORT.md
 
 Required:
-1. Update the final failure block to include failed assertion names and details directly in the raised exception message.
-2. Keep the existing pass/fail assertions intact.
-3. Do not remove, weaken, or invert any failing assertion.
-4. Keep scripts DEVELOPMENT ONLY.
-5. Keep rollback cleanup.
+1. Do not weaken or remove the failing assertion.
+2. Do not expose supplier_team_members.permissions to supplier_inventory_manager.
+3. Prefer a secure design such as:
+   - restrict direct supplier_team_members SELECT to supplier owners/admins, and provide inventory managers a safe view/RPC that omits permissions; or
+   - split sensitive permission JSON into an owner/admin-only table.
+4. Preserve legitimate supplier owner/admin staff-management access.
+5. Keep scripts DEVELOPMENT ONLY.
 6. Do not disable RLS, DROP, TRUNCATE, or add real data/secrets.
 7. Run git diff --check, npm test, npm run typecheck, npm run lint, npm run build, and secret scan.
-8. Update the RLS execution report with the fix notes.
+8. After code/schema fix is reviewed and committed, request explicit approval before rerunning the development-only RLS boundary test.
 
 Do not rerun the RLS script unless explicitly approved.
 ```
