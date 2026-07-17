@@ -7,7 +7,7 @@ create type public.user_role as enum (
   'customer',
   'reseller',
   'supplier_owner',
-  'inventory_manager',
+  'supplier_inventory_manager',
   'support_staff',
   'finance_staff',
   'admin',
@@ -18,7 +18,7 @@ create type public.account_status as enum ('active', 'pending', 'restricted', 's
 create type public.approval_status as enum ('draft', 'pending_review', 'approved', 'needs_changes', 'rejected', 'hidden', 'suspended', 'archived');
 create type public.risk_level as enum ('low', 'medium', 'high', 'restricted', 'suspended');
 create type public.staff_status as enum ('invited', 'active', 'restricted', 'removed');
-create type public.supplier_role as enum ('owner', 'inventory_manager');
+create type public.supplier_role as enum ('owner', 'supplier_inventory_manager');
 create type public.product_status as enum ('draft', 'pending_approval', 'approved', 'active', 'rejected', 'needs_changes', 'price_change_pending', 'needs_reseller_review', 'out_of_stock', 'hidden', 'suspended', 'archived');
 create type public.variant_status as enum ('active', 'low_stock', 'out_of_stock', 'hidden', 'archived');
 create type public.image_status as enum ('pending_review', 'active', 'hidden', 'rejected', 'archived');
@@ -137,7 +137,7 @@ create table public.supplier_team_members (
   id uuid primary key default gen_random_uuid(),
   supplier_id uuid not null references public.suppliers(id) on delete restrict,
   profile_id uuid not null references public.profiles(id) on delete restrict,
-  supplier_role public.supplier_role not null default 'inventory_manager',
+  supplier_role public.supplier_role not null default 'supplier_inventory_manager',
   staff_status public.staff_status not null default 'active',
   permissions jsonb not null default '{}'::jsonb,
   invited_by_profile_id uuid references public.profiles(id) on delete set null,
@@ -749,17 +749,21 @@ create policy "profiles_insert_self_non_admin"
   on public.profiles for insert
   with check (clerk_user_id = public.jwt_subject() and primary_role in ('customer', 'reseller', 'supplier_owner'));
 
-create policy "profiles_update_own_basic_or_admin"
+create policy "profiles_update_admin_only_until_profile_rpc"
   on public.profiles for update
-  using (id = public.current_profile_id() or public.has_admin_role('admin'))
-  with check (id = public.current_profile_id() or public.has_admin_role('admin'));
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "admin_staff_select_admins"
   on public.admin_staff for select
   using (public.has_admin_role('admin'));
 
-create policy "admin_staff_write_super_admins"
-  on public.admin_staff for all
+create policy "admin_staff_insert_super_admins"
+  on public.admin_staff for insert
+  with check (public.has_admin_role('super_admin'));
+
+create policy "admin_staff_update_super_admins"
+  on public.admin_staff for update
   using (public.has_admin_role('super_admin'))
   with check (public.has_admin_role('super_admin'));
 
@@ -771,10 +775,10 @@ create policy "customers_insert_own_or_admin"
   on public.customers for insert
   with check (profile_id = public.current_profile_id() or public.has_admin_role('admin'));
 
-create policy "customers_update_own_or_admin"
+create policy "customers_update_support_admin_until_profile_rpc"
   on public.customers for update
-  using (public.is_customer_owner(id) or public.has_admin_role('support_staff'))
-  with check (public.is_customer_owner(id) or public.has_admin_role('support_staff'));
+  using (public.has_admin_role('support_staff'))
+  with check (public.has_admin_role('support_staff'));
 
 create policy "resellers_select_own_or_admin"
   on public.resellers for select
@@ -784,19 +788,23 @@ create policy "resellers_insert_own_or_admin"
   on public.resellers for insert
   with check (profile_id = public.current_profile_id() or public.has_admin_role('admin'));
 
-create policy "resellers_update_own_limited_or_admin"
+create policy "resellers_update_admin_only_until_reseller_rpc"
   on public.resellers for update
-  using (public.is_reseller_owner(id) or public.has_admin_role('admin'))
-  with check (public.is_reseller_owner(id) or public.has_admin_role('admin'));
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "reseller_shops_select_owner_or_admin"
   on public.reseller_shops for select
   using (public.is_reseller_owner(reseller_id) or public.has_admin_role('support_staff'));
 
-create policy "reseller_shops_write_owner_or_admin"
-  on public.reseller_shops for all
-  using (public.is_reseller_owner(reseller_id) or public.has_admin_role('admin'))
+create policy "reseller_shops_insert_owner_or_admin"
+  on public.reseller_shops for insert
   with check (public.is_reseller_owner(reseller_id) or public.has_admin_role('admin'));
+
+create policy "reseller_shops_update_admin_only_until_shop_rpc"
+  on public.reseller_shops for update
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "suppliers_select_members_or_admin"
   on public.suppliers for select
@@ -806,17 +814,21 @@ create policy "suppliers_insert_owner_or_admin"
   on public.suppliers for insert
   with check (owner_profile_id = public.current_profile_id() or public.has_admin_role('admin'));
 
-create policy "suppliers_update_owner_or_admin"
+create policy "suppliers_update_admin_only_until_supplier_rpc"
   on public.suppliers for update
-  using (public.is_supplier_owner(id) or public.has_admin_role('admin'))
-  with check (public.is_supplier_owner(id) or public.has_admin_role('admin'));
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "supplier_team_select_members_or_admin"
   on public.supplier_team_members for select
   using (public.is_supplier_member(supplier_id) or public.has_admin_role('support_staff'));
 
-create policy "supplier_team_write_owner_or_admin"
-  on public.supplier_team_members for all
+create policy "supplier_team_insert_owner_or_admin"
+  on public.supplier_team_members for insert
+  with check (public.is_supplier_owner(supplier_id) or public.has_admin_role('admin'));
+
+create policy "supplier_team_update_owner_or_admin"
+  on public.supplier_team_members for update
   using (public.is_supplier_owner(supplier_id) or public.has_admin_role('admin'))
   with check (public.is_supplier_owner(supplier_id) or public.has_admin_role('admin'));
 
@@ -824,10 +836,14 @@ create policy "products_select_supplier_or_admin"
   on public.products for select
   using (public.is_supplier_member(supplier_id) or public.has_admin_role('support_staff'));
 
-create policy "products_write_supplier_product_permission_or_admin"
-  on public.products for all
-  using (public.has_supplier_permission(supplier_id, 'products.update') or public.has_admin_role('admin'))
+create policy "products_insert_supplier_product_permission_or_admin"
+  on public.products for insert
   with check (public.has_supplier_permission(supplier_id, 'products.create') or public.has_admin_role('admin'));
+
+create policy "products_update_admin_only_until_product_rpc"
+  on public.products for update
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "product_variants_select_supplier_or_admin"
   on public.product_variants for select
@@ -840,24 +856,21 @@ create policy "product_variants_select_supplier_or_admin"
     )
   );
 
-create policy "product_variants_write_stock_permission_or_admin"
-  on public.product_variants for all
-  using (
-    public.has_admin_role('admin')
-    or exists (
-      select 1 from public.products p
-      where p.id = product_variants.product_id
-        and public.has_supplier_permission(p.supplier_id, 'stock.adjust')
-    )
-  )
+create policy "product_variants_insert_supplier_product_permission_or_admin"
+  on public.product_variants for insert
   with check (
     public.has_admin_role('admin')
     or exists (
       select 1 from public.products p
       where p.id = product_variants.product_id
-        and public.has_supplier_permission(p.supplier_id, 'stock.adjust')
+        and public.has_supplier_permission(p.supplier_id, 'products.create')
     )
   );
+
+create policy "product_variants_update_admin_only_until_stock_rpc"
+  on public.product_variants for update
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "product_images_select_supplier_or_admin"
   on public.product_images for select
@@ -870,16 +883,8 @@ create policy "product_images_select_supplier_or_admin"
     )
   );
 
-create policy "product_images_write_supplier_or_admin"
-  on public.product_images for all
-  using (
-    public.has_admin_role('admin')
-    or exists (
-      select 1 from public.products p
-      where p.id = product_images.product_id
-        and public.has_supplier_permission(p.supplier_id, 'products.update')
-    )
-  )
+create policy "product_images_insert_supplier_or_admin"
+  on public.product_images for insert
   with check (
     public.has_admin_role('admin')
     or exists (
@@ -888,6 +893,11 @@ create policy "product_images_write_supplier_or_admin"
         and public.has_supplier_permission(p.supplier_id, 'products.update')
     )
   );
+
+create policy "product_images_update_admin_only_until_media_rpc"
+  on public.product_images for update
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "inventory_movements_select_supplier_or_admin"
   on public.inventory_movements for select
@@ -901,10 +911,14 @@ create policy "reseller_products_select_owner_or_admin"
   on public.reseller_products for select
   using (public.is_reseller_owner(reseller_id) or public.has_admin_role('support_staff'));
 
-create policy "reseller_products_write_owner_or_admin"
-  on public.reseller_products for all
-  using (public.is_reseller_owner(reseller_id) or public.has_admin_role('admin'))
+create policy "reseller_products_insert_owner_or_admin"
+  on public.reseller_products for insert
   with check (public.is_reseller_owner(reseller_id) or public.has_admin_role('admin'));
+
+create policy "reseller_products_update_admin_only_until_listing_rpc"
+  on public.reseller_products for update
+  using (public.has_admin_role('admin'))
+  with check (public.has_admin_role('admin'));
 
 create policy "orders_select_participants_or_admin"
   on public.orders for select
@@ -914,10 +928,10 @@ create policy "orders_insert_customer_or_admin"
   on public.orders for insert
   with check (public.is_customer_owner(customer_id) or public.has_admin_role('admin'));
 
-create policy "orders_update_participants_or_admin"
+create policy "orders_update_support_admin_until_order_rpc"
   on public.orders for update
-  using (public.is_order_participant(id) or public.has_admin_role('support_staff'))
-  with check (public.is_order_participant(id) or public.has_admin_role('support_staff'));
+  using (public.has_admin_role('support_staff'))
+  with check (public.has_admin_role('support_staff'));
 
 create policy "order_items_select_participants_or_admin"
   on public.order_items for select
@@ -956,17 +970,8 @@ create policy "delivery_quotes_select_order_participants_or_admin"
   on public.delivery_quotes for select
   using (public.is_order_participant(order_id) or public.has_admin_role('support_staff'));
 
-create policy "delivery_quotes_write_admin_or_supplier_member"
-  on public.delivery_quotes for all
-  using (
-    public.has_admin_role('support_staff')
-    or exists (
-      select 1
-      from public.order_items oi
-      where oi.order_id = delivery_quotes.order_id
-        and public.is_supplier_member(oi.supplier_id)
-    )
-  )
+create policy "delivery_quotes_insert_admin_or_supplier_member"
+  on public.delivery_quotes for insert
   with check (
     public.has_admin_role('support_staff')
     or exists (
@@ -977,12 +982,21 @@ create policy "delivery_quotes_write_admin_or_supplier_member"
     )
   );
 
+create policy "delivery_quotes_update_support_admin_until_quote_rpc"
+  on public.delivery_quotes for update
+  using (public.has_admin_role('support_staff'))
+  with check (public.has_admin_role('support_staff'));
+
 create policy "settlements_select_supplier_finance_admin"
   on public.settlements for select
   using (public.is_supplier_owner(supplier_id) or public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
 
-create policy "settlements_write_finance_admin"
-  on public.settlements for all
+create policy "settlements_insert_finance_admin"
+  on public.settlements for insert
+  with check (public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
+
+create policy "settlements_update_finance_admin"
+  on public.settlements for update
   using (public.has_admin_role('finance_staff') or public.has_admin_role('admin'))
   with check (public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
 
@@ -990,8 +1004,12 @@ create policy "commissions_select_reseller_finance_admin"
   on public.commissions for select
   using (public.is_reseller_owner(reseller_id) or public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
 
-create policy "commissions_write_finance_admin"
-  on public.commissions for all
+create policy "commissions_insert_finance_admin"
+  on public.commissions for insert
+  with check (public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
+
+create policy "commissions_update_finance_admin"
+  on public.commissions for update
   using (public.has_admin_role('finance_staff') or public.has_admin_role('admin'))
   with check (public.has_admin_role('finance_staff') or public.has_admin_role('admin'));
 
@@ -1073,8 +1091,12 @@ create policy "admin_actions_select_admins"
   on public.admin_actions for select
   using (public.has_admin_role('support_staff'));
 
-create policy "admin_actions_write_admins"
-  on public.admin_actions for all
+create policy "admin_actions_insert_admins"
+  on public.admin_actions for insert
+  with check (public.has_admin_role('admin'));
+
+create policy "admin_actions_update_admins"
+  on public.admin_actions for update
   using (public.has_admin_role('admin'))
   with check (public.has_admin_role('admin'));
 
@@ -1082,3 +1104,12 @@ comment on table public.products is 'Base catalog table contains sensitive suppl
 comment on table public.order_items is 'Immutable price snapshot table. Updates should be avoided except through audited correction/admin override functions.';
 comment on table public.stock_reservations is 'Direct inserts are admin-only until reserve_stock/create_checkout_order RPCs are implemented with row locks.';
 comment on table public.audit_logs is 'Append-only audit foundation. Do not store raw secrets, unmasked payout data, or public URLs to private documents.';
+comment on table public.profiles is 'Direct self-updates are intentionally blocked until a profile RPC/server action limits writes to contact fields and writes audit entries for sensitive changes.';
+comment on table public.customers is 'Customer self-updates that touch delivery/contact fields should use a future column-safe profile RPC; risk/status fields are admin controlled.';
+comment on table public.resellers is 'Reseller approval, risk, payout, and commission fields are admin/RPC controlled; direct owner table updates are blocked.';
+comment on table public.reseller_shops is 'Shop profile edits and visibility/status changes should use column-safe server actions; direct owner updates are blocked in RLS.';
+comment on table public.reseller_products is 'Listing margin/status edits should use a validated listing RPC that enforces max margin and audit rules; direct owner updates are blocked.';
+comment on table public.suppliers is 'Supplier verification, risk, settlement, trust, and status fields are admin/RPC controlled; owner edits should use audited server actions.';
+comment on table public.orders is 'Order, payment, delivery, and confirmation transitions must use audited RPC/server actions, not participant direct table updates.';
+comment on table public.settlements is 'Finance/admin writes are allowed as a foundation only; production settlement verification must move to audited RPCs with reason metadata.';
+comment on table public.commissions is 'Finance/admin writes are allowed as a foundation only; production commission release must move to audited RPCs.';

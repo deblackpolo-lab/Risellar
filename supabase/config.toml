@@ -7,4 +7,3 @@ extra_search_path = ["public", "extensions"]
 
 [db]
 major_version = 15
-
