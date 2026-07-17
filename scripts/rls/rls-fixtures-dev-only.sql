@@ -1,69 +1,122 @@
 -- DEVELOPMENT ONLY - DO NOT RUN AGAINST PRODUCTION.
--- Fake RLS boundary fixture scaffolding for the Risellar development Supabase project.
--- Do not use real users, real orders, real emails, real phone numbers, or real payout data.
--- Do not run unless explicitly approved.
+-- Fake RLS fixture smoke script for the Risellar development Supabase project.
+-- This script uses only fake records and rolls back all changes.
+-- Do not use real users, emails, phone numbers, addresses, payout data, or secrets.
 
 begin;
 
--- This script is intentionally a scaffold.
--- Recommended flow:
--- 1. Review every insert.
--- 2. Run against the confirmed development project only.
--- 3. Use the returned IDs to complete dependent fixture rows.
--- 4. Then run rls-boundary-test-plan.sql.
+create temp table rls_fixture_ids (
+  fixture_key text primary key,
+  fixture_id uuid not null
+) on commit drop;
 
--- Identity fixture subjects:
--- dev_clerk_customer_a
--- dev_clerk_customer_b
--- dev_clerk_reseller_a
--- dev_clerk_reseller_b
--- dev_clerk_supplier_owner_a
--- dev_clerk_supplier_owner_b
--- dev_clerk_supplier_a_inventory_manager
--- dev_clerk_support_operator
--- dev_clerk_finance_operator
--- dev_clerk_admin
--- dev_clerk_super_admin
+insert into public.profiles (clerk_user_id, email, full_name, primary_role)
+values
+  ('dev_clerk_customer_a', 'customer-a@example.invalid', 'Dev Customer A', 'customer'),
+  ('dev_clerk_reseller_a', 'reseller-a@example.invalid', 'Dev Reseller A', 'reseller'),
+  ('dev_clerk_supplier_owner_a', 'supplier-owner-a@example.invalid', 'Dev Supplier Owner A', 'supplier_owner'),
+  ('dev_clerk_supplier_a_inventory_manager', 'supplier-a-inventory@example.invalid', 'Dev Supplier A Inventory Manager', 'supplier_inventory_manager'),
+  ('dev_clerk_admin', 'admin@example.invalid', 'Dev Admin', 'customer')
+returning clerk_user_id, id;
 
--- Example profile fixture shape:
--- insert into public.profiles (clerk_user_id, email, full_name, primary_role)
--- values
---   ('dev_clerk_customer_a', 'customer-a@example.invalid', 'Dev Customer A', 'customer'),
---   ('dev_clerk_customer_b', 'customer-b@example.invalid', 'Dev Customer B', 'customer'),
---   ('dev_clerk_reseller_a', 'reseller-a@example.invalid', 'Dev Reseller A', 'reseller'),
---   ('dev_clerk_reseller_b', 'reseller-b@example.invalid', 'Dev Reseller B', 'reseller'),
---   ('dev_clerk_supplier_owner_a', 'supplier-owner-a@example.invalid', 'Dev Supplier Owner A', 'supplier_owner'),
---   ('dev_clerk_supplier_owner_b', 'supplier-owner-b@example.invalid', 'Dev Supplier Owner B', 'supplier_owner'),
---   ('dev_clerk_supplier_a_inventory_manager', 'supplier-a-inventory@example.invalid', 'Dev Supplier A Inventory Manager', 'supplier_inventory_manager'),
---   ('dev_clerk_support_operator', 'support@example.invalid', 'Dev Support Operator', 'customer'),
---   ('dev_clerk_finance_operator', 'finance@example.invalid', 'Dev Finance Operator', 'customer'),
---   ('dev_clerk_admin', 'admin@example.invalid', 'Dev Admin', 'customer'),
---   ('dev_clerk_super_admin', 'super-admin@example.invalid', 'Dev Super Admin', 'customer');
+insert into rls_fixture_ids (fixture_key, fixture_id)
+select clerk_user_id, id
+from public.profiles
+where clerk_user_id in (
+  'dev_clerk_customer_a',
+  'dev_clerk_reseller_a',
+  'dev_clerk_supplier_owner_a',
+  'dev_clerk_supplier_a_inventory_manager',
+  'dev_clerk_admin'
+);
 
--- Important:
--- The profiles table has a check constraint preventing direct admin/support/finance
--- primary_role values. Admin/support/finance/super-admin fixtures should use allowed
--- profile rows plus admin_staff.admin_role rows.
+insert into public.admin_staff (profile_id, admin_role, permissions, staff_status)
+values (
+  (select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_admin'),
+  'admin',
+  '{}'::jsonb,
+  'active'
+);
 
--- Example admin_staff fixture shape after profile IDs are known:
--- insert into public.admin_staff (profile_id, admin_role, permissions, staff_status)
--- values
---   (<support_profile_id>, 'support_staff', '{}'::jsonb, 'active'),
---   (<finance_profile_id>, 'finance_staff', '{}'::jsonb, 'active'),
---   (<admin_profile_id>, 'admin', '{}'::jsonb, 'active'),
---   (<super_admin_profile_id>, 'super_admin', '{}'::jsonb, 'active');
+insert into public.customers (profile_id, customer_status)
+values ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_customer_a'), 'active')
+returning 'customer_a', id;
 
--- Additional fixture groups to create in child-safe order:
--- customers, resellers, reseller_shops, suppliers, supplier_team_members
--- products, product_variants, product_images
--- reseller_products, orders, order_items, stock_reservations
--- delivery_quotes, settlements, commissions, withdrawals
--- disputes, returns, notifications, audit_logs, admin_actions
+insert into public.resellers (profile_id, business_name, approval_status, payout_status)
+values (
+  (select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_a'),
+  'Dev Reseller A',
+  'approved',
+  'active'
+)
+returning 'reseller_a', id;
 
--- Use fake storage paths only, such as:
--- dev-only/products/supplier-a-product-a.jpg
+insert into public.suppliers (owner_profile_id, business_name, public_display_name, supplier_status, verification_status)
+values (
+  (select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_supplier_owner_a'),
+  'Dev Supplier A',
+  'Dev Supplier A Public',
+  'active',
+  'approved'
+)
+returning 'supplier_a', id;
+
+insert into rls_fixture_ids (fixture_key, fixture_id)
+select 'supplier_a', id from public.suppliers where business_name = 'Dev Supplier A';
+
+insert into public.supplier_team_members (supplier_id, profile_id, supplier_role, permissions)
+values (
+  (select fixture_id from rls_fixture_ids where fixture_key = 'supplier_a'),
+  (select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_supplier_a_inventory_manager'),
+  'supplier_inventory_manager',
+  '{"stock.adjust": true}'::jsonb
+);
+
+insert into public.products (
+  supplier_id,
+  name,
+  slug,
+  product_status,
+  approval_status,
+  base_price_amount,
+  platform_margin_amount,
+  max_reseller_margin_amount
+)
+values (
+  (select fixture_id from rls_fixture_ids where fixture_key = 'supplier_a'),
+  'Dev RLS Product A',
+  'dev-rls-product-a',
+  'active',
+  'approved',
+  10000,
+  1000,
+  2500
+)
+returning 'product_a', id;
+
+do $$
+declare
+  profile_count integer;
+  supplier_count integer;
+  product_count integer;
+begin
+  select count(*) into profile_count from public.profiles where clerk_user_id like 'dev_clerk_%';
+  select count(*) into supplier_count from public.suppliers where business_name = 'Dev Supplier A';
+  select count(*) into product_count from public.products where slug = 'dev-rls-product-a';
+
+  if profile_count <> 5 then
+    raise exception 'Fixture smoke failed: expected 5 fake profiles, observed %', profile_count;
+  end if;
+
+  if supplier_count <> 1 then
+    raise exception 'Fixture smoke failed: expected 1 fake supplier, observed %', supplier_count;
+  end if;
+
+  if product_count <> 1 then
+    raise exception 'Fixture smoke failed: expected 1 fake product, observed %', product_count;
+  end if;
+end $$;
 
 rollback;
 
--- The rollback is intentional while this file remains scaffolding.
--- Replace rollback with commit only after explicit approval and final fixture review.
+-- Rollback is intentional. This file verifies fixture shape without leaving data behind.
