@@ -1,0 +1,9 @@
+# Local Supabase project configuration placeholder.
+# This file intentionally does not include project IDs, access tokens, or secrets.
+
+[api]
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+major_version = 15
