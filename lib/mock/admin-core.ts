@@ -1,3 +1,5 @@
+import { getMockProductImages, getPrimaryProductImageAlt, type MockProductImage } from "@/lib/mock/product-images";
+
 export type MoneyBreakdown = {
   supplierBase: number;
   platformMargin: number;
@@ -38,6 +40,8 @@ export type AdminOrder = {
 export type AdminProduct = {
   id: string;
   name: string;
+  imageAlt: string;
+  images: MockProductImage[];
   supplier: string;
   supplierId: string;
   category: string;
@@ -194,6 +198,8 @@ export const adminProducts: AdminProduct[] = [
   {
     id: "nike-air-force-1-07-green-white",
     name: "Nike Air Force 1 '07 Green & White",
+    imageAlt: getPrimaryProductImageAlt("Nike Air Force 1 '07 Green & White"),
+    images: getMockProductImages("nike-air-force-1-07-green-white"),
     supplier: "KNUST Gadgets",
     supplierId: "knust-gadgets",
     category: "Sneakers",
@@ -207,6 +213,8 @@ export const adminProducts: AdminProduct[] = [
   {
     id: "anua-niacinamide-serum-30ml",
     name: "Anua Niacinamide Serum 30ml",
+    imageAlt: getPrimaryProductImageAlt("Anua Niacinamide Serum 30ml"),
+    images: getMockProductImages("anua-niacinamide-serum-30ml"),
     supplier: "Palace Beauty Supplies",
     supplierId: "palace-beauty-supplies",
     category: "Beauty",
@@ -216,6 +224,21 @@ export const adminProducts: AdminProduct[] = [
     activeResellers: 52,
     risk: "Low",
     price: { supplierBase: 120, platformMargin: 5, resellerMargin: 20, customerProductPrice: 145, deliveryFee: 35, totalPayOnDelivery: 180 }
+  },
+  {
+    id: "hostel-essentials-pack",
+    name: "Hostel Essentials Pack",
+    imageAlt: getPrimaryProductImageAlt("Hostel Essentials Pack"),
+    images: getMockProductImages("hostel-essentials-pack"),
+    supplier: "Beautiful Living Store",
+    supplierId: "beautiful-living-store",
+    category: "Home & Living",
+    status: "Active",
+    approval: "Approved",
+    stock: 32,
+    activeResellers: 18,
+    risk: "Low",
+    price: { supplierBase: 150, platformMargin: 10, resellerMargin: 25, customerProductPrice: 185, deliveryFee: 30, totalPayOnDelivery: 215 }
   }
 ];
 

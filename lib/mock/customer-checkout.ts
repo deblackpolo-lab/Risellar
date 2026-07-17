@@ -27,7 +27,7 @@ export const customerCheckoutMock = {
     name: "Ama's Beauty Plug",
     owner: "Ama Serwaa",
     location: "Legon, Accra",
-    status: "Verified trusted reseller",
+    status: "Verified seller",
     tagline: "Original products, fast delivery across Accra, and Pay on Delivery.",
     trustPoints: ["Pay when your item arrives", "Delivery quote confirmed before dispatch", "Real people, real support"]
   },

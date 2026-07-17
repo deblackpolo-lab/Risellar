@@ -349,7 +349,7 @@ function ProductSection({ products, title }: { products: ResellerProduct[]; titl
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-bold">{title}</h2>
+        <h2 className="text-lg font-bold">{title}</h2>
         <StatusBadge status={`${products.length} products`} tone="neutral" />
       </div>
       <ProductBrowseGrid ariaLabel={`${title} reseller products`}>
@@ -572,8 +572,8 @@ export function ResellerShareProductScreen({ productId }: { productId: string })
             productName={product.name}
           />
           <div>
-            <h1 className="text-xl font-bold">{product.name}</h1>
-            <p className="mt-2 text-lg font-bold text-[var(--color-primary)]">{formatGhc(product.suggestedSellingPrice)}</p>
+            <h1 className="line-clamp-2 text-[18px] font-semibold leading-[22px]">{product.name}</h1>
+            <p className="mt-2 text-[19px] font-bold text-[var(--color-primary)]">{formatGhc(product.suggestedSellingPrice)}</p>
             <p className="mt-1 text-sm text-[var(--color-muted)]">Ready for delivery anywhere in Accra after confirmation.</p>
           </div>
         </div>

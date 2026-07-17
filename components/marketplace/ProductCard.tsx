@@ -20,8 +20,8 @@ export function ProductCard({
       <ProductImageFrame className="aspect-[4/3] rounded-[var(--radius-md)]" imageAlt={imageAlt} images={images} productName={name} />
       <div className="mt-3 flex items-start justify-between gap-3">
         <div>
-          <h3 className="line-clamp-2 text-sm font-bold leading-5">{name}</h3>
-          <p className="mt-1 text-lg font-bold text-[var(--color-primary)]">{price}</p>
+          <h3 className="line-clamp-2 text-[13px] font-medium leading-[18px]">{name}</h3>
+          <p className="mt-1 text-[18px] font-bold leading-5 text-[var(--color-primary)]">{price}</p>
         </div>
         <StatusBadge status={status} />
       </div>

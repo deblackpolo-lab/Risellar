@@ -26,7 +26,8 @@ describe("Phase 5 customer mobile web checkout core", () => {
     render(<PublicShopScreen shopSlug="amas-beauty-plug" />);
 
     expect(screen.getByRole("heading", { name: customerCheckoutMock.shop.name })).toBeInTheDocument();
-    expect(screen.getByText("Verified trusted reseller")).toBeInTheDocument();
+    expect(screen.getByText("Verified seller")).toBeInTheDocument();
+    expect(screen.queryByText("Verified trusted reseller")).not.toBeInTheDocument();
     expect(screen.getByText("Legon, Accra")).toBeInTheDocument();
     expect(screen.getAllByText("Pay on Delivery").length).toBeGreaterThan(0);
     expect(screen.getByRole("searchbox", { name: /Search Ama's Beauty Plug/i })).toBeInTheDocument();

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/admin/AdminSidebar";
+import { ProductImageFrame } from "@/components/marketplace";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -18,6 +19,7 @@ import {
   type Priority,
   type RiskEntityType
 } from "@/lib/mock/admin-operations";
+import { getMockProductImages, getPrimaryProductImageAlt } from "@/lib/mock/product-images";
 
 const priorityTone: Record<Priority, "neutral" | "info" | "warning" | "danger"> = {
   Low: "neutral",
@@ -44,6 +46,29 @@ function PriorityBadge({ priority }: { priority: Priority }) {
 
 function AssignmentBadge({ admin }: { admin: string }) {
   return <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-muted-soft)] px-3 py-1 text-xs font-bold text-[var(--color-muted)]">{admin}</span>;
+}
+
+function productKeyFromName(name: string) {
+  if (/anua/i.test(name)) return "anua-niacinamide-serum-30ml";
+  if (/hostel/i.test(name)) return "hostel-essentials-pack";
+  return "nike-air-force-1-07-green-white";
+}
+
+function AdminOperationProductCell({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
+  return (
+    <div className="flex min-w-[220px] items-center gap-3">
+      <ProductImageFrame
+        className={size === "md" ? "h-20 w-20 shrink-0 rounded-[12px]" : "h-14 w-14 shrink-0 rounded-[12px]"}
+        imageAlt={getPrimaryProductImageAlt(name)}
+        images={getMockProductImages(productKeyFromName(name))}
+        productName={name}
+      />
+      <div className="min-w-0">
+        <p className="line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-charcoal)]">{name}</p>
+        <p className="mt-0.5 text-xs text-[var(--color-muted)]">Product context</p>
+      </div>
+    </div>
+  );
 }
 
 function DataTable({ columns, rows }: { columns: string[]; rows: React.ReactNode[][] }) {
@@ -100,7 +125,7 @@ function QueueTable({ queue }: { queue: AdminOperationQueue }) {
         item.id,
         <PriorityBadge key={`${item.id}-priority`} priority={item.priority} />,
         <StatusBadge key={`${item.id}-status`} status={item.status} />,
-        item.relatedEntity,
+        queue.slug === "product-approvals" ? <AdminOperationProductCell key={`${item.id}-product`} name={item.relatedEntity} /> : item.relatedEntity,
         item.age,
         <AssignmentBadge admin={item.assignedAdmin} key={`${item.id}-admin`} />,
         item.dueTime,
@@ -257,6 +282,7 @@ export function AdminOperationsQueueDetailScreen({ queueSlug, itemId }: { queueS
   const item = getAdminOperationItem(queueSlug, itemId);
   const title = item.orderId ?? item.id;
   const templateType = queueSlug === "delivery-quotes" ? "delivery quote" : queueSlug === "overdue-settlements" ? "overdue settlement warning" : queueSlug === "disputes" ? "dispute follow-up" : "customer confirmation";
+  const productMetadata = item.metadata.find(([label]) => /product/i.test(label));
   return (
     <AdminShell active="Operations">
       <PageHeader eyebrow="Queue detail" title={title}>
@@ -264,6 +290,11 @@ export function AdminOperationsQueueDetailScreen({ queueSlug, itemId }: { queueS
       </PageHeader>
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-5">
+          {productMetadata ? (
+            <Card title="Product context">
+              <AdminOperationProductCell name={productMetadata[1]} size="md" />
+            </Card>
+          ) : null}
           <MetadataCard title={queueSlug === "disputes" ? "Dispute summary" : queueSlug === "overdue-settlements" ? "Settlement breakdown" : "Order summary"} rows={item.metadata} />
           {queueSlug === "customer-confirmations" ? <MetadataCard title="Confirmation history" rows={[["Order placed", "13 Jul 2026, 10:24 AM"], ["Reminder sent", "Not yet"], ["Confirmation source", "Pending customer account or WhatsApp follow-up"]]} /> : null}
           {queueSlug === "overdue-settlements" ? (

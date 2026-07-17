@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CheckCircle2, ClipboardList, FileText, Headphones, Home, Package, UserRound, Wallet } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminSidebar";
 import { MobileShell } from "@/components/layout";
+import { ProductImageFrame } from "@/components/marketplace";
 import { Button, Card, Input, StatusBadge, Textarea } from "@/components/ui";
 import {
   disputeStatuses,
@@ -28,6 +29,7 @@ import {
   type ReturnRequest,
   type SupportTicket
 } from "@/lib/mock/support-disputes";
+import { getMockProductImages, getPrimaryProductImageAlt } from "@/lib/mock/product-images";
 import { cn } from "@/lib/utils/cn";
 
 const customerNav = [
@@ -149,6 +151,29 @@ function SummaryStat({ label, value, tone = "neutral" }: { label: string; value:
   );
 }
 
+function productKeyFromName(name: string) {
+  if (/anua/i.test(name)) return "anua-niacinamide-serum-30ml";
+  if (/hostel/i.test(name)) return "hostel-essentials-pack";
+  return "nike-air-force-1-07-green-white";
+}
+
+function SupportProductContext({ product, size = "sm" }: { product: string; size?: "sm" | "md" }) {
+  return (
+    <div className="flex items-center gap-3">
+      <ProductImageFrame
+        className={size === "md" ? "h-20 w-20 shrink-0 rounded-[12px]" : "h-14 w-14 shrink-0 rounded-[12px]"}
+        imageAlt={getPrimaryProductImageAlt(product)}
+        images={getMockProductImages(productKeyFromName(product))}
+        productName={product}
+      />
+      <div className="min-w-0">
+        <p className="line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-charcoal)]">{product}</p>
+        <p className="mt-0.5 text-xs text-[var(--color-muted)]">Product context</p>
+      </div>
+    </div>
+  );
+}
+
 export function IssueCategoryCard({ title, description, selected = false }: { title: string; description: string; selected?: boolean }) {
   return (
     <button
@@ -177,6 +202,9 @@ export function EvidenceUploadPlaceholder({ label = "Evidence upload placeholder
 function OrderContextCard({ customerSafe = false }: { customerSafe?: boolean }) {
   return (
     <Card title="Order context">
+      <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-page)] p-3">
+        <SupportProductContext product={supportOrder.product} size="md" />
+      </div>
       <InfoRow label="Order" value={supportOrder.id} />
       <InfoRow label="Product" value={supportOrder.product} />
       <InfoRow label="Delivery area" value={supportOrder.deliveryArea} />
@@ -775,7 +803,7 @@ export function AdminReturnsScreen() {
       </Card>
       <DataTable
         columns={["Return", "Order", "Product", "Reason", "Status", "Next Action"]}
-        rows={returns.map((item) => [item.id, item.orderId, item.product, item.reason, <StatusBadge key={`${item.id}-status`} status={item.status} />, item.nextAction])}
+        rows={returns.map((item) => [item.id, item.orderId, <SupportProductContext key={`${item.id}-product`} product={item.product} />, item.reason, <StatusBadge key={`${item.id}-status`} status={item.status} />, item.nextAction])}
       />
     </AdminShell>
   );
@@ -790,6 +818,9 @@ export function AdminReturnDetailScreen({ returnId }: { returnId: string }) {
       </AdminHeader>
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
         <Card title="Returned item inspection">
+          <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-page)] p-3">
+            <SupportProductContext product={item.product} size="md" />
+          </div>
           <InfoRow label="Return ID" value={item.id} />
           <InfoRow label="Order" value={item.orderId} />
           <InfoRow label="Product" value={item.product} />

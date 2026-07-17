@@ -147,19 +147,19 @@ export function ProductOpportunityCard({ product }: { product: InsightProduct })
       <div className="flex gap-3">
         <ProductTile product={product} />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold leading-5">{product.name}</h3>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">{product.category} - {product.location}</p>
+          <h3 className="line-clamp-2 text-[13px] font-medium leading-[18px]">{product.name}</h3>
+          <p className="mt-1 text-[11px] leading-4 text-[var(--color-muted)]">{product.category} - {product.location}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {product.labels.slice(0, 3).map((label) => <StatusBadge key={label} status={label} />)}
           </div>
         </div>
       </div>
-      <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
-        <div><dt className="text-xs text-[var(--color-muted)]">Reseller cost</dt><dd className="font-bold">{formatGhc(product.resellerCost)}</dd></div>
-        <div><dt className="text-xs text-[var(--color-muted)]">Suggested</dt><dd className="font-bold">{formatGhc(product.suggestedPrice)}</dd></div>
-        <div><dt className="text-xs text-[var(--color-muted)]">Profit</dt><dd className="font-bold text-[var(--color-primary)]">{formatGhc(product.expectedProfit)}</dd></div>
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-[11px] leading-4">
+        <div><dt className="text-[var(--color-muted)]">Reseller cost</dt><dd className="text-xs font-semibold">{formatGhc(product.resellerCost)}</dd></div>
+        <div><dt className="text-[var(--color-muted)]">Suggested</dt><dd className="text-xs font-semibold">{formatGhc(product.suggestedPrice)}</dd></div>
+        <div><dt className="text-[var(--color-muted)]">Profit</dt><dd className="text-xs font-semibold text-[var(--color-primary)]">{formatGhc(product.expectedProfit)}</dd></div>
       </dl>
-      <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">{product.insight}</p>
+      <p className="mt-3 text-xs leading-5 text-[var(--color-muted)]">{product.insight}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <StatusBadge status={product.stockState}>{product.stockState}</StatusBadge>
         <StatusBadge tone="success">{product.trust}</StatusBadge>
@@ -182,7 +182,7 @@ export function ProInsightLockedCard() {
   return (
     <Card className="border-[var(--color-primary)]/20 bg-[var(--color-primary-subtle)]">
       <Lock className="h-8 w-8 text-[var(--color-primary)]" aria-hidden="true" />
-      <h3 className="mt-3 text-lg font-extrabold">Pro insights</h3>
+      <h3 className="mt-3 text-lg font-bold">Pro insights</h3>
       <div className="mt-3 space-y-2 text-sm text-[var(--color-muted)]">
         {["top-selling by area", "best product captions", "early access to hot products", "low competition alerts", "advanced profit analytics"].map((item) => <p key={item}>{item}</p>)}
       </div>

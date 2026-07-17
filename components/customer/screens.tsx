@@ -44,7 +44,7 @@ function CustomerHeader({ title, eyebrow, backHref }: { title: string; eyebrow?:
       ) : null}
       <div>
         {eyebrow ? <p className="text-xs font-semibold uppercase tracking-normal text-[var(--color-primary)]">{eyebrow}</p> : null}
-        <h1 className="text-2xl font-extrabold text-[var(--color-charcoal)]">{title}</h1>
+        <h1 className="text-[22px] font-bold leading-tight text-[var(--color-charcoal)]">{title}</h1>
       </div>
     </header>
   );
@@ -73,27 +73,21 @@ export function PublicShopHeader() {
   const { shop } = customerCheckoutMock;
 
   return (
-    <section className="rounded-[var(--radius-lg)] bg-[var(--color-primary)] p-5 text-white shadow-[var(--shadow-md)]">
-      <div className="flex items-start justify-between gap-4">
-        <div>
+    <section className="rounded-[var(--radius-lg)] bg-[var(--color-primary)] p-4 text-white shadow-[var(--shadow-md)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm font-semibold text-[var(--color-accent)]">Risellar Shop</p>
-          <h1 className="mt-1 text-2xl font-extrabold">{shop.name}</h1>
+          <h1 className="mt-1 max-w-[13rem] text-[24px] font-semibold leading-[1.16]">{shop.name}</h1>
           <p className="mt-2 flex items-center gap-1 text-sm text-white/85">
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {shop.location}
           </p>
         </div>
-        <StatusBadge tone="success">{shop.status}</StatusBadge>
+        <div className="shrink-0">
+          <StatusBadge tone="success">Verified seller</StatusBadge>
+        </div>
       </div>
-      <p className="mt-4 text-sm leading-6 text-white/90">{shop.tagline}</p>
-      <div className="mt-4 grid gap-2">
-        {shop.trustPoints.map((point) => (
-          <div className="flex items-center gap-2 text-sm text-white" key={point}>
-            <ShieldCheck className="h-4 w-4 text-[var(--color-accent)]" aria-hidden="true" />
-            {point}
-          </div>
-        ))}
-      </div>
+      <p className="mt-3 line-clamp-2 text-sm leading-5 text-white/90">{shop.tagline}</p>
     </section>
   );
 }
@@ -125,7 +119,7 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
   return (
     <MobileShell>
       <PublicShopHeader />
-      <label className="relative block">
+      <label className="relative mt-4 block">
         <span className="sr-only">Search Ama&apos;s Beauty Plug</span>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
         <Input
@@ -137,7 +131,7 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
           value={query}
         />
       </label>
-      <ScrollableChipRow>
+      <ScrollableChipRow className="mt-3">
         {["All", "Sneakers", "Beauty", "Phone Accessories", "Hostel Essentials"].map((category) => (
           <button
             className="h-9 flex-none whitespace-nowrap rounded-full border border-[var(--color-border)] bg-white px-4 text-sm font-semibold text-[var(--color-charcoal)] first:bg-[var(--color-primary)] first:text-white"
@@ -148,18 +142,18 @@ export function PublicShopScreen({ shopSlug }: { shopSlug: string }) {
           </button>
         ))}
       </ScrollableChipRow>
-      <Card className="bg-[var(--color-accent-soft)]">
+      <Card className="bg-[var(--color-accent-soft)] p-4">
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-5 w-5 text-[var(--color-primary)]" aria-hidden="true" />
           <div>
-            <p className="font-bold text-[var(--color-charcoal)]">Pay on Delivery</p>
-            <p className="text-sm text-[var(--color-muted)]">No upfront payment. Delivery quote is confirmed before dispatch.</p>
+            <p className="text-base font-bold text-[var(--color-charcoal)]">Pay on Delivery</p>
+            <p className="text-sm leading-5 text-[var(--color-muted)]">No upfront payment. Delivery quote is confirmed before dispatch.</p>
           </div>
         </div>
       </Card>
       <section className="grid gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-[var(--color-charcoal)]">Featured products</h2>
+          <h2 className="text-[18px] font-semibold leading-6 text-[var(--color-charcoal)]">Featured products</h2>
           <span className="text-sm font-semibold text-[var(--color-primary)]">{shopSlug === customerCheckoutMock.shop.slug ? "Trusted shop" : "Preview"}</span>
         </div>
         <ProductBrowseGrid ariaLabel="Customer storefront products">
@@ -178,7 +172,7 @@ export function PublicProductHero({ product }: { product: CustomerProduct }) {
       <ProductImageGallery productName={product.name} images={product.images} imageAlt={product.imageAlt} />
       <div className="space-y-2">
         <StatusBadge tone={product.stockLabel.includes("Only") ? "warning" : "success"}>{product.stockLabel}</StatusBadge>
-        <h1 className="text-2xl font-extrabold leading-tight text-[var(--color-charcoal)]">{product.name}</h1>
+        <h1 className="text-[23px] font-bold leading-[1.2] text-[var(--color-charcoal)]">{product.name}</h1>
         <p className="text-sm font-semibold text-[var(--color-muted)]">Sold by {customerCheckoutMock.shop.name}</p>
         <p className="text-2xl font-extrabold text-[var(--color-primary)]">{formatGhc(product.price)}</p>
         <p className="text-sm leading-6 text-[var(--color-muted)]">{product.description}</p>
