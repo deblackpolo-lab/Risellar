@@ -411,10 +411,28 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_rpc_customer_a"}';
 select pg_temp.rpc_expect_allowed('customer A can confirm own order through audited RPC', $$with changed as (select public.confirm_customer_order((select fixture_id from rpc_fixture_ids where fixture_key = 'order_a'), 'development rpc customer confirmation') as id) select count(*) from changed$$);
+select pg_temp.rpc_expect_count('customer A still cannot read audit logs directly', $$select count(*) from public.audit_logs$$, 0);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
+select pg_temp.rpc_expect_positive('test setup/admin verification context cannot read audit logs', $$select count(*) from public.audit_logs$$);
 select pg_temp.rpc_expect_count('customer confirmation RPC writes audit row', $$select count(*) from public.audit_logs where action = 'confirm_customer_order' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'order_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_customer_a"}';
 select pg_temp.rpc_expect_blocked_or_zero('customer A cannot confirm customer B order through RPC', $$with changed as (select public.confirm_customer_order((select fixture_id from rpc_fixture_ids where fixture_key = 'order_b'), 'blocked cross customer confirmation') as id) select count(*) from changed$$);
 select pg_temp.rpc_expect_allowed('customer A can approve own delivery quote through audited RPC', $$with changed as (select public.approve_delivery_quote((select fixture_id from rpc_fixture_ids where fixture_key = 'delivery_quote_a'), 'development quote approval') as id) select count(*) from changed$$);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('delivery quote approval writes audit row', $$select count(*) from public.audit_logs where action = 'approve_delivery_quote' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'delivery_quote_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_customer_a"}';
 select pg_temp.rpc_expect_blocked_or_zero('customer cannot directly mutate order price totals', $$with changed as (update public.orders set total_payable_amount = 1 where id = (select fixture_id from rpc_fixture_ids where fixture_key = 'order_a') returning 1) select count(*) from changed$$);
 select pg_temp.rpc_expect_blocked_or_zero('customer cannot directly mutate price snapshot fields', $$with changed as (update public.order_items set customer_product_price_snapshot_amount = 1 where order_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'order_a') returning 1) select count(*) from changed$$);
 select pg_temp.rpc_expect_count('customer cannot read settlement summary view', $$select count(*) from public.supplier_settlement_summary$$, 0);
@@ -427,6 +445,11 @@ select pg_temp.rpc_expect_blocked_or_zero('reseller cannot approve own withdrawa
 select pg_temp.rpc_expect_blocked_or_zero('reseller cannot directly mutate commission status', $$with changed as (update public.commissions set commission_status = 'available' returning 1) select count(*) from changed$$);
 select pg_temp.rpc_expect_blocked_or_zero('reseller withdrawal request cannot exceed available balance', $$with changed as (select public.request_commission_withdrawal((select fixture_id from rpc_fixture_ids where fixture_key = 'reseller_a'), 999999, 'dev-provider', 'Dev RPC Account', '****0100') as id) select count(*) from changed$$);
 select pg_temp.rpc_expect_allowed('reseller can request withdrawal within available balance', $$with changed as (select public.request_commission_withdrawal((select fixture_id from rpc_fixture_ids where fixture_key = 'reseller_a'), 250, 'dev-provider', 'Dev RPC Account', '****0100') as id) select count(*) from changed$$);
+select pg_temp.rpc_expect_count('reseller still cannot read audit logs directly', $$select count(*) from public.audit_logs$$, 0);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('reseller withdrawal request writes audit row', $$select count(*) from public.audit_logs where action = 'request_commission_withdrawal' and target_entity_type = 'withdrawals'$$, 1);
 
 reset role;
@@ -434,7 +457,16 @@ set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_rpc_supplier_owner_a"}';
 select pg_temp.rpc_expect_blocked_or_zero('supplier owner cannot verify own settlement through RPC', $$with changed as (select public.verify_supplier_settlement((select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a'), 2500, 'blocked supplier self verification', true) as id) select count(*) from changed$$);
 select pg_temp.rpc_expect_allowed('supplier owner can submit private settlement proof through RPC', $$with changed as (select public.submit_supplier_settlement_proof((select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a'), 'settlement-proofs/dev-only/rpc-proof-a.jpg', 'DEV-RPC-PROOF-A', 'development proof submission') as id) select count(*) from changed$$);
+select pg_temp.rpc_expect_count('supplier owner still cannot read audit logs directly', $$select count(*) from public.audit_logs$$, 0);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('settlement proof submission writes audit row', $$select count(*) from public.audit_logs where action = 'submit_supplier_settlement_proof' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_supplier_owner_a"}';
 select pg_temp.rpc_expect_blocked_or_zero('supplier owner cannot submit public settlement proof URL', $$with changed as (select public.submit_supplier_settlement_proof((select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a'), 'https://example.invalid/proof.jpg', 'DEV-RPC-BLOCKED', 'blocked public proof url') as id) select count(*) from changed$$);
 select pg_temp.rpc_expect_blocked_or_zero('supplier owner cannot directly mutate settlement verification status', $$with changed as (update public.settlements set settlement_status = 'paid' returning 1) select count(*) from changed$$);
 select pg_temp.rpc_expect_count('supplier owner can read own settlement summary', $$select count(*) from public.supplier_settlement_summary where supplier_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'supplier_a')$$, 1);
@@ -451,7 +483,15 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_rpc_support_operator"}';
 select pg_temp.rpc_expect_allowed('support can release expired reservation through audited RPC', $$with changed as (select public.release_expired_reservation((select fixture_id from rpc_fixture_ids where fixture_key = 'reservation_a'), 'development expired reservation release') as id) select count(*) from changed$$);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('reservation release writes audit row', $$select count(*) from public.audit_logs where action = 'release_expired_reservation' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'reservation_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_support_operator"}';
 select pg_temp.rpc_expect_allowed('support can record delivery quote through audited RPC', $$with changed as (select public.record_delivery_quote((select fixture_id from rpc_fixture_ids where fixture_key = 'order_b'), 'dev courier b', 1900, now() + interval '1 day', 'development support quote') as id) select count(*) from changed$$);
 select pg_temp.rpc_expect_blocked_or_zero('support cannot verify settlement through finance RPC', $$with changed as (select public.verify_supplier_settlement((select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a'), 2500, 'blocked support verification', true) as id) select count(*) from changed$$);
 
@@ -459,10 +499,30 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_rpc_finance_operator"}';
 select pg_temp.rpc_expect_allowed('finance can verify supplier settlement through audited RPC', $$with changed as (select public.verify_supplier_settlement((select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a'), 2500, 'development finance verification', true) as id) select count(*) from changed$$);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('settlement verification writes audit row', $$select count(*) from public.audit_logs where action = 'verify_supplier_settlement' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'settlement_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_finance_operator"}';
 select pg_temp.rpc_expect_allowed('finance can release commission after paid settlement', $$with changed as (select public.release_commission_after_settlement((select fixture_id from rpc_fixture_ids where fixture_key = 'commission_a'), 'development commission release') as id) select count(*) from changed$$);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('commission release writes audit row', $$select count(*) from public.audit_logs where action = 'release_commission_after_settlement' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'commission_a')$$, 1);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_finance_operator"}';
 select pg_temp.rpc_expect_allowed('finance can approve requested withdrawal through audited RPC', $$with changed as (select public.approve_or_reject_withdrawal((select fixture_id from rpc_fixture_ids where fixture_key = 'withdrawal_a'), true, 500, 'development withdrawal approval') as id) select count(*) from changed$$);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claims" = '{"sub":"dev_rpc_admin_operator"}';
 select pg_temp.rpc_expect_count('withdrawal approval writes audit row', $$select count(*) from public.audit_logs where action = 'approve_or_reject_withdrawal' and target_entity_id = (select fixture_id from rpc_fixture_ids where fixture_key = 'withdrawal_a')$$, 1);
 
 reset role;
