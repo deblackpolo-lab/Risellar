@@ -122,6 +122,12 @@ export const protectedRoutePolicies: AuthRoutePolicy[] = [
     note: "Success screen should resolve the customer's own order."
   },
   {
+    pattern: "/onboarding/:slug*",
+    roles: ["customer"],
+    onboarding: ["not_started", "in_progress", "pending_review", "complete"],
+    note: "Signed-in customers can request reseller or supplier access without changing their profile role."
+  },
+  {
     pattern: "/customer/:slug*",
     roles: ["customer"],
     onboarding: ["complete"],
