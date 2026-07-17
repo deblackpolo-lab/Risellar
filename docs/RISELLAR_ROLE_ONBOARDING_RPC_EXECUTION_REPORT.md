@@ -177,43 +177,123 @@ No real role/RPC security gap has been confirmed yet.
 
 The role onboarding RPC boundary tests still require explicit approval before rerun.
 
-## Required Fix Prompt
+## O. Successful Rerun Update
+
+The role onboarding RPC boundary tests were rerun against the confirmed DEVELOPMENT Supabase project named `Risellar` after the temp fixture table harness fix.
+
+Command:
+
+```bash
+npx supabase db query --linked --file scripts/rpc/role-onboarding-rpc-tests-dev-only.sql
+```
+
+Result:
+
+- Passed.
+- All returned rows had `passed = true`.
+- No failed assertion was reported.
+- No real role/RPC security gap was found in this test run.
+- The script uses a transaction and ends with rollback, so fixture data was not intentionally committed permanently.
+
+Passed assertions included:
+
+- `anonymous cannot submit onboarding request`
+- `anonymous cannot read onboarding requests`
+- `customer can submit reseller onboarding request`
+- `customer can submit supplier owner onboarding request`
+- `customer duplicate pending request is blocked`
+- `customer cannot request admin role`
+- `customer cannot request supplier inventory manager role`
+- `customer cannot update own request status directly`
+- `customer cannot delete own request directly`
+- `customer cannot read audit logs directly`
+- `customer cannot review own request`
+- `reseller cannot submit onboarding request`
+- `reseller cannot review onboarding request`
+- `supplier owner cannot review onboarding request`
+- `supplier inventory manager cannot review onboarding request`
+- `admin can read review queue`
+- `admin can approve reseller onboarding request`
+- `approved reseller request promotes profile to reseller`
+- `approved reseller request creates reseller foundation`
+- `reseller approval writes audit row`
+- `admin can approve supplier owner onboarding request`
+- `approved supplier request promotes profile to supplier owner`
+- `approved supplier request creates supplier foundation`
+- `admin can reject reseller onboarding request`
+- `rejected request does not promote customer profile`
+- `rejection writes audit row`
+- `admin cannot review already reviewed request twice`
+- `admin review rejects unsupported decision values`
+
+Role escalation protections verified at runtime:
+
+- Role self-promotion is blocked.
+- Customers can only request `reseller` or `supplier_owner`.
+- Admin and supplier inventory manager roles cannot be self-requested.
+- Profile role changes require the admin review RPC.
+- Direct client status update and delete paths are blocked.
+
+Post-rerun normal verification:
+
+```bash
+npm test
+```
+
+Result:
+
+- Passed: 21 test files, 101 tests.
+
+```bash
+npm run lint
+```
+
+Result:
+
+- Passed.
+
+```bash
+npm run build
+```
+
+Result:
+
+- Passed.
+
+```bash
+npm run typecheck
+```
+
+Result:
+
+- Passed.
+
+Post-rerun secret scan:
+
+- `.env.local` is ignored and not staged.
+- `supabase/.temp/` is ignored.
+- No secret values were printed.
+- Filename-only scan found existing documentation and server-helper files that contain secret-safety keywords.
+- The only server-only key reference in source remains `SUPABASE_SERVICE_ROLE_KEY` in `lib/supabase/admin.ts`.
+- No bearer tokens, passwords, API secrets, or production data were exposed in command output.
+
+Current local file changed:
+
+- `docs/RISELLAR_ROLE_ONBOARDING_RPC_EXECUTION_REPORT.md`
+
+Production remains blocked until this successful development execution report is reviewed/committed and production rollout is separately approved.
+
+## Exact Next Prompt
 
 ```text
-You are working on Risellar.
-
-Task: fix the development-only role onboarding RPC test harness temp-table permission bug.
+Commit the passing role onboarding RPC boundary test execution report.
 
 Do NOT connect to production Supabase.
 Do NOT apply migrations.
 Do NOT run destructive reset commands.
-Do NOT run supabase db reset --linked.
 Do NOT print secrets.
 Do NOT commit .env.local.
-Do NOT weaken RLS/RPC/storage policies.
-Do NOT run the role onboarding RPC test yet.
 Do NOT run npm audit fix --force.
-
-Context:
-The role onboarding requests/RPC migration was applied to the confirmed DEVELOPMENT Supabase project named "Risellar".
-The development-only RPC test failed before assertions with:
-ERROR: 42501: permission denied for table role_onboarding_fixture_ids
-HINT: Grant the required privileges to the current role with: GRANT INSERT ON pg_temp_57.role_onboarding_fixture_ids TO authenticated;
-
-Classification:
-This is a test harness permission bug, not a confirmed real RPC/security gap.
-
-Goal:
-Fix only scripts/rpc/role-onboarding-rpc-tests-dev-only.sql so the simulated authenticated role can use the temporary fixture table safely.
-
-Requirements:
-1. Keep the script marked DEVELOPMENT ONLY.
-2. Do not weaken RLS or RPC policies.
-3. Do not change the database migration.
-4. Do not remove assertions.
-5. Grant only the needed temp table privileges to the simulated roles, likely insert/select/update where needed for role_onboarding_fixture_ids.
-6. Preserve rollback behavior.
-7. Update docs/RISELLAR_ROLE_ONBOARDING_RPC_EXECUTION_REPORT.md to record that the harness bug was fixed and tests still require explicit approval before rerun.
 
 Run:
 git status --short
@@ -230,8 +310,12 @@ Run secret scan:
 - no service role values exposed
 - no bearer tokens, passwords, API secrets, or production data
 
-Do not run:
-npx supabase db query --linked --file scripts/rpc/role-onboarding-rpc-tests-dev-only.sql
+Stage only:
+docs/RISELLAR_ROLE_ONBOARDING_RPC_EXECUTION_REPORT.md
 
-Commit after verification if clean.
+Commit:
+git commit -m "Document passing role onboarding RPC boundary tests"
+
+Push:
+git push origin main
 ```
