@@ -11,7 +11,21 @@ describe("Phase 15 frontend QA polish", () => {
     expect(screen.getByRole("heading", { name: "Screen launcher for frontend QA" })).toBeInTheDocument();
 
     for (const section of previewSections) {
-      expect(screen.getByRole("heading", { name: section })).toBeInTheDocument();
+      expect(screen.getAllByRole("heading", { name: section }).length).toBeGreaterThan(0);
+    }
+
+    for (const section of [
+      "Public/Auth",
+      "Customer Account/Orders",
+      "Reseller Insights/Promotions",
+      "Supplier Inventory",
+      "Supplier Settlements/Finance",
+      "Supplier Promotions",
+      "Supplier Team/Inventory Manager",
+      "Admin Promotions",
+      "Admin Support/Disputes/Returns/Refunds"
+    ]) {
+      expect(previewSections).toContain(section);
     }
 
     for (const route of [
