@@ -11,6 +11,8 @@ create temp table rls_fixture_ids (
   fixture_id uuid not null
 ) on commit drop;
 
+grant select on rls_fixture_ids to public;
+
 create temp table rls_test_results (
   test_name text primary key,
   passed boolean not null,
@@ -512,8 +514,9 @@ select pg_temp.rls_expect_count('inventory manager sees supplier A product row',
 select pg_temp.rls_expect_count('inventory manager cannot see settlement data', $$select count(*) from public.settlements$$, 0);
 select pg_temp.rls_expect_count('inventory manager cannot see payout withdrawal data', $$select count(*) from public.withdrawals$$, 0);
 select pg_temp.rls_expect_count('inventory manager cannot read staff permission data', $$select count(*) from public.supplier_team_members where permissions <> '{}'::jsonb$$, 0);
-select pg_temp.rls_expect_count('inventory manager can read safe own team operational data', $$select count(*) from public.get_supplier_operational_team_members((select id from public.suppliers where business_name = 'Dev Supplier A'))$$, 1);
-select pg_temp.rls_expect_count('inventory manager cannot read safe other supplier team data', $$select count(*) from public.get_supplier_operational_team_members((select id from public.suppliers where business_name = 'Dev Supplier B'))$$, 0);
+select pg_temp.rls_expect_count('test setup has supplier B fixture id', $$select count(*) from rls_fixture_ids where fixture_key = 'supplier_b' and fixture_id is not null$$, 1);
+select pg_temp.rls_expect_count('inventory manager can read safe own team operational data', $$select count(*) from public.get_supplier_operational_team_members((select fixture_id from rls_fixture_ids where fixture_key = 'supplier_a'))$$, 1);
+select pg_temp.rls_expect_count('inventory manager cannot read safe other supplier team data', $$select count(*) from public.get_supplier_operational_team_members((select fixture_id from rls_fixture_ids where fixture_key = 'supplier_b'))$$, 0);
 select pg_temp.rls_expect_blocked_or_zero('safe team RPC does not expose permissions column', $$select count(*) from public.get_supplier_operational_team_members() where permissions is not null$$);
 select pg_temp.rls_expect_blocked_or_zero('inventory manager cannot mutate settlement status', $$with changed as (update public.settlements set settlement_status = 'paid' returning 1) select count(*) from changed$$);
 select pg_temp.rls_expect_blocked_or_zero('inventory manager cannot mutate supplier permissions', $$with changed as (update public.supplier_team_members set permissions = '{"stock.adjust": false}'::jsonb returning 1) select count(*) from changed$$);
