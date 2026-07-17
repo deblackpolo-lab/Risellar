@@ -12,6 +12,7 @@ create temp table role_onboarding_fixture_ids (
 ) on commit drop;
 
 grant select on role_onboarding_fixture_ids to public;
+grant select, insert on role_onboarding_fixture_ids to authenticated;
 
 create temp table role_onboarding_test_results (
   test_name text primary key,
@@ -429,4 +430,3 @@ end $$;
 rollback;
 
 -- Rollback is intentional. This script must not leave fixture data behind.
-
