@@ -9,6 +9,7 @@ Do not run these scripts unless the user explicitly approves development-only RP
 ## Files
 
 - `rpc-boundary-tests-dev-only.sql`: inserts a fake fixture graph, runs pass/fail assertions for Backend Security Phase 1 audited RPCs and views under simulated `anon` and `authenticated` request contexts, reports results, then rolls back.
+- `role-onboarding-rpc-tests-dev-only.sql`: inserts fake customer/admin onboarding fixtures, runs pass/fail assertions for role onboarding request submission, admin review, audit logging, direct table mutation blocking, and role-promotion boundaries, reports results, then rolls back.
 
 ## Recommended Execution
 
@@ -16,6 +17,12 @@ Preferred method after explicit approval:
 
 ```bash
 npx supabase db query --linked --file scripts/rpc/rpc-boundary-tests-dev-only.sql
+```
+
+For role onboarding request RPCs, use this only after the role onboarding migration has been applied to the confirmed development project:
+
+```bash
+npx supabase db query --linked --file scripts/rpc/role-onboarding-rpc-tests-dev-only.sql
 ```
 
 Fallback method:

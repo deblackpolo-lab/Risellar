@@ -35,7 +35,7 @@ describe("role onboarding request foundation", () => {
     expect(draft).toEqual({
       profile_id: "profile_customer",
       requested_role: "reseller",
-      status: "pending_review",
+      status: "pending",
       business_name: "Campus Beauty Picks",
       contact_phone: "0240000000",
       notes: "Student reseller request"
@@ -54,7 +54,7 @@ describe("role onboarding request foundation", () => {
     expect(draft).toMatchObject({
       profile_id: "profile_customer",
       requested_role: "supplier_owner",
-      status: "pending_review",
+      status: "pending",
       business_name: "Dev Supplier Ltd"
     });
   });
@@ -102,4 +102,3 @@ describe("role onboarding request foundation", () => {
     expect(getRoleOnboardingPendingPath("supplier")).toBe("/onboarding/pending?request=supplier");
   });
 });
-

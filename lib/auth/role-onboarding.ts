@@ -1,7 +1,7 @@
 import type { RisellarRole } from "./role-policy";
 
 export type RoleOnboardingRequestKind = "reseller" | "supplier";
-export type RoleOnboardingRequestStatus = "draft" | "pending_review";
+export type RoleOnboardingRequestStatus = "draft" | "pending";
 export type RoleOnboardingRequestedRole = Extract<RisellarRole, "reseller" | "supplier_owner">;
 
 export type RoleOnboardingProfile = {
@@ -61,7 +61,7 @@ export function buildRoleOnboardingRequestDraft(
   return {
     profile_id: profile.id,
     requested_role: roleOnboardingTargetRoles[input.requestKind],
-    status: "pending_review",
+    status: "pending",
     business_name: normalizeOptionalText(input.businessName),
     contact_phone: normalizeOptionalText(input.contactPhone),
     notes: normalizeOptionalText(input.notes)
@@ -75,4 +75,3 @@ export function getRoleOnboardingStartPath(requestKind: RoleOnboardingRequestKin
 export function getRoleOnboardingPendingPath(requestKind: RoleOnboardingRequestKind) {
   return `/onboarding/pending?request=${requestKind}`;
 }
-
