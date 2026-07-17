@@ -546,13 +546,19 @@ order by test_name;
 do $$
 declare
   failure_count integer;
+  failed_details text;
 begin
   select count(*) into failure_count
   from rls_test_results
   where not passed;
 
+  select string_agg(test_name || ' - ' || coalesce(nullif(details, ''), '<no details>'), E'\n' order by test_name)
+  into failed_details
+  from rls_test_results
+  where not passed;
+
   if failure_count > 0 then
-    raise exception 'RLS boundary tests failed: % failure(s). Review rls_test_results output above.', failure_count;
+    raise exception 'RLS boundary tests failed: % failure(s): %', failure_count, failed_details;
   end if;
 end $$;
 

@@ -37,7 +37,19 @@ The script was reviewed before execution:
 
 ## C. RLS Test Execution Result
 
-Result: failed before RLS assertions completed.
+Result: failed with one RLS boundary assertion failure, but the exact assertion name was not returned by the Supabase Management API response.
+
+Third approved execution after helper ambiguity fix:
+
+```text
+LegacyDbQueryUnexpectedStatusError
+unexpected status 400
+Failed to run sql query:
+ERROR: P0001: RLS boundary tests failed: 1 failure(s). Review rls_test_results output above.
+CONTEXT: PL/pgSQL function inline_code_block line 10 at RAISE
+```
+
+The script reached the final failure-count block, so the fixture/schema mismatch and helper ambiguity issues were cleared. However, the linked query error response did not include the earlier `rls_test_results` output, so the exact failing assertion is not visible from this run.
 
 Second approved execution after fixture/schema alignment:
 
@@ -73,25 +85,35 @@ LINE 187: insert into public.resellers (profile_id, business_name, approval_stat
 
 ## D. Passed Assertions
 
-No assertions can be counted as passed.
+No individual assertions can be counted as passed from the captured output.
 
-The second run reached the assertion helper path, but the helper failed because its `test_name` parameter conflicted with the `rls_test_results.test_name` column name.
+The third run reached the final failure-count block, but the error response did not include the assertion result rows.
 
 ## E. Failed Assertions
 
-No RLS policy assertion failed.
+One assertion failed.
 
-The failing error is a test-script helper bug, not an RLS boundary assertion.
+The exact failing assertion was not included in the Supabase CLI/Management API error output.
 
 ## F. Test-Simulation Issue Or Real RLS Gap
 
-Latest classification: test assertion bug.
+Latest classification: unknown.
+
+Reason: the third execution proves one pass/fail assertion failed, but the error response did not expose the `rls_test_results` row that names the failed assertion. This could be a real RLS policy gap, a role/JWT simulation issue, or a test assertion bug. It should not be treated as a confirmed RLS policy gap until the script reports the failed assertion details in the exception message or another approved diagnostic run captures them.
+
+Follow-up diagnostic fix applied:
+
+- The final failure block now aggregates failed `rls_test_results` rows with `string_agg`.
+- The raised exception now includes failed assertion names and details directly, using the format `test_name - details`.
+- Existing assertions were preserved.
+- No RLS policies, migrations, or schema were changed.
+- RLS tests still require explicit approval before another development-only rerun.
 
 The first execution was a test fixture/schema mismatch. That was fixed in commit `5c937bb5`.
 
 The second execution failed because the PL/pgSQL helper function uses `test_name` as a parameter name and also writes to a `test_name` table column without qualifying the parameter.
 
-This is not yet evidence of a real RLS policy gap.
+This is not yet evidence of a confirmed real RLS policy gap.
 
 Follow-up helper fix applied:
 
@@ -123,7 +145,7 @@ Follow-up fix applied:
 
 The script uses an explicit transaction and rollback strategy, and the query failed before completion. Because the failed statement occurred inside the transaction submitted by the script, fixture data is expected not to be permanently committed.
 
-No additional SQL was run to inspect or clean data after the second failure, to avoid repeated database execution without a clear fix.
+No additional SQL was run to inspect or clean data after the third failure, to avoid repeated database execution without a clear fix.
 
 ## H. Commands Run/Results
 
@@ -133,6 +155,7 @@ No additional SQL was run to inspect or clean data after the second failure, to 
 - Static SQL safety check - passed; warning-language matches only.
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - first approved run failed with missing `resellers.business_name` column.
 - `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - second approved run failed with ambiguous `test_name` reference in the PL/pgSQL test helper.
+- `npx supabase db query --linked --file scripts/rls/rls-boundary-tests-dev-only.sql` - third approved run failed with `RLS boundary tests failed: 1 failure(s)`; exact assertion row was not included in the returned error output.
 - Normal repo verification (`npm test`, `npm run typecheck`, `npm run lint`, `npm run build`) was not run after the RLS failure because the instruction was to stop immediately if tests fail.
 - Helper fix verification:
   - `git diff --check` - passed; Git reported line-ending normalization warnings only.
@@ -168,6 +191,8 @@ Reasons:
 
 - RLS boundary tests did not complete.
 - Test helper parameter names were corrected after the second failure.
+- One assertion failed on the third approved run, but the exact assertion name was not captured in the returned output.
+- The test script diagnostic improvement has been applied so failed assertion names/details are included in the final raised exception.
 - RLS tests must be rerun only after explicit development-only approval.
 - RLS assertions still need to execute and pass against the development project.
 - No production migration/apply should occur until development RLS testing is complete.
@@ -177,7 +202,7 @@ Reasons:
 ```text
 You are working on Risellar.
 
-Task: fix the development-only RLS boundary test assertion helper after the second approved execution failed.
+Task: improve the development-only RLS boundary test failure reporting after the third approved execution failed.
 
 Do NOT weaken RLS policies.
 Do NOT connect to production Supabase.
@@ -190,10 +215,14 @@ Do NOT run npm audit fix --force.
 Context:
 The first approved development-only RLS test execution failed because public.resellers.business_name did not exist. That fixture/schema mismatch was fixed in commit 5c937bb5.
 
-The second approved development-only RLS test execution failed because the PL/pgSQL helper has an ambiguous test_name reference:
-ERROR 42702: column reference "test_name" is ambiguous.
+The second approved development-only RLS test execution failed because the PL/pgSQL helper had an ambiguous test_name reference. That was fixed in commit 6c135dcb.
 
-Fix only the development-only test helper/scripts. Do not change RLS policies or migrations.
+The third approved development-only RLS test execution reached the final assertion summary and failed with:
+ERROR P0001: RLS boundary tests failed: 1 failure(s). Review rls_test_results output above.
+
+The Supabase linked query error response did not include the rls_test_results rows, so the failing assertion is unknown.
+
+Fix only development-only test diagnostics. Do not change RLS policies or migrations.
 
 Review:
 - scripts/rls/rls-boundary-tests-dev-only.sql
@@ -201,9 +230,9 @@ Review:
 - supabase/migrations/20260717000000_risellar_schema_rls_foundation.sql
 
 Required:
-1. Rename PL/pgSQL helper parameters to avoid ambiguity, for example p_test_name, p_passed, and p_details.
-2. Qualify inserted column names and referenced parameters clearly in rls_record_result and related helper functions.
-3. Search the RLS test script for any other parameter/column ambiguity risks.
+1. Update the final failure block to include failed assertion names and details directly in the raised exception message.
+2. Keep the existing pass/fail assertions intact.
+3. Do not remove, weaken, or invert any failing assertion.
 4. Keep scripts DEVELOPMENT ONLY.
 5. Keep rollback cleanup.
 6. Do not disable RLS, DROP, TRUNCATE, or add real data/secrets.
