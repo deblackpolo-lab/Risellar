@@ -42,10 +42,10 @@ insert into public.customers (profile_id, customer_status)
 values ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_customer_a'), 'active')
 returning 'customer_a', id;
 
-insert into public.resellers (profile_id, business_name, approval_status, payout_status)
+insert into public.resellers (profile_id, reseller_type, approval_status, payout_status)
 values (
   (select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_a'),
-  'Dev Reseller A',
+  'dev_social_reseller_a',
   'approved',
   'active'
 )

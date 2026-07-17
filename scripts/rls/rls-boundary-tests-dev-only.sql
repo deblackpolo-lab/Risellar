@@ -184,10 +184,10 @@ select
 from inserted;
 
 with inserted as (
-  insert into public.resellers (profile_id, business_name, approval_status, payout_status)
+  insert into public.resellers (profile_id, reseller_type, approval_status, payout_status)
   values
-    ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_a'), 'Dev Reseller A', 'approved', 'active'),
-    ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_b'), 'Dev Reseller B', 'approved', 'active')
+    ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_a'), 'dev_social_reseller_a', 'approved', 'active'),
+    ((select fixture_id from rls_fixture_ids where fixture_key = 'dev_clerk_reseller_b'), 'dev_social_reseller_b', 'approved', 'active')
   returning id, profile_id
 )
 insert into rls_fixture_ids (fixture_key, fixture_id)
@@ -484,7 +484,7 @@ reset role;
 set local role authenticated;
 set local "request.jwt.claims" = '{"sub":"dev_clerk_reseller_a"}';
 select pg_temp.rls_expect_count('reseller A sees one reseller row', $$select count(*) from public.resellers$$, 1);
-select pg_temp.rls_expect_count('reseller A cannot see reseller B row', $$select count(*) from public.resellers where business_name = 'Dev Reseller B'$$, 0);
+select pg_temp.rls_expect_count('reseller A cannot see reseller B row', $$select count(*) from public.resellers where reseller_type = 'dev_social_reseller_b'$$, 0);
 select pg_temp.rls_expect_count('reseller A sees own listing', $$select count(*) from public.reseller_products$$, 1);
 select pg_temp.rls_expect_count('reseller A sees own commission', $$select count(*) from public.commissions$$, 1);
 select pg_temp.rls_expect_count('reseller A cannot read supplier product base rows', $$select count(*) from public.products$$, 0);
