@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { getRoleOnboardingAdminAccess } from "@/lib/auth/admin-access";
 import { getCurrentSyncedProfile } from "@/lib/auth/profile-sync";
 import { canReviewRoleOnboardingRequests, type RoleOnboardingReviewErrorCode } from "@/lib/auth/role-onboarding";
 import { createSupabaseUserServerClient } from "@/lib/supabase/server";
@@ -128,10 +129,6 @@ export default async function AdminOnboardingRequestsPage({ searchParams }: { se
 
   const profile = await getCurrentSyncedProfile();
 
-  if (!canReviewRoleOnboardingRequests(profile)) {
-    return <AdminAccessDenied />;
-  }
-
   const accessToken = await getToken();
 
   if (!accessToken) {
@@ -142,6 +139,15 @@ export default async function AdminOnboardingRequestsPage({ searchParams }: { se
         </Card>
       </AdminShell>
     );
+  }
+
+  const adminAccess = await getRoleOnboardingAdminAccess({
+    accessToken,
+    profile
+  });
+
+  if (!canReviewRoleOnboardingRequests(adminAccess)) {
+    return <AdminAccessDenied />;
   }
 
   const { requests, error: loadError } = await loadPendingRequests(accessToken);

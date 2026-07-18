@@ -240,11 +240,27 @@ describe("role onboarding request foundation", () => {
     ).toThrow("Role onboarding review decision must be approved or rejected");
   });
 
-  it("limits admin onboarding review access to admin profiles and protected admin routes", () => {
-    expect(canReviewRoleOnboardingRequests({ id: "profile_admin", primary_role: "admin" })).toBe(true);
+  it("limits admin onboarding review access to active admin staff membership and protected admin routes", () => {
+    expect(
+      canReviewRoleOnboardingRequests({
+        profile: { id: "profile_admin_staff", primary_role: "customer" },
+        hasActiveAdminStaff: true
+      })
+    ).toBe(true);
+    expect(
+      canReviewRoleOnboardingRequests({
+        profile: { id: "profile_admin_role_only", primary_role: "admin" },
+        hasActiveAdminStaff: false
+      })
+    ).toBe(false);
 
     for (const role of ["customer", "reseller", "supplier_owner", "supplier_inventory_manager"] as const) {
-      expect(canReviewRoleOnboardingRequests({ id: `profile_${role}`, primary_role: role })).toBe(false);
+      expect(
+        canReviewRoleOnboardingRequests({
+          profile: { id: `profile_${role}`, primary_role: role },
+          hasActiveAdminStaff: false
+        })
+      ).toBe(false);
     }
 
     expect(getRoutePolicyForPath("/admin/onboarding-requests")).toMatchObject({
@@ -260,7 +276,8 @@ describe("role onboarding request foundation", () => {
     const root = process.cwd();
     const files = [
       "app/admin/onboarding-requests/page.tsx",
-      "app/admin/onboarding-requests/actions.ts"
+      "app/admin/onboarding-requests/actions.ts",
+      "lib/auth/admin-access.ts"
     ];
 
     for (const file of files) {
@@ -277,5 +294,9 @@ describe("role onboarding request foundation", () => {
     expect(actionSource).toContain("getToken()");
     expect(actionSource).not.toContain('template: "supabase"');
     expect(actionSource).not.toContain("template: 'supabase'");
+
+    const adminAccessSource = readFileSync(join(root, "lib/auth/admin-access.ts"), "utf8");
+    expect(adminAccessSource).toContain('rpc("has_admin_role"');
+    expect(adminAccessSource).toContain('required_role: "admin"');
   });
 });

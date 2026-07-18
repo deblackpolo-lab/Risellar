@@ -18,14 +18,19 @@ The route is under the existing `/admin/:slug*` Clerk-protected admin route poli
 
 - `app/admin/onboarding-requests/actions.ts`
   - Uses Clerk `auth()` and `getToken()`.
-  - Ensures the signed-in user has a synced admin profile.
+  - Ensures the signed-in user has a synced profile and active `public.admin_staff` membership.
   - Calls `review_role_onboarding_request` through `createSupabaseUserServerClient`.
   - Redirects with safe success/error query states.
+
+- `lib/auth/admin-access.ts`
+  - Server-only helper.
+  - Uses the signed-in user's Supabase user-context token.
+  - Calls `public.has_admin_role('admin')` to align with the schema's `admin_staff` authority model.
 
 - `lib/auth/role-onboarding.ts`
   - Added `RoleOnboardingReviewDecision`.
   - Added `buildRoleOnboardingReviewPayload`.
-  - Added `canReviewRoleOnboardingRequests`.
+  - Added `canReviewRoleOnboardingRequests`, now based on active admin-staff access rather than `profiles.primary_role`.
   - Added `mapRoleOnboardingReviewRpcError`.
 
 ## D. Security protections
@@ -35,6 +40,7 @@ The route is under the existing `/admin/:slug*` Clerk-protected admin route poli
 - Review notes are optional and trimmed safely.
 - The UI does not expose profile role mutation controls.
 - The UI does not call `.from("profiles").update`.
+- Admin test profiles may remain `profiles.primary_role = customer`; admin authority comes from `public.admin_staff`.
 - The action uses Clerk native session token retrieval via `getToken()`, not a deprecated Supabase JWT template.
 - The action does not use `createSupabaseAdminClient`.
 - Service role remains server-only and is not imported in app/components for this flow.
@@ -43,7 +49,9 @@ The route is under the existing `/admin/:slug*` Clerk-protected admin route poli
 
 - `/admin/onboarding-requests` is protected by the existing Clerk middleware route matcher for `/admin(.*)`.
 - Role policy confirms `/admin/:slug*` requires the `admin` role.
-- The page and server action also check `canReviewRoleOnboardingRequests`, which only allows synced admin profiles.
+- The page and server action also check `public.has_admin_role('admin')` through a server-only user-context helper.
+- A `profiles.primary_role = 'admin'` value alone is not sufficient for this UI/action gate.
+- A synced `customer` profile with active `public.admin_staff.admin_role = 'admin'` can access the admin review flow.
 - Customers, resellers, supplier owners, and supplier inventory managers cannot review requests through the helper.
 
 ## F. Approve/reject behavior
@@ -65,6 +73,9 @@ Updated `tests/role-onboarding.test.ts` to verify:
 - Request id is required.
 - Review notes are optional and normalized safely.
 - Non-admin roles cannot review onboarding requests.
+- Active `admin_staff` membership grants admin review permission.
+- `profiles.primary_role = customer` plus active `admin_staff.admin_role = admin` is accepted.
+- `profiles.primary_role = admin` without active admin-staff membership is not sufficient.
 - `/admin/onboarding-requests` is covered by the admin route policy.
 - Admin review page/action do not import service-role helpers.
 - Admin review page/action do not directly mutate `profiles.primary_role`.

@@ -3,6 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getRoleOnboardingAdminAccess } from "@/lib/auth/admin-access";
 import { getCurrentSyncedProfile } from "@/lib/auth/profile-sync";
 import {
   buildRoleOnboardingReviewPayload,
@@ -25,14 +26,19 @@ export async function reviewRoleOnboardingRequestAction(formData: FormData) {
 
     const profile = await getCurrentSyncedProfile();
 
-    if (!canReviewRoleOnboardingRequests(profile)) {
-      throw new Error("ADMIN_REQUIRED");
-    }
-
     const accessToken = await getToken();
 
     if (!accessToken) {
       throw new Error("SUPABASE_AUTH_TOKEN_MISSING");
+    }
+
+    const adminAccess = await getRoleOnboardingAdminAccess({
+      accessToken,
+      profile
+    });
+
+    if (!canReviewRoleOnboardingRequests(adminAccess)) {
+      throw new Error("ADMIN_REQUIRED");
     }
 
     const payload = buildRoleOnboardingReviewPayload({

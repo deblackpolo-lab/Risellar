@@ -28,6 +28,11 @@ export type RoleOnboardingProfile = {
   primary_role: RisellarRole | string;
 };
 
+export type RoleOnboardingAdminAccess = {
+  profile: RoleOnboardingProfile | null;
+  hasActiveAdminStaff: boolean;
+};
+
 export type RoleOnboardingRequestInput = {
   requestKind: RoleOnboardingRequestKind;
   businessName?: string | null;
@@ -94,8 +99,8 @@ export function canRequestRoleOnboarding(profile: RoleOnboardingProfile | null) 
   return profile?.primary_role === "customer";
 }
 
-export function canReviewRoleOnboardingRequests(profile: RoleOnboardingProfile | null) {
-  return profile?.primary_role === "admin";
+export function canReviewRoleOnboardingRequests(access: RoleOnboardingAdminAccess | null) {
+  return Boolean(access?.profile && access.hasActiveAdminStaff);
 }
 
 function normalizeOptionalText(value?: string | null) {
