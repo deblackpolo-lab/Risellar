@@ -33,7 +33,7 @@ async function submitRoleOnboardingRequest(requestKind: RoleOnboardingRequestKin
       throw new Error("PROFILE_SYNC_FAILED");
     }
 
-    const accessToken = await getToken({ template: "supabase" });
+    const accessToken = await getToken();
     hasSupabaseToken = Boolean(accessToken);
 
     if (!accessToken) {

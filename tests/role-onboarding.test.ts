@@ -193,4 +193,12 @@ describe("role onboarding request foundation", () => {
       expect(source).not.toContain("supplier_inventory_manager");
     }
   });
+
+  it("uses the default Clerk session token for onboarding Supabase user-context calls", () => {
+    const source = readFileSync(join(process.cwd(), "app/onboarding/actions.ts"), "utf8");
+
+    expect(source).toContain("getToken()");
+    expect(source).not.toContain('template: "supabase"');
+    expect(source).not.toContain("template: 'supabase'");
+  });
 });

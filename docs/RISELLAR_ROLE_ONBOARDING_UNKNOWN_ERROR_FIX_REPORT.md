@@ -22,7 +22,13 @@ Confirmed remaining submit blocker:
 - The page now maps this to `SUPABASE_AUTH_TOKEN_MISSING`.
 - No `role_onboarding_requests` row is created.
 
-This points to development Clerk/Supabase JWT template or auth-token configuration, not a role onboarding RPC parameter mismatch.
+This pointed to development Clerk/Supabase user-token configuration, not a role onboarding RPC parameter mismatch.
+
+Follow-up native-auth code update:
+
+- The onboarding submit action now calls `getToken()` instead of `getToken({ template: "supabase" })`.
+- This uses the default Clerk session token expected by native Clerk + Supabase third-party auth.
+- The user-context Supabase client still uses the anon key plus the Clerk session token.
 
 The expected classes are now explicit instead of hidden:
 
@@ -209,15 +215,16 @@ Expected local changes after this fix:
 
 ## K. Ready For Another Manual QA Run
 
-Ready for another manual QA run: after Clerk/Supabase JWT template configuration is fixed.
+Ready for another manual QA run: yes, after the native Clerk/Supabase token code update.
 
 The latest manual QA run confirmed:
 
 - The request no longer returns `UNKNOWN`.
 - The specific safe error is `SUPABASE_AUTH_TOKEN_MISSING`.
-- Request creation is still blocked before the RPC can run as an authenticated Supabase user.
+- Request creation was blocked before the RPC could run as an authenticated Supabase user.
+- The code now uses Clerk native third-party auth token retrieval and needs a manual rerun.
 
-The next run should confirm one of two outcomes after development auth-token configuration is repaired:
+The next run should confirm one of two outcomes after the native-auth code update:
 
 - The request succeeds and creates a pending `role_onboarding_requests` row.
 - The request returns a different specific safe code that identifies the next remaining backend/auth issue.
@@ -225,7 +232,7 @@ The next run should confirm one of two outcomes after development auth-token con
 ## Exact Next Prompt
 
 ```text
-Fix the development Clerk/Supabase JWT template integration, then rerun role onboarding page manual QA.
+Rerun role onboarding page manual QA after the Clerk native Supabase token update.
 
 Do NOT connect checkout, orders, products, settlements, commissions, payments, or inventory to live Supabase data.
 Do NOT apply migrations.
@@ -237,11 +244,10 @@ Do NOT run npm audit fix --force.
 
 Context:
 Role onboarding submit no longer returns UNKNOWN.
-It now fails with SUPABASE_AUTH_TOKEN_MISSING.
-Safe diagnostics show Clerk user exists, profile sync succeeds, but getToken({ template: "supabase" }) returns Clerk api_response_error / Not Found and no Supabase token.
+The onboarding server action now uses getToken() for the native Clerk + Supabase third-party auth integration.
 
 Goal:
-Repair only the development Clerk/Supabase JWT template or auth-token configuration so the server action can obtain a Supabase user token.
+Confirm the server action can obtain a Supabase user-context token and submit the role onboarding RPC.
 
 After the configuration fix, use the signed-in Clerk test account on http://localhost:400.
 

@@ -28,7 +28,13 @@ Follow-up result after the UNKNOWN error mapping fix:
 - No matching reseller or supplier request row was created.
 - Profile QA still shows the default role as `customer`.
 
-This is not safe to proceed to admin review UI yet because request creation from the page is blocked by Clerk/Supabase JWT template or auth-token configuration.
+This is not safe to proceed to admin review UI yet because request creation from the page was blocked by Clerk/Supabase user-token configuration at the time of the manual QA run.
+
+Follow-up code update:
+
+- The app has now been updated to use Clerk native Supabase third-party auth token retrieval with `getToken()`.
+- The deprecated named JWT template request is no longer used by the onboarding submit action.
+- Manual submit QA still needs to be rerun after this code update.
 
 ## B. Test Account Used
 
@@ -215,7 +221,14 @@ Fixes applied in this QA task:
   - Regression tests were added for the known error mappings.
 
 No migration was created or applied.
-The follow-up manual QA rerun confirmed the remaining blocker is Clerk/Supabase JWT template or auth-token configuration, not a generic page error.
+The follow-up manual QA rerun confirmed the remaining blocker was Clerk/Supabase user-token configuration, not a generic page error.
+
+Native auth code update applied after the rerun:
+
+- `app/onboarding/actions.ts` now requests the default Clerk session token with `getToken()`.
+- This matches the native Clerk + Supabase third-party auth setup configured in the dashboards.
+- No migration was created or applied.
+- No service role was added to onboarding submit.
 
 Required fix prompt:
 
@@ -418,15 +431,174 @@ After the UNKNOWN fix and follow-up manual QA rerun, expected local changes are:
 
 ## M. Whether Safe To Proceed To Admin Review UI
 
-Safe to proceed to admin review UI: no.
+Safe to proceed to admin review UI: yes, after committing the verified native auth update.
 
 Reason:
 
 - The original manual run did not create pending onboarding requests in development.
 - The UNKNOWN collapse is fixed.
-- The real page submit now reveals the remaining blocker: Clerk/Supabase token retrieval fails with safe code `SUPABASE_AUTH_TOKEN_MISSING`.
-- Pending request rows are still not created, so admin review UI would have no valid request rows to review.
+- Native Clerk/Supabase token retrieval has been updated in code.
+- Pending request rows are now created after the native Clerk/Supabase token update.
+- Profile role remains `customer` until admin review.
 
 Recommended next step:
 
-- Configure or repair the Clerk Supabase JWT template/auth-token integration for development, then rerun the role onboarding page manual QA.
+- Commit the native Clerk/Supabase token update and QA reports, then proceed to admin review UI foundation.
+
+## N. Clerk Native Supabase Token Manual QA Rerun
+
+### A. Reseller Submit Result
+
+Result: passed.
+
+- Fake dev-only marker: `native-qa-reseller-1784336427244`
+- Browser redirected to `/onboarding/pending?request=reseller&status=submitted`.
+- The pending page displayed reseller request submitted copy.
+- No `UNKNOWN` error appeared.
+- No `SUPABASE_AUTH_TOKEN_MISSING` error appeared.
+
+### B. Supabase Pending Row Verification
+
+Read-only development Supabase query result for the reseller marker:
+
+- Matching request count: `1`
+- `requested_role = reseller`: true
+- `status = pending`: true
+- request `profile_id` joins to the signed-in profile row: true
+- joined profile role remains `customer`: true
+
+### C. Duplicate Request Behavior
+
+Result: passed.
+
+- Fake duplicate marker: `native-qa-reseller-duplicate-1784336476352`
+- Browser redirected to `/onboarding/reseller?error=DUPLICATE_PENDING_REQUEST`.
+- Page displayed: `You already have a pending reseller request.`
+- The duplicate error was clear and did not show `UNKNOWN`.
+- Read-only development query confirmed:
+  - Original reseller marker count: `1`
+  - Pending reseller count for that profile: `1`
+  - Duplicate marker count: `0`
+
+### D. Supplier Request Behavior
+
+Result: passed.
+
+- Fake dev-only marker: `native-qa-supplier-1784336521335`
+- Browser redirected to `/onboarding/pending?request=supplier&status=submitted`.
+- The pending page displayed supplier request submitted copy.
+- Read-only development Supabase query result:
+  - Matching request count: `1`
+  - `requested_role = supplier_owner`: true
+  - `status = pending`: true
+  - request `profile_id` joins to the signed-in profile row: true
+  - joined profile role remains `customer`: true
+
+### E. Profile Role Verification
+
+Profile QA page result:
+
+- Profile row was created or found.
+- Clerk user id is stored.
+- Email is stored.
+- Default role remains `customer`.
+- Account status remains `active`.
+- No reseller role signal was shown.
+- No supplier-owner role signal was shown.
+- Submitting reseller/supplier requests did not mutate `profile.primary_role`.
+
+### F. Clerk/Supabase Native Token Result
+
+Result: passed.
+
+- `app/onboarding/actions.ts` uses `getToken()`.
+- The deprecated `getToken({ template: "supabase" })` call is no longer used by the onboarding submit path.
+- Reseller and supplier RPC submissions succeeded through the Supabase user-context client.
+- Server-side duplicate diagnostics showed `hasSupabaseToken: true`.
+- The user-context client still uses anon key plus the Clerk session token.
+
+### G. Security Checks
+
+Passed checks:
+
+- No `requested_role` field is exposed on reseller or supplier forms.
+- No `super_admin` or `supplier_inventory_manager` request option is visible.
+- Supplier page contains only descriptive admin-approval copy, not a requestable admin role.
+- Service role references are not present in `app` or `components`.
+- No profile role mutation was added.
+- No checkout, orders, products, settlements, commissions, payments, or inventory integration was touched.
+- No migration, destructive reset, or production Supabase command was run.
+
+### H. Commands Run/Results
+
+```bash
+git status --short
+```
+
+Result:
+
+- Working tree contains only expected Clerk native token update files and reports.
+
+```bash
+git diff --check
+```
+
+Result:
+
+- Passed. Git reported line-ending normalization warnings only.
+
+```bash
+npm test
+```
+
+Result:
+
+- Passed: 21 test files, 106 tests.
+
+```bash
+npm run lint
+```
+
+Result:
+
+- Passed.
+
+```bash
+npm run build
+```
+
+Result:
+
+- Passed.
+
+```bash
+npm run typecheck
+```
+
+Result:
+
+- Passed.
+
+### I. Secret Scan Result
+
+Result:
+
+- `.env.local` ignored and not staged.
+- `supabase/.temp/` ignored and not staged.
+- Service role import count in `app` and `components`: `0`.
+- Filename-only secret pattern scan found existing documentation/test/source files with secret-safety terminology, not printed secret values.
+- No bearer tokens, passwords, API secrets, or production data were printed.
+
+### J. Current Git Status
+
+Expected local changes:
+
+- `app/onboarding/actions.ts`
+- `tests/role-onboarding.test.ts`
+- `docs/RISELLAR_ROLE_ONBOARDING_PAGE_MANUAL_QA_REPORT.md`
+- `docs/RISELLAR_ROLE_ONBOARDING_UNKNOWN_ERROR_FIX_REPORT.md`
+- `docs/RISELLAR_CLERK_SUPABASE_NATIVE_AUTH_TOKEN_FIX_REPORT.md`
+
+### K. Whether Safe To Commit
+
+Safe to commit: yes.
