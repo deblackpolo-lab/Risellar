@@ -17,13 +17,13 @@ export function AccountSignOutButton({
   const { signOut } = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  async function handleSignOut() {
+  function handleSignOut() {
     setIsSigningOut(true);
-    await signOut({ redirectUrl: "/sign-in" });
+    void signOut({ redirectUrl: "/sign-in" });
   }
 
   return (
-    <Button aria-label={ariaLabel} className={className} disabled={isSigningOut} onClick={() => void handleSignOut()} type="button" variant="outline">
+    <Button aria-label={ariaLabel} className={className} disabled={isSigningOut} onClick={handleSignOut} type="button" variant="outline">
       <LogOut className="h-4 w-4" aria-hidden="true" />
       {isSigningOut ? "Signing out..." : label}
     </Button>
