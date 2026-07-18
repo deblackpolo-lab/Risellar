@@ -15,6 +15,7 @@ This report treats that project as the confirmed development project. No product
 Applied to the confirmed development Supabase project:
 
 - `20260718090000_supplier_product_management_rpc_foundation.sql`
+- `20260718102000_fix_supplier_owner_uuid_selection.sql`
 
 ## C. db push Result
 
@@ -26,6 +27,7 @@ Result:
 
 - succeeded
 - applied `20260718090000_supplier_product_management_rpc_foundation.sql`
+- later applied `20260718102000_fix_supplier_owner_uuid_selection.sql`
 - no destructive reset command was run
 - `supabase db reset --linked` was not run
 
@@ -37,36 +39,53 @@ Command:
 
 Result:
 
-- failed before SQL assertions were returned
-- no pass/fail product RPC assertions were recorded
-- follow-up diagnosis confirmed linked query works generally
-- reduced diagnostic isolated a SQL runtime bug in `public.current_verified_supplier_owner_id()`
-
-Exact error:
-
-```text
-{"_tag":"Error","error":{"code":"LegacyDbQueryExecError","message":"failed to execute query: HttpClientError: Transport error (POST https://api.supabase.com/v1/projects/fslspziubnfakarkkavo/database/query)"}}
-```
+- passed after applying `20260718102000_fix_supplier_owner_uuid_selection.sql`
+- all returned product RPC boundary assertions passed
+- no failed SQL assertion was reported
 
 ## E. Passed Assertions
 
-None recorded. The linked query failed at the Supabase query transport layer before assertion output was returned.
+Passed assertions:
+
+- `archive is soft and marks product variant image archived`
+- `audit log is written for create update image archive`
+- `created product belongs to caller supplier`
+- `created product defaults to pending review state`
+- `created product has default stock variant`
+- `image metadata defaults to pending review and own product`
+- `normal customer cannot create supplier product`
+- `reseller cannot create supplier product`
+- `safe update keeps admin approval protected and moves price change to review`
+- `supplier inventory manager can list own supplier operational products`
+- `supplier inventory manager cannot create supplier product through owner RPC`
+- `supplier inventory manager cannot list archived supplier products`
+- `supplier owner can add own product image metadata`
+- `supplier owner can archive own product`
+- `supplier owner can create own product`
+- `supplier owner can update safe editable own product fields`
+- `supplier owner cannot add image metadata with another supplier path`
+- `supplier owner cannot add public URL image metadata`
+- `supplier owner cannot approve own product directly`
+- `supplier owner cannot create product for another supplier through direct insert`
+- `supplier owner cannot edit another supplier product through RPC`
+- `supplier owner has no direct delete access`
 
 ## F. Failed Assertion/Error
 
-No SQL assertion failure was reported.
+None after the UUID patch was applied.
 
-The failure was:
+Historical pre-patch failure:
 
-- Supabase CLI linked query transport error
-- error code: `LegacyDbQueryExecError`
-- message: `failed to execute query: HttpClientError: Transport error`
+- initial full script surfaced `LegacyDbQueryExecError`
+- reduced diagnostic exposed `ERROR: 42883: function min(uuid) does not exist`
 
 ## G. Failure Classification
 
 Original classification: `unknown`
 
 Updated classification after diagnosis: product RPC implementation bug
+
+Current classification after UUID patch and rerun: resolved; no product RPC/security gap confirmed
 
 Root cause:
 
@@ -80,33 +99,34 @@ CONTEXT: PL/pgSQL function current_verified_supplier_owner_id() line 13 at SQL s
 PL/pgSQL function create_supplier_product(text,text,text,numeric,integer,jsonb,jsonb) line 18 at assignment
 ```
 
-This is not a confirmed product RPC/security authorization gap. It is a runtime implementation bug in the applied development RPC foundation and requires a forward fix migration before rerunning the full product boundary test.
+This was not a confirmed product RPC/security authorization gap. It was a runtime implementation bug in the applied development RPC foundation. The forward patch migration corrected the UUID selection issue.
 
 ## H. Product Security Protections Verified
 
-Static/migration-level protections remain in place:
+Runtime product RPC boundary tests verified:
 
 - product creation requires an authenticated active approved supplier owner
-- customer/reseller creation paths are blocked by the RPC authorization model
+- customer/reseller creation paths are blocked
 - supplier owners cannot update another supplier product through the RPC
-- supplier owners cannot self-approve products through the RPC
+- supplier owners cannot self-approve products directly
 - supplier product mutations are audited through `create_audit_log_entry`
 - image metadata requires private supplier/product-scoped storage paths
-- direct hard delete path is not exposed by the RPC foundation
+- direct hard delete is blocked
+- supplier inventory managers can list own supplier operational products but cannot create through the owner RPC
 
-Runtime boundary verification is still pending because `create_supplier_product()` fails before assertions due to the `min(uuid)` bug.
+No RLS/RPC/storage policies were weakened.
 
 ## I. Fixture/Test Data Rollback
 
-Rollback could not be confirmed from SQL execution output because the linked query failed at the transport layer before SQL assertion output was returned.
+Rollback/cleanup was confirmed after successful test execution.
 
-The script is designed with:
+Read-only verification query:
 
-- `begin;`
-- fake `example.invalid` fixture data only
-- final `rollback;`
+`select count(*) as dev_product_fixture_profile_count from public.profiles where clerk_user_id like 'dev_product_%';`
 
-Follow-up read-only check found zero `dev_product_%` fixture profiles after the original failure. The reduced diagnostic script was temporary, rollback-based, and deleted after use.
+Result:
+
+- `dev_product_fixture_profile_count = 0`
 
 ## J. Commands Run/Results
 
@@ -116,13 +136,16 @@ Follow-up read-only check found zero `dev_product_%` fixture profiles after the 
 - `npx supabase status` - failed because local Docker/Supabase containers are unavailable; this was not a production connection
 - `npx supabase projects list` - confirmed linked development project named `Risellar`
 - `npx supabase db push` - succeeded; applied `20260718090000_supplier_product_management_rpc_foundation.sql`
-- `npx supabase db query --linked --file scripts/rpc/product-management-rpc-tests-dev-only.sql` - failed with `LegacyDbQueryExecError` transport error
+- `npx supabase db push` - succeeded; applied `20260718102000_fix_supplier_owner_uuid_selection.sql`
+- `npx supabase db query --linked --file scripts/rpc/product-management-rpc-tests-dev-only.sql` - passed after UUID fix
 - `npx supabase db query --linked "select 1 as linked_query_ok;"` - passed
 - `npx supabase db query --linked "select count(*) ... dev_product_%"` - passed; returned zero leftover fake product fixture profiles
 - temporary reduced diagnostic linked-query script - failed with `ERROR: 42883: function min(uuid) does not exist`; temporary file deleted after diagnosis
+- `npm test` - passed; 21 files, 114 tests
+- `npm run lint` - passed
+- `npm run build` - passed
+- `npm run typecheck` - passed
 - secret/env scan - passed
-
-Normal `npm` verification commands were not run during the initial apply/test turn because the instruction was to stop immediately on test failure. The follow-up diagnostic turn ran normal verification after documenting the diagnosis.
 
 ## K. Secret Scan Result
 
@@ -135,7 +158,7 @@ Normal `npm` verification commands were not run during the initial apply/test tu
 
 ## L. Current Git Status
 
-This report is the only expected working-tree change after creation.
+This report is the only expected working-tree change after update.
 
 ## M. Whether Production Remains Blocked
 
@@ -143,23 +166,22 @@ Production remains blocked.
 
 Reasons:
 
-- product RPC boundary tests did not complete
-- `current_verified_supplier_owner_id()` needs a forward fix migration for `min(uuid)`
-- supplier product UI has not been connected
-- no production apply should occur until development RPC boundary tests pass
+- production has not had a production migration plan or approval
+- supplier product UI has not been connected or QA'd
+- product image upload and admin product approval flows remain deferred
+- production apply still requires separate production readiness review
 
 ## N. Whether Supplier UI Integration Is Safe To Plan Next
 
-Supplier UI integration is not ready to start yet.
+Supplier UI integration is safe to plan next, with scope control.
 
-Forward fix migration prepared:
+Safe next planning scope:
 
-- `supabase/migrations/20260718102000_fix_supplier_owner_uuid_selection.sql`
+- supplier product create/edit UI using audited product RPCs
+- no checkout/orders/reseller catalog/stock reservation/settlement/commission/payment/delivery integration
+- no production Supabase apply
 
-Dry-run result:
+Recommended next gate before implementation:
 
-- `npx supabase db push --dry-run` passed
-- would apply only `20260718102000_fix_supplier_owner_uuid_selection.sql`
-- real `supabase db push` was not run
-
-Next required step is to apply the forward fix migration to the confirmed development Supabase project after explicit approval, then rerun the full development-only product management RPC boundary test.
+- commit this development apply/test report
+- create a supplier UI integration plan that calls the approved RPCs through server-only/user-context Supabase helpers
