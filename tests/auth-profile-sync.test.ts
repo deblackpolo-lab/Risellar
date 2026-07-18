@@ -176,6 +176,25 @@ describe("auth route guard foundation", () => {
     expect(canAccessRoute("/admin/dashboard", approvedReseller)).toBe(false);
   });
 
+  it("allows approved supplier owners into the supplier route family only", () => {
+    const approvedSupplierOwner = { role: "supplier_owner", onboardingStatus: "complete" } as const;
+
+    for (const pathname of [
+      "/supplier/dashboard",
+      "/supplier/products",
+      "/supplier/inventory",
+      "/supplier/settlements",
+      "/supplier/team"
+    ]) {
+      expect(canAccessRoute(pathname, approvedSupplierOwner)).toBe(true);
+    }
+
+    expect(canAccessRoute("/reseller/dashboard", approvedSupplierOwner)).toBe(false);
+    expect(canAccessRoute("/reseller/products", approvedSupplierOwner)).toBe(false);
+    expect(canAccessRoute("/admin/dashboard", approvedSupplierOwner)).toBe(false);
+    expect(canAccessRoute("/admin/onboarding-requests", approvedSupplierOwner)).toBe(false);
+  });
+
   it("keeps rejected supplier requests from implying supplier-owner route access", () => {
     const rejectedSupplierRequester = { role: "reseller", onboardingStatus: "complete" } as const;
 
