@@ -1,5 +1,5 @@
-import { SupplierAddProductScreen } from "@/components/supplier/screens";
+import { SupplierProductCreateRpcScreen } from "@/components/supplier/product-management-rpc-screens";
 
 export default function SupplierAddProductPage() {
-  return <SupplierAddProductScreen />;
+  return <SupplierProductCreateRpcScreen />;
 }
