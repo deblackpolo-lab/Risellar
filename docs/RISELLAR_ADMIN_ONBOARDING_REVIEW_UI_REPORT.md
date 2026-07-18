@@ -134,4 +134,4 @@ Working tree is intentionally dirty with the admin review UI implementation and 
 
 Safe to commit after final verification remains green and the secret scan remains clean.
 
-Live approve/reject QA should be completed later with a dedicated admin Clerk test account or admin development profile. Production remains out of scope.
+Development admin test access has since been bootstrapped through `public.admin_staff`, and the audited approve/reject RPC path was QA'd under that admin test user context. A final browser click-through spot-check is still recommended because Codex could not reuse the in-app browser's signed-in Clerk session in this thread. Production remains out of scope.

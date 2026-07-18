@@ -2,9 +2,9 @@
 
 ## Summary
 
-Prepared a development-only bootstrap plan for a dedicated Clerk admin test account so `/admin/onboarding-requests` can be manually QA'd.
+Prepared and executed a development-only bootstrap for a dedicated Clerk admin test account so `/admin/onboarding-requests` can be manually QA'd.
 
-No SQL update or insert was executed. No production Supabase project was contacted. No secrets, credentials, full email addresses, Clerk user ids, or database passwords were printed.
+The bootstrap inserted only one `public.admin_staff` row in the confirmed development Supabase project. No `public.profiles` row was updated. No production Supabase project was contacted. No secrets, credentials, full email addresses, Clerk user ids, or database passwords were printed.
 
 ## Development project confirmation
 
@@ -60,7 +60,8 @@ Relevant schema findings:
 - `profiles_no_self_admin_signup` blocks `primary_role` values in `admin`, `super_admin`, `finance_staff`, and `support_staff`.
 - `public.has_admin_role(required_role)` checks `public.admin_staff`, not `profiles.primary_role`.
 - `review_role_onboarding_request` requires `public.has_admin_role('admin')`.
-- Active `admin_staff` rows with `admin` or `super_admin` privileges currently count as `0`.
+- Active `admin_staff` rows with `admin` or `super_admin` privileges counted as `0` before bootstrap.
+- After bootstrap, the confirmed development admin test profile has one active `admin_staff` row with `admin_role = 'admin'`.
 
 Therefore, a development admin test bootstrap should create a dev-only `public.admin_staff` row for the confirmed test profile. It should not update `public.profiles.primary_role`.
 
@@ -81,7 +82,7 @@ Current app behavior:
 
 ## Proposed development-only bootstrap SQL
 
-Do not run this without explicit user approval and confirmation that profile id `50c02a70-be36-4d58-a206-103b44da7aef` is the intended development admin test profile.
+This SQL was run only after explicit user confirmation that the masked profile id belonged to the intended development admin test account.
 
 ```sql
 -- DEVELOPMENT ONLY -- DO NOT RUN AGAINST PRODUCTION.
@@ -122,11 +123,16 @@ returning id, profile_id, admin_role, staff_status, created_at;
 commit;
 ```
 
-If this returns no row, stop and inspect before doing anything else. Do not update an existing admin staff row blindly.
+The bootstrap inserted one row. A follow-up read-only verification confirmed:
+
+- `profiles.primary_role` remained `customer`.
+- `admin_staff.admin_role = admin`.
+- `admin_staff.staff_status = active`.
+- Safe user-context simulation returned `public.has_admin_role('admin') = true`.
 
 ## Approval requirement
 
-Explicit approval is required before running any SQL bootstrap.
+Explicit approval was received before running the development-only SQL bootstrap.
 
 Before approval, the user should confirm:
 
@@ -152,19 +158,32 @@ Before approval, the user should confirm:
 - Read-only profile discovery query
   - Found two development profiles with masked emails only.
   - Most recent candidate role is `customer`.
-- Read-only admin-staff count query
+- Read-only admin-staff count query before bootstrap
   - Active admin/super_admin staff count: `0`
+- Development-only `admin_staff` insert
+  - Inserted admin_staff rows: `1`
+- Read-only verification after bootstrap
+  - Active admin_staff row exists for the confirmed profile.
+  - Profile role remained `customer`.
+  - `public.has_admin_role('admin')` returned `true` under a safe simulated user-context claim.
+- `npm test`
+  - Passed: 21 test files, 109 tests.
+- `npm run lint`
+  - Passed.
+- `npm run build`
+  - Passed.
+- `npm run typecheck`
+  - Passed.
 
 ## Current git status
 
-This report is untracked. No files are staged.
+This report is modified/uncommitted. The execution report is also untracked. No files are staged.
 
 ## Recommendation
 
-Do not run bootstrap SQL yet.
+The development-only bootstrap is complete. Do not rerun it unless a later verification shows the test admin_staff row was removed or deactivated.
 
 Next step:
 
-1. User confirms the masked profile/profile id is the intended development admin test account.
-2. After explicit approval, run the development-only insert-only bootstrap SQL against the linked development project.
-3. Manually QA `/admin/onboarding-requests` approve/reject using the admin test account.
+1. Manually QA `/admin/onboarding-requests` approve/reject using the admin test account.
+2. Commit the bootstrap execution report if accepted.
