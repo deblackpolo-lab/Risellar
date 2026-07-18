@@ -12,7 +12,7 @@ Created forward migration:
 
 - `supabase/migrations/20260718183000_public_reseller_shop_readonly_rpc.sql`
 
-The migration was dry-run only. It was not applied.
+The migration was initially dry-run only and later applied to the confirmed DEVELOPMENT Supabase project named "Risellar" after explicit approval.
 
 ## C. RPCs Created
 
@@ -106,7 +106,15 @@ Added development-only script:
 
 - `scripts/rpc/public-shop-rpc-tests-dev-only.sql`
 
-The script was not run because the migration has not been applied.
+The script was run after the migration was applied to development.
+
+Current limitation:
+
+- the script was initially scaffold-only and recorded one passing scaffold assertion
+- it was later hardened into active pass/fail assertions
+- the first hardened run exposed a fixture/schema mismatch (`supplier_role = 'supplier_owner'`)
+- the unnecessary `supplier_team_members` fixture insert was removed
+- the hardened script then passed against development
 
 ## I. Dry-Run Result
 
@@ -171,6 +179,15 @@ Changed/untracked files at validation time:
 
 ## N. Whether Safe To Commit/Apply Migration
 
-The code/docs are safe to commit after final review.
+The code/docs were committed in `31c7344`.
 
-Migration application is not yet approved. The next safe step after commit would be an explicit development-only approval to run `npx supabase db push`, followed by development-only public shop RPC boundary tests.
+Development apply/test update:
+
+- `npx supabase db push` was later approved and applied only `20260718183000_public_reseller_shop_readonly_rpc.sql` to development.
+- `scripts/rpc/public-shop-rpc-tests-dev-only.sql` executed successfully but is scaffold-only.
+- `scripts/rpc/public-shop-rpc-tests-dev-only.sql` was later hardened into active pass/fail assertions and passed after a fixture/schema mismatch fix.
+- No production Supabase connection was used.
+- No checkout, orders, stock reservation, payments, delivery, settlements, commissions, withdrawals, or customer purchase flow was connected.
+- The next safe step is read-only public shop browser QA.
+- Browser QA later verified safe unauthenticated empty/not-found states.
+- Positive active-listing browser QA remains blocked until development has a fake/dev-only persistent active public listing.
