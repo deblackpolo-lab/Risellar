@@ -12,6 +12,12 @@ export type VerifiedProfileAccess = {
   onboardingStatus: OnboardingStatus;
 };
 
+export type RouteAccessProfileInput = {
+  primaryRole?: string | null;
+  onboardingStatus?: OnboardingStatus | null;
+  hasActiveAdminStaff?: boolean;
+};
+
 function normalizePath(pathname: string) {
   if (pathname.length > 1 && pathname.endsWith("/")) {
     return pathname.slice(0, -1);
@@ -78,4 +84,34 @@ export function canAccessRoute(pathname: string, profile: VerifiedProfileAccess 
   const onboardingAllowed = !policy.onboarding || policy.onboarding.includes(profile.onboardingStatus);
 
   return roleAllowed && onboardingAllowed;
+}
+
+function isRisellarRole(value: string | null | undefined): value is RisellarRole {
+  return (
+    value === "customer"
+    || value === "reseller"
+    || value === "supplier_owner"
+    || value === "supplier_inventory_manager"
+    || value === "admin"
+  );
+}
+
+export function getVerifiedRouteAccessProfile(input: RouteAccessProfileInput): VerifiedProfileAccess | null {
+  const onboardingStatus = input.onboardingStatus ?? "complete";
+
+  if (input.hasActiveAdminStaff) {
+    return {
+      role: "admin",
+      onboardingStatus
+    };
+  }
+
+  if (!isRisellarRole(input.primaryRole) || input.primaryRole === "admin") {
+    return null;
+  }
+
+  return {
+    role: input.primaryRole,
+    onboardingStatus
+  };
 }

@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   "/checkout/account(.*)",
@@ -15,9 +16,18 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-risellar-pathname", request.nextUrl.pathname);
+
   if (isProtectedRoute(request)) {
     await auth.protect();
   }
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders
+    }
+  });
 });
 
 export const config = {

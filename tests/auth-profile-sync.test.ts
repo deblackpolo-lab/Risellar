@@ -5,7 +5,12 @@ import {
   isSelfAssignableProfileRole,
   normalizeClerkIdentity
 } from "@/lib/auth/profile-sync-core";
-import { canAccessRoute, getRoutePolicyForPath, isPublicPath } from "@/lib/auth/route-guards";
+import {
+  canAccessRoute,
+  getRoutePolicyForPath,
+  getVerifiedRouteAccessProfile,
+  isPublicPath
+} from "@/lib/auth/route-guards";
 import { getRoleHomePath } from "@/lib/auth/role-redirect";
 
 describe("Clerk profile sync foundation", () => {
@@ -136,6 +141,75 @@ describe("auth route guard foundation", () => {
     expect(canAccessRoute("/admin/dashboard", { role: "admin", onboardingStatus: "complete" })).toBe(true);
     expect(canAccessRoute("/reseller/dashboard", { role: "reseller", onboardingStatus: "pending_review" })).toBe(false);
     expect(canAccessRoute("/reseller/dashboard", { role: "reseller", onboardingStatus: "complete" })).toBe(true);
+  });
+
+  it("allows approved reseller profiles into the reseller route family", () => {
+    const approvedReseller = { role: "reseller", onboardingStatus: "complete" } as const;
+
+    for (const pathname of [
+      "/reseller/dashboard",
+      "/reseller/products",
+      "/reseller/shop",
+      "/reseller/my-products",
+      "/reseller/wallet"
+    ]) {
+      expect(canAccessRoute(pathname, approvedReseller)).toBe(true);
+    }
+  });
+
+  it("blocks customer and reseller profiles from supplier-owner and admin route families", () => {
+    const customer = { role: "customer", onboardingStatus: "complete" } as const;
+    const approvedReseller = { role: "reseller", onboardingStatus: "complete" } as const;
+
+    for (const pathname of [
+      "/supplier/dashboard",
+      "/supplier/products",
+      "/supplier/inventory",
+      "/supplier/settlements",
+      "/supplier/team"
+    ]) {
+      expect(canAccessRoute(pathname, customer)).toBe(false);
+      expect(canAccessRoute(pathname, approvedReseller)).toBe(false);
+    }
+
+    expect(canAccessRoute("/admin/onboarding-requests", approvedReseller)).toBe(false);
+    expect(canAccessRoute("/admin/dashboard", approvedReseller)).toBe(false);
+  });
+
+  it("keeps rejected supplier requests from implying supplier-owner route access", () => {
+    const rejectedSupplierRequester = { role: "reseller", onboardingStatus: "complete" } as const;
+
+    expect(canAccessRoute("/reseller/dashboard", rejectedSupplierRequester)).toBe(true);
+    expect(canAccessRoute("/supplier/dashboard", rejectedSupplierRequester)).toBe(false);
+    expect(canAccessRoute("/supplier/products", rejectedSupplierRequester)).toBe(false);
+  });
+
+  it("maps profile roles into route access without treating primary_role admin as sufficient", () => {
+    expect(
+      getVerifiedRouteAccessProfile({
+        primaryRole: "reseller"
+      })
+    ).toEqual({
+      role: "reseller",
+      onboardingStatus: "complete"
+    });
+
+    expect(
+      getVerifiedRouteAccessProfile({
+        primaryRole: "customer",
+        hasActiveAdminStaff: true
+      })
+    ).toEqual({
+      role: "admin",
+      onboardingStatus: "complete"
+    });
+
+    expect(
+      getVerifiedRouteAccessProfile({
+        primaryRole: "admin",
+        hasActiveAdminStaff: false
+      })
+    ).toBeNull();
   });
 
   it("returns role home paths from trusted profile role data", () => {

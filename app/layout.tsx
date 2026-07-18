@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import { RouteAccessBoundary } from "@/lib/auth/route-access-boundary";
 import "react-photo-view/dist/react-photo-view.css";
 import "./globals.css";
 
@@ -12,7 +13,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>{children}</body>
+        <body>
+          <RouteAccessBoundary>{children}</RouteAccessBoundary>
+        </body>
       </html>
     </ClerkProvider>
   );
