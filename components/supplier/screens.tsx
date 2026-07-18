@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Bell, ClipboardList, Home, Package, UserRound } from "lucide-react";
+import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { ProductImageFrame, ProductImageGallery, ProductImagePreviewGrid } from "@/components/marketplace";
 import { Button, Card, Checkbox, Input, ScrollableChipRow, StatusBadge, Textarea } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
@@ -738,8 +739,7 @@ export function SupplierSettingsScreen() {
     ["Business profile", supplierCoreMock.supplier.businessName],
     ["Payout details summary", supplierCoreMock.supplier.payoutMethod],
     ["Agreement and rules", "Supplier operating terms"],
-    ["Notifications", "Order and settlement alerts"],
-    ["Logout placeholder", "Auth arrives in a later integration phase"]
+    ["Notifications", "Order and settlement alerts"]
   ];
 
   return (
@@ -760,6 +760,7 @@ export function SupplierSettingsScreen() {
           </Card>
         ))}
       </div>
+      <AccountSignOutButton className="mt-4 w-full" />
     </SupplierMobileShell>
   );
 }

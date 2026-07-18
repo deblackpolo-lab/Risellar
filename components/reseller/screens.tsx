@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Wallet
 } from "lucide-react";
+import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { BottomNav, MobileShell } from "@/components/layout";
 import { ProductBrowseGrid, ProductGridCard, ProductImageFrame, ProductImageGallery } from "@/components/marketplace";
 import { Button, Card, Input, ScrollableChipRow, StatusBadge } from "@/components/ui";
@@ -809,6 +810,7 @@ export function ResellerSettingsScreen() {
         <SettingsItem icon={<ShieldCheck />} label="Trust and reseller rules" />
         <SettingsItem icon={<Headphones />} label="Support and report issue" />
       </div>
+      <AccountSignOutButton className="mt-4 w-full" />
     </ResellerShell>
   );
 }

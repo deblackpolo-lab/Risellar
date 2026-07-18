@@ -153,7 +153,8 @@ describe("Phase 6 supplier PWA core", () => {
     expect(screen.getByText("Business profile")).toBeInTheDocument();
     expect(screen.getByText("Payout details summary")).toBeInTheDocument();
     expect(screen.getByText("Agreement and rules")).toBeInTheDocument();
-    expect(screen.getByText("Logout placeholder")).toBeInTheDocument();
+    expect(screen.queryByText("Logout placeholder")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
 
     rerender(<SupplierSupportScreen />);
     expect(screen.getByRole("heading", { name: /Supplier support/i })).toBeInTheDocument();

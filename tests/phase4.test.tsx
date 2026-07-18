@@ -104,5 +104,6 @@ describe("Phase 4 reseller PWA core", () => {
     expect(screen.getByText("MTN MoMo")).toBeInTheDocument();
     expect(screen.getByText("Ama's Beauty Plug")).toBeInTheDocument();
     expect(screen.getByText(/mock settings/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
   });
 });

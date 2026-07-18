@@ -1,5 +1,16 @@
 import "@testing-library/jest-dom/vitest";
+import { createElement } from "react";
+import type { ReactNode } from "react";
 import { vi } from "vitest";
+
+vi.mock("@clerk/nextjs", () => ({
+  ClerkProvider: ({ children }: { children: ReactNode }) => children,
+  SignIn: () => createElement("div", null, "Sign in"),
+  SignUp: () => createElement("div", null, "Sign up"),
+  useClerk: () => ({
+    signOut: vi.fn()
+  })
+}));
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
