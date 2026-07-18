@@ -4,9 +4,13 @@
 
 Browser/manual QA was run against the read-only public reseller shop routes on `http://localhost:400`.
 
-The public shop routes loaded without requiring Clerk sign-in. However, full active-listing browser QA is currently blocked because the confirmed DEVELOPMENT Supabase project does not currently have an active, non-deleted reseller listing for the available development shop.
+Initial public shop browser QA confirmed safe empty/unavailable states because the confirmed DEVELOPMENT Supabase project did not yet have an active, non-deleted public listing.
 
-The available development shop/listing state was:
+Follow-up positive browser QA created one fake/dev-only active public listing and confirmed the active listing appears safely without auth. Details are documented in:
+
+- `docs/RISELLAR_PUBLIC_RESELLER_SHOP_ACTIVE_LISTING_BROWSER_QA_REPORT.md`
+
+The original available development shop/listing state was:
 
 - shop slug: `shop-5d2328c9d22f412e8bbb5cc1`
 - shop status: `active`
@@ -35,14 +39,20 @@ Result:
 
 ## C. Active Approved Listing Result
 
-Active approved listing browser verification is blocked.
+Active approved listing browser verification has now passed in a follow-up positive QA pass.
 
-Reason:
+Result:
 
-- Read-only development query found no active, non-deleted reseller listing that satisfies the public RPC filters.
-- The only available development listing for the candidate shop is archived/deleted.
+- A fake/dev-only active listing was created from an existing fake/dev-only approved supplier product through the tested reseller listing RPC path.
+- `/shop/shop-5d2328c9d22f412e8bbb5cc1` loaded without auth.
+- The active listing appeared.
+- Final customer price appeared.
+- Sensitive supplier/reseller/internal fields stayed hidden.
+- Checkout, order creation, stock reservation, payment, and delivery remained disabled/deferred.
 
-The active-listing behavior is verified by the hardened SQL boundary test using rollback fixtures, but not yet by browser QA against persistent development data.
+Follow-up report:
+
+- `docs/RISELLAR_PUBLIC_RESELLER_SHOP_ACTIVE_LISTING_BROWSER_QA_REPORT.md`
 
 ## D. Product Detail Route Result
 
@@ -115,15 +125,15 @@ No unrelated live flow was touched or connected:
 
 ## I. Issues/Limitations
 
-The only blocker is missing persistent development data for the browser positive path:
+Resolved follow-up:
 
-- no active, non-deleted public reseller listing currently exists in development
+- The prior blocker was missing persistent development data for the browser positive path.
+- A fake/dev-only active listing was created in development.
+- Positive browser QA now passed and is documented separately.
 
-Recommended safe follow-up:
+Remaining limitation:
 
-- create a fake/dev-only persistent public shop listing fixture, or use the reseller add-to-shop UI to create a new active listing from an approved product, then rerun browser QA.
-
-Do not use production data.
+- This remains development-only QA. Production Supabase was not used.
 
 ## J. Commands Run/Results
 
@@ -135,6 +145,7 @@ Do not use production data.
 - browser checked product detail for archived listing - safe `Product unavailable` state loaded without auth
 - browser checked `/shop/not-a-real-shop` - safe empty/unavailable state
 - read-only before/after row count checks - no order, order item, stock reservation, delivery quote, settlement, commission, or withdrawal rows were created
+- follow-up positive browser QA - active fake/dev-only listing shown without auth; product detail loaded; checkout/order/payment/delivery remained disabled/deferred
 - `git status --short` - reviewed before and after QA/report updates
 - `git diff --check` - passed with LF-to-CRLF warnings only
 - `npm test` - passed: 28 test files, 145 tests
@@ -157,16 +168,11 @@ Do not use production data.
 
 ## L. Current Git Status
 
-Changed/untracked files after final validation:
+Changed/untracked files after positive active-listing browser QA:
 
-- `scripts/rpc/public-shop-rpc-tests-dev-only.sql`
+- `docs/RISELLAR_PUBLIC_RESELLER_SHOP_ACTIVE_LISTING_BROWSER_QA_REPORT.md`
 - `docs/RISELLAR_PUBLIC_RESELLER_SHOP_BROWSER_QA_REPORT.md`
-- `docs/RISELLAR_PUBLIC_RESELLER_SHOP_DEV_APPLY_AND_TEST_REPORT.md`
-- `docs/RISELLAR_PUBLIC_RESELLER_SHOP_READONLY_FOUNDATION_REPORT.md`
-- `docs/RISELLAR_PUBLIC_SHOP_RPC_BOUNDARY_TEST_HARDENING_REPORT.md`
 
 ## M. Whether Safe To Commit
 
-Safe to commit the reports and hardened public-shop RPC boundary test after final validation.
-
-Browser QA for the positive active-listing path should be rerun after a fake/dev-only persistent active listing is available.
+Safe to commit the active-listing browser QA documentation after final validation.
