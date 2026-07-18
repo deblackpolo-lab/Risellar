@@ -162,20 +162,34 @@ Root cause: the development-only test script used nested `$$...$$` SQL strings i
 
 Classification: test assertion/harness bug.
 
-No real customer profile/address security gap is confirmed yet. No migration, RPC, RLS, or storage policy was changed for this fix.
+No real customer profile/address security gap was confirmed by the initial failure. No migration, RPC, RLS, or storage policy was changed for this fix.
 
-The test harness was updated so nested SQL assertion strings use `$sql$...$sql$` while the outer `DO $$ ... $$` block remains unchanged. All assertions were preserved. The customer profile/address RPC boundary test was not rerun after this fix; rerun still requires explicit approval.
+The test harness was updated so nested SQL assertion strings use `$sql$...$sql$` while the outer `DO $$ ... $$` block remains unchanged. All assertions were preserved.
+
+The customer profile/address RPC boundary test was rerun once after explicit approval and passed. All returned assertion rows had `passed = true`.
+
+Passed coverage confirmed:
+
+- customer can upsert own contact
+- customer can create, read, update, and archive own delivery address
+- archived addresses are hidden from the customer RPC
+- customer B cannot read, update, or archive customer A's active address
+- default address behavior works
+- required address/contact validation works
+- reseller/supplier can only create their own buyer/customer foundation and cannot mutate another customer's address
+- admin role does not bypass ownership through customer RPC
+- no order, order item, stock reservation, delivery quote, commission, settlement, or withdrawal rows are created
 
 ## L. Current Status
 
-Customer profile/address backend migration is applied to development, but boundary-test verification remains pending after the SQL quoting harness fix.
+Customer profile/address backend migration is applied to development, and the development-only Customer Phase A profile/address RPC boundary test passed.
 
-Production remains blocked. The development-only boundary test still requires explicit approval before running against the confirmed development Supabase project.
+Checkout, order creation, stock reservation, delivery quotes, payments, settlements, commissions, withdrawals, and purchase flow remain out of scope and unconnected.
 
 ## M. Exact Next Prompt
 
 ```text
-I approve rerunning the development-only customer profile/address RPC boundary tests against the confirmed DEVELOPMENT Supabase project named "Risellar".
+Plan the next Customer Phase A UI/server-action integration step for customer contact and delivery address management.
 
 Do NOT connect production Supabase.
 Do NOT use production data.
@@ -187,17 +201,4 @@ Do NOT commit .env.local.
 Do NOT weaken RLS/RPC/storage policies.
 Do NOT connect checkout, orders, stock reservation, payments, delivery, settlements, commissions, withdrawals, or customer purchase flow.
 Do NOT run npm audit fix --force.
-
-Run:
-git status --short
-npx supabase --version
-npx supabase db query --linked --file scripts/rpc/customer-profile-address-rpc-tests-dev-only.sql
-
-Then run:
-npm test
-npm run lint
-npm run build
-npm run typecheck
-
-Update docs/RISELLAR_CUSTOMER_PHASE_A_PROFILE_ADDRESS_RPC_REPORT.md with the development apply/test result. Do not commit unless asked.
 ```
