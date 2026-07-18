@@ -227,3 +227,77 @@ npx supabase db query --linked --file scripts/rpc/reseller-catalog-rpc-tests-dev
 
 Commit only when asked.
 ```
+
+## L. Approved Rerun Result
+
+After commit `f8ea408b` fixed the dev-only temp table grant, the reseller catalog RPC boundary test was rerun against the confirmed development Supabase project named `Risellar`.
+
+Command:
+
+```text
+npx supabase db query --linked --file scripts/rpc/reseller-catalog-rpc-tests-dev-only.sql
+```
+
+Result:
+
+- passed
+- no failed assertion was returned
+- no production connection was used
+- no destructive reset command was run
+- no migration was applied during the rerun
+
+The script uses `rollback`, so fake/dev-only fixture data was not committed permanently.
+
+Boundary assertions covered by the passing script:
+
+- approved reseller can see approved active products
+- pending and archived products are hidden
+- customer cannot call reseller catalog RPC
+- supplier cannot call reseller catalog RPC
+
+Security/scope confirmations:
+
+- approved/active products are safely visible to approved resellers through the read-only RPC
+- unapproved products are hidden
+- sensitive supplier/contact/payout/internal fields are not part of the RPC return shape
+- add-to-shop remains disabled/deferred in the UI
+- checkout, customer catalog, public shop, orders, stock reservation, payments, delivery, settlements, commissions, withdrawals, and reseller checkout flow remain disconnected
+
+## M. Post-Rerun Commands / Results
+
+- `git status --short` - clean before rerun.
+- `npx supabase --version` - `2.109.1`.
+- precheck - `.env.local` exists, is ignored, and is not staged; `supabase/.temp/` is ignored; linked project metadata exists.
+- `npx supabase db query --linked --file scripts/rpc/reseller-catalog-rpc-tests-dev-only.sql` - passed.
+- `npm test` - passed; 24 files, 131 tests.
+- `npm run lint` - passed.
+- `npm run build` - passed.
+- `npm run typecheck` - passed.
+
+## N. Post-Rerun Secret Scan Result
+
+Result: passed with known safe existing references.
+
+Confirmed:
+
+- `.env.local` is ignored and not staged
+- `supabase/.temp/` is ignored
+- no secret values were printed
+- no real Clerk/Supabase/service-role values were added to docs/source
+- no service role references exist in `app/` or `components/`
+- no bearer tokens, passwords, API secrets, or production data were found in changed files
+- no reseller catalog RPC references exist in checkout/customer/shop flows
+
+Known existing safe matches:
+
+- `.env.example` contains placeholder key names
+- `lib/supabase/admin.ts` references `SUPABASE_SERVICE_ROLE_KEY` in a server-only helper
+- historical docs mention secret key names as explanatory text
+
+## O. Current Status
+
+The reseller catalog RPC boundary tests now pass in development.
+
+Production remains blocked until separate production planning, approval, and production-specific validation.
+
+Browser/manual reseller catalog QA is now safe to run with the approved development reseller test account.

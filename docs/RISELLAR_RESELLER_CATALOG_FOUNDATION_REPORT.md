@@ -216,6 +216,33 @@ Required next step:
 
 The harness fix did not change the applied migration, catalog RPC, RLS policy, or any real application table grants.
 
+## N. Development Boundary Test Passed
+
+After the harness fix in commit `f8ea408b`, the development-only reseller catalog RPC boundary test was rerun against the confirmed development Supabase project named `Risellar`.
+
+Command:
+
+```text
+npx supabase db query --linked --file scripts/rpc/reseller-catalog-rpc-tests-dev-only.sql
+```
+
+Result:
+
+- passed
+- approved reseller can see approved active products
+- pending and archived products are hidden
+- customer cannot call reseller catalog RPC
+- supplier cannot call reseller catalog RPC
+- fixture data was rolled back by the script
+
+No production Supabase connection was used.
+
+No migration was applied during the rerun.
+
+No destructive reset command was run.
+
+No checkout, customer catalog, public shop, orders, stock reservation, payments, delivery, settlements, commissions, withdrawals, or reseller checkout flow was connected.
+
 Exact next prompt to apply development migration and run boundary tests:
 
 ```text
