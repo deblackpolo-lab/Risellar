@@ -211,12 +211,18 @@ Pending local changes:
 
 ## O. Whether Safe to Apply to Development
 
-Safe to request approval to apply to the confirmed development Supabase project: yes.
+Development apply status:
+
+- Applied to the confirmed development Supabase project named `Risellar` on 2026-07-18 after explicit approval.
+- Development-only reseller listing RPC boundary tests passed.
+- Fixture/test data was rolled back.
+- Production remains blocked.
 
 Conditions:
 
-- Apply only to the confirmed development project named `Risellar`.
-- Run only `npx supabase db push` after explicit approval.
-- Then run `scripts/rpc/reseller-listing-rpc-tests-dev-only.sql`.
 - Do not apply to production.
 - Do not connect customer/public shop, checkout, orders, payments, delivery, settlements, commissions, withdrawals, or reseller checkout flows.
+
+See:
+
+- `docs/RISELLAR_RESELLER_ADD_TO_SHOP_DEV_APPLY_AND_TEST_REPORT.md`
