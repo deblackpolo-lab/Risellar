@@ -110,7 +110,7 @@ describe("reseller approved product catalog foundation", () => {
     }
   });
 
-  it("keeps add-to-shop disabled and service role out of reseller product UI", () => {
+  it("keeps service role out of reseller product UI while add-to-shop uses the tested RPC action", () => {
     const files = [
       "app/reseller/products/page.tsx",
       "app/reseller/products/[id]/page.tsx",
@@ -127,8 +127,8 @@ describe("reseller approved product catalog foundation", () => {
     }
 
     const screenSource = readFileSync(join(process.cwd(), "components/reseller/reseller-catalog-rpc-screens.tsx"), "utf8");
-    expect(screenSource).toContain("disabled");
-    expect(screenSource).toContain("Add to shop planned");
+    expect(screenSource).toContain("Add to My Shop");
+    expect(screenSource).toContain("Only your reseller margin is submitted");
   });
 
   it("does not connect customer, shop, checkout, order, payment, or delivery flows", () => {
