@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   buildRoleOnboardingRequestDraft,
+  buildRoleOnboardingReviewPayload,
   buildRoleOnboardingSubmissionPayload,
+  canReviewRoleOnboardingRequests,
   canRequestRoleOnboarding,
   getRoleOnboardingPendingPath,
   getRoleOnboardingRequestConfig,
@@ -200,5 +202,80 @@ describe("role onboarding request foundation", () => {
     expect(source).toContain("getToken()");
     expect(source).not.toContain('template: "supabase"');
     expect(source).not.toContain("template: 'supabase'");
+  });
+
+  it("builds admin review payloads only for approved or rejected decisions", () => {
+    expect(
+      buildRoleOnboardingReviewPayload({
+        requestId: "11111111-1111-4111-8111-111111111111",
+        decision: "approved",
+        reviewNotes: "  verified in dev QA  "
+      })
+    ).toEqual({
+      requestId: "11111111-1111-4111-8111-111111111111",
+      decision: "approved",
+      reviewNotes: "verified in dev QA"
+    });
+
+    expect(
+      buildRoleOnboardingReviewPayload({
+        requestId: "22222222-2222-4222-8222-222222222222",
+        decision: "rejected",
+        reviewNotes: "   "
+      })
+    ).toEqual({
+      requestId: "22222222-2222-4222-8222-222222222222",
+      decision: "rejected",
+      reviewNotes: null
+    });
+
+    expect(() => buildRoleOnboardingReviewPayload({ requestId: "", decision: "approved" })).toThrow(
+      "Role onboarding request id is required"
+    );
+    expect(() =>
+      buildRoleOnboardingReviewPayload({
+        requestId: "11111111-1111-4111-8111-111111111111",
+        decision: "cancelled"
+      })
+    ).toThrow("Role onboarding review decision must be approved or rejected");
+  });
+
+  it("limits admin onboarding review access to admin profiles and protected admin routes", () => {
+    expect(canReviewRoleOnboardingRequests({ id: "profile_admin", primary_role: "admin" })).toBe(true);
+
+    for (const role of ["customer", "reseller", "supplier_owner", "supplier_inventory_manager"] as const) {
+      expect(canReviewRoleOnboardingRequests({ id: `profile_${role}`, primary_role: role })).toBe(false);
+    }
+
+    expect(getRoutePolicyForPath("/admin/onboarding-requests")).toMatchObject({
+      pattern: "/admin/:slug*",
+      roles: ["admin"]
+    });
+    expect(canAccessRoute("/admin/onboarding-requests", null)).toBe(false);
+    expect(canAccessRoute("/admin/onboarding-requests", { role: "customer", onboardingStatus: "complete" })).toBe(false);
+    expect(canAccessRoute("/admin/onboarding-requests", { role: "admin", onboardingStatus: "complete" })).toBe(true);
+  });
+
+  it("keeps admin review UI on the audited RPC path without service-role or direct role mutation", () => {
+    const root = process.cwd();
+    const files = [
+      "app/admin/onboarding-requests/page.tsx",
+      "app/admin/onboarding-requests/actions.ts"
+    ];
+
+    for (const file of files) {
+      const source = readFileSync(join(root, file), "utf8");
+      expect(source).not.toContain("createSupabaseAdminClient");
+      expect(source).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+      expect(source).not.toContain(".from(\"profiles\").update");
+      expect(source).not.toContain(".from('profiles').update");
+      expect(source).not.toContain("primary_role =");
+    }
+
+    const actionSource = readFileSync(join(root, "app/admin/onboarding-requests/actions.ts"), "utf8");
+    expect(actionSource).toContain('rpc("review_role_onboarding_request"');
+    expect(actionSource).toContain("getToken()");
+    expect(actionSource).not.toContain('template: "supabase"');
+    expect(actionSource).not.toContain("template: 'supabase'");
   });
 });

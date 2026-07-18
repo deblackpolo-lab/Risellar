@@ -3,6 +3,7 @@ import type { RisellarRole } from "./role-policy";
 export type RoleOnboardingRequestKind = "reseller" | "supplier";
 export type RoleOnboardingRequestStatus = "draft" | "pending";
 export type RoleOnboardingRequestedRole = Extract<RisellarRole, "reseller" | "supplier_owner">;
+export type RoleOnboardingReviewDecision = "approved" | "rejected";
 export type RoleOnboardingSubmissionErrorCode =
   | "AUTH_REQUIRED"
   | "PROFILE_SYNC_FAILED"
@@ -13,10 +14,18 @@ export type RoleOnboardingSubmissionErrorCode =
   | "RPC_VALIDATION_FAILED"
   | "SUPABASE_AUTH_TOKEN_MISSING"
   | "UNKNOWN";
+export type RoleOnboardingReviewErrorCode =
+  | "AUTH_REQUIRED"
+  | "ADMIN_REQUIRED"
+  | "INVALID_REVIEW_REQUEST"
+  | "INVALID_REVIEW_DECISION"
+  | "RPC_PERMISSION_DENIED"
+  | "SUPABASE_AUTH_TOKEN_MISSING"
+  | "UNKNOWN";
 
 export type RoleOnboardingProfile = {
   id: string;
-  primary_role: RisellarRole;
+  primary_role: RisellarRole | string;
 };
 
 export type RoleOnboardingRequestInput = {
@@ -42,6 +51,12 @@ export type RoleOnboardingSubmissionPayload = {
   notes: string | null;
 };
 
+export type RoleOnboardingReviewPayload = {
+  requestId: string;
+  decision: RoleOnboardingReviewDecision;
+  reviewNotes: string | null;
+};
+
 export type RoleOnboardingRequestConfig = {
   requestKind: RoleOnboardingRequestKind;
   requestedRole: RoleOnboardingRequestedRole;
@@ -64,6 +79,7 @@ export type RoleOnboardingSafeErrorMetadata = {
 };
 
 export const roleOnboardingRequestKinds: RoleOnboardingRequestKind[] = ["reseller", "supplier"];
+export const roleOnboardingReviewDecisions: RoleOnboardingReviewDecision[] = ["approved", "rejected"];
 
 export const roleOnboardingTargetRoles: Record<RoleOnboardingRequestKind, RoleOnboardingRequestedRole> = {
   reseller: "reseller",
@@ -76,6 +92,10 @@ export function isRoleOnboardingRequestKind(value: string): value is RoleOnboard
 
 export function canRequestRoleOnboarding(profile: RoleOnboardingProfile | null) {
   return profile?.primary_role === "customer";
+}
+
+export function canReviewRoleOnboardingRequests(profile: RoleOnboardingProfile | null) {
+  return profile?.primary_role === "admin";
 }
 
 function normalizeOptionalText(value?: string | null) {
@@ -111,6 +131,33 @@ export function buildRoleOnboardingSubmissionPayload(
     businessName: normalizeOptionalText(input.businessName),
     contactPhone: normalizeOptionalText(input.contactPhone),
     notes: normalizeOptionalText(input.notes)
+  };
+}
+
+export function isRoleOnboardingReviewDecision(value: string): value is RoleOnboardingReviewDecision {
+  return roleOnboardingReviewDecisions.includes(value as RoleOnboardingReviewDecision);
+}
+
+export function buildRoleOnboardingReviewPayload(input: {
+  requestId?: string | null;
+  decision?: string | null;
+  reviewNotes?: string | null;
+}): RoleOnboardingReviewPayload {
+  const requestId = normalizeOptionalText(input.requestId);
+  const decision = normalizeOptionalText(input.decision);
+
+  if (!requestId) {
+    throw new Error("Role onboarding request id is required");
+  }
+
+  if (!decision || !isRoleOnboardingReviewDecision(decision)) {
+    throw new Error("Role onboarding review decision must be approved or rejected");
+  }
+
+  return {
+    requestId,
+    decision,
+    reviewNotes: normalizeOptionalText(input.reviewNotes)
   };
 }
 
@@ -229,6 +276,59 @@ export function mapRoleOnboardingRpcError(error: unknown): RoleOnboardingSubmiss
   return {
     code: "UNKNOWN",
     message: "We could not submit this request. Please try again."
+  };
+}
+
+export function mapRoleOnboardingReviewRpcError(error: unknown): { code: RoleOnboardingReviewErrorCode; message: string } {
+  const message = getErrorMessage(error);
+  const normalized = message.toLowerCase();
+  const errorCode = getErrorCode(error);
+
+  if (message === "AUTH_REQUIRED" || normalized.includes("sign in")) {
+    return {
+      code: "AUTH_REQUIRED",
+      message: "Sign in with an admin account before reviewing requests."
+    };
+  }
+
+  if (message === "SUPABASE_AUTH_TOKEN_MISSING" || normalized.includes("missing supabase user access token")) {
+    return {
+      code: "SUPABASE_AUTH_TOKEN_MISSING",
+      message: "We could not prepare your secure Supabase admin session. Please sign in again."
+    };
+  }
+
+  if (message === "ADMIN_REQUIRED" || normalized.includes("admin role is required")) {
+    return {
+      code: "ADMIN_REQUIRED",
+      message: "Only admin users can review role onboarding requests."
+    };
+  }
+
+  if (normalized.includes("request id is required") || normalized.includes("not found")) {
+    return {
+      code: "INVALID_REVIEW_REQUEST",
+      message: "Choose a pending onboarding request before reviewing."
+    };
+  }
+
+  if (normalized.includes("decision must be approved or rejected") || normalized.includes("approved or rejected")) {
+    return {
+      code: "INVALID_REVIEW_DECISION",
+      message: "Review decisions must be approved or rejected."
+    };
+  }
+
+  if (errorCode === "42501" || normalized.includes("permission denied")) {
+    return {
+      code: "RPC_PERMISSION_DENIED",
+      message: "Your signed-in session is not allowed to review onboarding requests."
+    };
+  }
+
+  return {
+    code: "UNKNOWN",
+    message: "We could not review this request. Please try again."
   };
 }
 

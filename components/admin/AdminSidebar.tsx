@@ -26,6 +26,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Store,
+  UserCheck,
   UserRound,
   Users,
   WalletCards
@@ -42,6 +43,7 @@ type AdminNavItem = {
 const adminNavItems: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Operations", href: "/admin/operations", icon: ListChecks },
+  { label: "Onboarding Requests", href: "/admin/onboarding-requests", icon: UserCheck },
   { label: "Orders", href: "/admin/orders", icon: ClipboardList },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Suppliers", href: "/admin/suppliers", icon: Store },
