@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   LifeBuoy,
   ListChecks,
-  LogOut,
   Megaphone,
   MessageSquareWarning,
   Package,
@@ -31,6 +30,7 @@ import {
   Users,
   WalletCards
 } from "lucide-react";
+import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { cn } from "@/lib/utils/cn";
 
@@ -139,20 +139,14 @@ export function AdminShell({
           </nav>
 
           <div className="border-t border-white/10 p-3">
-            <button
-              aria-label="Logout mock action"
+            <AccountSignOutButton
+              ariaLabel="Logout"
               className={cn(
-                "group flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-md)] px-3 text-left text-sm font-semibold text-white/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/35",
+                "group min-h-11 w-full justify-start gap-3 rounded-[var(--radius-md)] border-0 bg-transparent px-3 text-left text-sm font-semibold text-white/78 shadow-none hover:bg-white/10 hover:text-white focus:ring-white/35",
                 collapsed && "justify-center px-0"
               )}
-              title={collapsed ? "Logout" : undefined}
-              type="button"
-            >
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full group-hover:bg-white/10">
-                <LogOut className="h-4 w-4" aria-hidden />
-              </span>
-              <span className={cn("truncate", collapsed && "sr-only")}>Logout</span>
-            </button>
+              label={collapsed ? "" : "Logout"}
+            />
           </div>
         </aside>
 
@@ -180,6 +174,7 @@ export function AdminShell({
                   <p className="text-xs text-[var(--color-muted)]">{userRole}</p>
                 </div>
               </div>
+              <AccountSignOutButton className="min-h-10 gap-2 px-3 text-sm" label="Logout" />
             </div>
           </div>
           {children}
@@ -223,16 +218,7 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="border-t border-white/10 p-3">
-        <button
-          aria-label="Logout mock action"
-          className="flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-md)] px-3 text-sm font-semibold text-white/78 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/35"
-          type="button"
-        >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/8">
-            <LogOut className="h-4 w-4" aria-hidden />
-          </span>
-          <span>Logout</span>
-        </button>
+        <AccountSignOutButton className="min-h-11 w-full justify-start gap-3 rounded-[var(--radius-md)] border-0 bg-transparent px-3 text-sm font-semibold text-white/78 shadow-none hover:bg-white/10 hover:text-white focus:ring-white/35" label="Logout" />
       </div>
     </aside>
   );

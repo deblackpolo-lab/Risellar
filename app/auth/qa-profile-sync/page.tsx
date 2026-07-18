@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
+import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { getCurrentSyncedProfile } from "@/lib/auth/profile-sync";
 
 export default async function AuthQaProfileSyncPage() {
@@ -17,6 +18,7 @@ export default async function AuthQaProfileSyncPage() {
     <main style={{ margin: "0 auto", maxWidth: 760, padding: 32, fontFamily: "system-ui, sans-serif" }}>
       <h1>Risellar Auth QA Profile Sync</h1>
       <p>This development-only QA route verifies Clerk sign-in and server-side Supabase profile sync.</p>
+      {userId ? <AccountSignOutButton label="Logout" /> : null}
 
       {!userId ? (
         <p>Sign in with a test Clerk account to run profile sync.</p>
