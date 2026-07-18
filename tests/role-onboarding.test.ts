@@ -145,19 +145,34 @@ describe("role onboarding request foundation", () => {
     ).toThrow("Unsupported role onboarding request type");
   });
 
-  it("maps unauthenticated, duplicate, invalid role, and profile sync errors clearly", () => {
-    expect(mapRoleOnboardingRpcError("UNAUTHENTICATED")).toMatchObject({
-      code: "UNAUTHENTICATED",
+  it("maps known auth, profile, RPC, duplicate, and validation errors clearly", () => {
+    expect(mapRoleOnboardingRpcError("AUTH_REQUIRED")).toMatchObject({
+      code: "AUTH_REQUIRED",
       message: "Sign in before submitting a role onboarding request."
+    });
+    expect(mapRoleOnboardingRpcError("SUPABASE_AUTH_TOKEN_MISSING")).toMatchObject({
+      code: "SUPABASE_AUTH_TOKEN_MISSING"
+    });
+    expect(mapRoleOnboardingRpcError({ code: "api_response_error", message: "Not Found" })).toMatchObject({
+      code: "SUPABASE_AUTH_TOKEN_MISSING"
+    });
+    expect(mapRoleOnboardingRpcError("Authenticated active profile is required to submit role onboarding requests")).toMatchObject({
+      code: "PROFILE_NOT_FOUND"
     });
     expect(mapRoleOnboardingRpcError("A pending onboarding request already exists for this role")).toMatchObject({
       code: "DUPLICATE_PENDING_REQUEST"
     });
     expect(mapRoleOnboardingRpcError("Requested role is not eligible for self-service onboarding")).toMatchObject({
-      code: "INVALID_REQUESTED_ROLE"
+      code: "INVALID_ROLE"
     });
     expect(mapRoleOnboardingRpcError("Failed to create Risellar profile: dev failure")).toMatchObject({
-      code: "PROFILE_SYNC_REQUIRED"
+      code: "PROFILE_SYNC_FAILED"
+    });
+    expect(mapRoleOnboardingRpcError("permission denied for function submit_role_onboarding_request")).toMatchObject({
+      code: "RPC_PERMISSION_DENIED"
+    });
+    expect(mapRoleOnboardingRpcError("invalid input value for enum user_role")).toMatchObject({
+      code: "RPC_VALIDATION_FAILED"
     });
   });
 

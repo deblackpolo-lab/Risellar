@@ -3,11 +3,14 @@ import { ArrowLeft, CheckCircle2, Store } from "lucide-react";
 import { submitResellerRoleOnboardingRequest } from "../actions";
 
 const errorMessages: Record<string, string> = {
+  AUTH_REQUIRED: "Sign in before submitting a reseller request.",
   DUPLICATE_PENDING_REQUEST: "You already have a pending reseller request.",
-  INVALID_REQUESTED_ROLE: "That role cannot be requested from this page.",
-  NOT_ALLOWED: "Only customer profiles can request reseller access.",
-  PROFILE_SYNC_REQUIRED: "We could not prepare your customer profile. Please try again.",
-  UNAUTHENTICATED: "Sign in before submitting a reseller request.",
+  INVALID_ROLE: "That role cannot be requested from this page.",
+  PROFILE_NOT_FOUND: "We could not match your signed-in user to an active customer profile.",
+  PROFILE_SYNC_FAILED: "We could not prepare your customer profile. Please try again.",
+  RPC_PERMISSION_DENIED: "Your signed-in session cannot submit this request yet.",
+  RPC_VALIDATION_FAILED: "Only customer profiles can request reseller access.",
+  SUPABASE_AUTH_TOKEN_MISSING: "We could not prepare your secure session. Please sign in again.",
   UNKNOWN: "We could not submit this request. Please try again."
 };
 
