@@ -146,19 +146,40 @@ Secret/scope scan result:
 - `scripts/rpc/customer-profile-address-rpc-tests-dev-only.sql`
 - `docs/RISELLAR_CUSTOMER_PHASE_A_PROFILE_ADDRESS_RPC_REPORT.md`
 
-## K. Current Status
+## K. Development Apply/Test Update
 
-Customer profile/address backend is ready for explicit development apply approval.
+The Customer Phase A migration was applied successfully to the confirmed DEVELOPMENT Supabase project named `Risellar`:
+
+- `20260718193000_customer_profile_address_rpc_foundation.sql`
+
+The first development-only boundary test run failed before assertions with:
+
+```text
+ERROR: 42601: syntax error at or near "select"
+```
+
+Root cause: the development-only test script used nested `$$...$$` SQL strings inside an outer `DO $$ ... $$` block. PostgreSQL interpreted the first inner `$$` as the end of the outer block.
+
+Classification: test assertion/harness bug.
+
+No real customer profile/address security gap is confirmed yet. No migration, RPC, RLS, or storage policy was changed for this fix.
+
+The test harness was updated so nested SQL assertion strings use `$sql$...$sql$` while the outer `DO $$ ... $$` block remains unchanged. All assertions were preserved. The customer profile/address RPC boundary test was not rerun after this fix; rerun still requires explicit approval.
+
+## L. Current Status
+
+Customer profile/address backend migration is applied to development, but boundary-test verification remains pending after the SQL quoting harness fix.
 
 Production remains blocked. The development-only boundary test still requires explicit approval before running against the confirmed development Supabase project.
 
-## L. Exact Next Prompt
+## M. Exact Next Prompt
 
 ```text
-I approve applying the Customer Phase A profile/address RPC migration to the confirmed DEVELOPMENT Supabase project named "Risellar", then running the development-only customer profile/address RPC boundary tests.
+I approve rerunning the development-only customer profile/address RPC boundary tests against the confirmed DEVELOPMENT Supabase project named "Risellar".
 
 Do NOT connect production Supabase.
 Do NOT use production data.
+Do NOT apply migrations.
 Do NOT run destructive reset commands.
 Do NOT run supabase db reset --linked.
 Do NOT print secrets.
@@ -170,7 +191,6 @@ Do NOT run npm audit fix --force.
 Run:
 git status --short
 npx supabase --version
-npx supabase db push
 npx supabase db query --linked --file scripts/rpc/customer-profile-address-rpc-tests-dev-only.sql
 
 Then run:
