@@ -1,7 +1,24 @@
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Store } from "lucide-react";
+import { submitResellerRoleOnboardingRequest } from "../actions";
 
-export default function ResellerRoleOnboardingPage() {
+const errorMessages: Record<string, string> = {
+  DUPLICATE_PENDING_REQUEST: "You already have a pending reseller request.",
+  INVALID_REQUESTED_ROLE: "That role cannot be requested from this page.",
+  NOT_ALLOWED: "Only customer profiles can request reseller access.",
+  PROFILE_SYNC_REQUIRED: "We could not prepare your customer profile. Please try again.",
+  UNAUTHENTICATED: "Sign in before submitting a reseller request.",
+  UNKNOWN: "We could not submit this request. Please try again."
+};
+
+export default async function ResellerRoleOnboardingPage({
+  searchParams
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const errorMessage = error ? errorMessages[error] ?? errorMessages.UNKNOWN : null;
+
   return (
     <main className="min-h-screen bg-[var(--color-page)] px-4 py-8 text-[var(--color-charcoal)]">
       <section className="mx-auto max-w-2xl space-y-6">
@@ -33,14 +50,59 @@ export default function ResellerRoleOnboardingPage() {
           ))}
         </section>
 
-        <Link
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 text-sm font-bold text-white"
-          href="/onboarding/pending?request=reseller"
-        >
-          Preview reseller request pending state
-        </Link>
+        <form action={submitResellerRoleOnboardingRequest} className="space-y-4 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-5">
+          <div>
+            <label className="text-sm font-bold" htmlFor="business_name">
+              Shop or business name
+            </label>
+            <input
+              className="mt-2 min-h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
+              id="business_name"
+              name="business_name"
+              placeholder="Campus Beauty Picks"
+              type="text"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold" htmlFor="contact_phone">
+              Contact phone
+            </label>
+            <input
+              className="mt-2 min-h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
+              id="contact_phone"
+              name="contact_phone"
+              placeholder="0240000000"
+              type="tel"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold" htmlFor="notes">
+              Notes
+            </label>
+            <textarea
+              className="mt-2 min-h-24 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-3 text-sm"
+              id="notes"
+              name="notes"
+              placeholder="Tell the review team how you plan to sell."
+            />
+          </div>
+
+          {errorMessage ? (
+            <p className="rounded-[var(--radius-md)] border border-[var(--color-danger)] bg-[var(--color-danger-soft)] p-3 text-sm font-semibold text-[var(--color-danger)]">
+              {errorMessage}
+            </p>
+          ) : null}
+
+          <button
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 text-sm font-bold text-white"
+            type="submit"
+          >
+            Submit reseller request
+          </button>
+        </form>
       </section>
     </main>
   );
 }
-
