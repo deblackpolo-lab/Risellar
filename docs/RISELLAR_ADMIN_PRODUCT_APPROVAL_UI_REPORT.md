@@ -98,18 +98,29 @@ The development-only SQL boundary script was created but not run. It is intended
 
 ## H. Manual QA Result Or Blockers
 
-Live approve/reject QA is blocked until the dry-run migration is explicitly approved and applied to the confirmed development Supabase project.
+The dry-run migration was explicitly approved, applied to the confirmed development Supabase project, and the development-only product approval RPC boundary tests passed.
 
-Expected next manual QA after development apply:
+Browser/manual approve/reject QA completed on July 18, 2026 with the development admin test account.
 
-- sign in with the development admin test account
-- open `/admin/products` or `/admin/operations/product-approvals`
-- verify pending supplier products appear
-- approve one pending product
-- reject one separate pending product if available
-- verify product status changes and audit logs in development Supabase
-- verify supplier account still cannot self-approve
-- verify approved products are not exposed to reseller/customer catalogs yet
+Routes verified:
+
+- `/admin/products`
+- `/admin/operations/product-approvals`
+- `/admin/products/54d1f228-3eb9-4ae2-9e9c-eb7c36899c33`
+- `/admin/products/587f897c-6b86-4bf5-b93b-90e4685e53f6`
+
+Browser QA result:
+
+- admin product approval queue loaded
+- both fake/dev-only pending supplier products appeared
+- one dev-only product was approved through the browser UI
+- one dev-only product was rejected through the browser UI
+- approval/rejection status changes were verified in development Supabase
+- `review_supplier_product` audit rows were created for both browser actions
+- the active supplier-owner browser session was previously verified blocked from `/admin/products`
+- approved products remain disconnected from customer/reseller catalogs
+
+No live checkout, customer catalog, reseller catalog, orders, stock reservation, payments, delivery, settlements, commissions, or reseller shop integration was started.
 
 ## I. Dry-Run Result
 
@@ -174,4 +185,4 @@ Safe to apply to the confirmed development Supabase project after explicit appro
 
 Safe to apply to production Supabase: no.
 
-Production remains blocked until development migration apply, product approval RPC boundary tests, and live admin approve/reject QA pass.
+Production remains blocked until production migration planning, approval, and production-specific safety checks are completed.
