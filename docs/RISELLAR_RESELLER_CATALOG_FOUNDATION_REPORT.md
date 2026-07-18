@@ -194,6 +194,28 @@ Safe to apply to development Supabase: yes, with explicit approval. Dry-run pass
 
 Safe for production: no. Production remains blocked until separate production planning, approval, and production-specific validation.
 
+## M. Development Apply Update
+
+The migration was later applied to the confirmed development Supabase project named `Risellar`:
+
+- `20260718150000_reseller_approved_product_catalog_rpc.sql`
+
+Development `npx supabase db push` succeeded and applied only that migration.
+
+The first development-only RPC boundary test run did not reach meaningful catalog assertions. It failed because the test harness switched into the simulated `authenticated` role before writing assertion rows to the temporary `reseller_catalog_test_results` table.
+
+Failure classification:
+
+- test assertion/harness bug
+
+No real reseller catalog security gap is confirmed yet.
+
+Required next step:
+
+- rerun the development-only boundary test after explicit approval. The test harness now grants the minimum needed permissions on the temporary `reseller_catalog_test_results` table to the simulated `authenticated` role.
+
+The harness fix did not change the applied migration, catalog RPC, RLS policy, or any real application table grants.
+
 Exact next prompt to apply development migration and run boundary tests:
 
 ```text

@@ -10,6 +10,8 @@ create temp table reseller_catalog_test_results (
   details text
 ) on commit drop;
 
+grant select, insert, update on reseller_catalog_test_results to authenticated;
+
 create or replace function pg_temp.record_result(
   p_test_name text,
   p_passed boolean,
