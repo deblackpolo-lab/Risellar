@@ -20,7 +20,7 @@ No destructive reset command was run.
 
 ## D. Checkout Draft RPC Test Result
 
-The development-only checkout draft RPC boundary test did not reach meaningful assertions.
+The development-only checkout draft RPC boundary test passed after the test harness syntax fix.
 
 Command:
 
@@ -28,15 +28,38 @@ Command:
 
 Result:
 
-- Failed before assertions with SQL syntax error.
+- Passed. All returned assertions had `passed=true`.
 
 ## E. Passed Assertions
 
-None. The script failed during SQL parsing before assertions executed.
+The passing run verified:
+
+- abandoned draft cannot be updated
+- archived listing cannot create draft
+- checkout draft create, address update, and abandon write audit rows
+- customer B cannot read, update, or abandon customer A draft
+- customer can abandon own draft
+- customer can attach own address to own draft
+- customer can create checkout draft from active approved listing
+- customer cannot attach another customer's address
+- draft snapshot price is server-calculated from listing
+- existing draft snapshot is immutable after listing price changes
+- invalid quantity is blocked
+- no commission rows are created by checkout drafts
+- no delivery quote rows are created by checkout drafts
+- no order item rows are created by checkout drafts
+- no order rows are created by checkout drafts
+- no settlement rows are created by checkout drafts
+- no stock reservation rows are created by checkout drafts
+- no withdrawal rows are created by checkout drafts
+- pending reseller listing cannot create draft
+- rejected product listing cannot create draft
+- reseller cannot create customer checkout draft
+- supplier cannot create customer checkout draft
 
 ## F. Failed Assertion/Error
 
-Exact error:
+Previous failed error, now fixed:
 
 ```text
 ERROR: 42601: syntax error at or near ")"
@@ -49,11 +72,13 @@ Local inspection found the parser failure at:
 - `scripts/rpc/checkout-draft-rpc-tests-dev-only.sql`
 - `checkout_draft_expect_blocked('abandoned draft cannot be updated', ...)`
 
-The call has a trailing comma after the SQL argument before the closing `);`.
+The call had a trailing comma after the SQL argument before the closing `);`. The harness fix removed that comma.
+
+Current failed assertion/error: none.
 
 ## G. Failure Classification
 
-Classification: `test assertion bug`
+Previous failure classification: `test assertion bug`
 
 Reason: the failure is a syntax error in the development-only test harness. It occurred before any checkout draft RPC assertions ran. No real checkout draft security gap is confirmed.
 
@@ -68,23 +93,24 @@ Update after harness fix:
 
 ## H. Draft Security Protections Verified
 
-Not verified in this run because the test script failed before assertions.
-
-The intended assertions remain:
+Verified by the passing boundary test:
 
 - customer can create a draft from an active approved listing
 - draft price snapshot is server-calculated
-- pending/rejected/archived listings are blocked
-- customer A cannot access/update customer B draft
+- existing draft snapshot remains immutable after listing price changes
+- pending/rejected/archived listings or products are blocked
+- customer A cannot access/update/abandon customer B draft
 - customer can attach own address
 - customer cannot attach another customer's address
 - customer can abandon own draft
-- no order/payment/stock/delivery/commission/settlement/withdrawal rows are created
-- fixture/test data rolls back
+- abandoned draft cannot be updated
+- reseller/supplier cannot create customer checkout draft
+- audit logs are created for create/update/abandon
+- no order/payment/stock/delivery/commission/settlement/withdrawal side-effect rows are created
 
 ## I. Fixture/Test Data Cleanup
 
-The script uses `begin` and `rollback`, but because SQL parsing failed before execution reached the transaction body, no fixture assertions were run.
+The script uses `begin` and `rollback`. The passing boundary test run completed with rollback, so fake/dev-only fixture data was not persisted by the test script.
 
 ## J. Commands Run/Results
 
@@ -94,6 +120,7 @@ The script uses `begin` and `rollback`, but because SQL parsing failed before ex
 - `.env.local` / ignore precheck - passed.
 - `npx supabase db push` - succeeded; applied only checkout draft migration.
 - `npx supabase db query --linked --file scripts/rpc/checkout-draft-rpc-tests-dev-only.sql` - failed with SQL syntax error shown above.
+- `npx supabase db query --linked --file scripts/rpc/checkout-draft-rpc-tests-dev-only.sql` - rerun after syntax fix passed; all assertions returned `passed=true`.
 - `git status --short` - showed the report updates and test script fix before commit.
 - `git diff --check` - passed.
 - `npm test` - passed: 29 test files, 151 tests.

@@ -120,7 +120,8 @@ Follow-up development apply status:
 - Classification: test assertion/harness bug.
 - No real checkout draft security gap is confirmed yet.
 - Test harness fix applied: removed the trailing comma from the malformed `checkout_draft_expect_blocked` call.
-- Boundary test rerun still requires explicit approval.
+- Boundary test rerun was later explicitly approved and passed.
+- Passing assertions verified customer-owned checkout draft creation from active approved listings, server-calculated price snapshots, blocked inactive/unapproved listing states, cross-customer isolation, own-address attachment, blocked foreign-address attachment, draft abandon behavior, audit logs, rollback, and no order/stock/payment/delivery/commission/settlement/withdrawal side effects.
 
 ## I. Commands Run/Results
 
