@@ -348,7 +348,7 @@ begin
 
   perform pg_temp.checkout_draft_expect_blocked(
     'abandoned draft cannot be updated',
-    $sql$select count(*) from public.update_checkout_draft_contact_address((select fixture_id from checkout_draft_fixture_ids where fixture_key = 'customer_a_draft'), (select fixture_id from checkout_draft_fixture_ids where fixture_key = 'customer_a_address'), null)$sql$,
+    $sql$select count(*) from public.update_checkout_draft_contact_address((select fixture_id from checkout_draft_fixture_ids where fixture_key = 'customer_a_draft'), (select fixture_id from checkout_draft_fixture_ids where fixture_key = 'customer_a_address'), null)$sql$
   );
 
   perform pg_temp.checkout_draft_reset_context();

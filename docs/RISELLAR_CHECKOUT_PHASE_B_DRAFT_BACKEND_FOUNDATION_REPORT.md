@@ -112,6 +112,16 @@ Dry-run reported that only this migration would be pushed:
 
 Real `npx supabase db push` was not run.
 
+Follow-up development apply status:
+
+- The migration was later applied successfully to the confirmed development Supabase project named `Risellar`.
+- The first checkout draft RPC boundary test run failed before assertions because of a SQL syntax bug in the development-only test script.
+- Failure: trailing comma in `checkout_draft_expect_blocked('abandoned draft cannot be updated', ...)`.
+- Classification: test assertion/harness bug.
+- No real checkout draft security gap is confirmed yet.
+- Test harness fix applied: removed the trailing comma from the malformed `checkout_draft_expect_blocked` call.
+- Boundary test rerun still requires explicit approval.
+
 ## I. Commands Run/Results
 
 - `git status --short` - clean before implementation; after implementation shows only the new checkout draft migration, development-only RPC test script, and this report as untracked.
