@@ -79,6 +79,12 @@ Active Claude-era RPCs/functions found:
 - `public.create_order_from_draft(p_draft_id uuid)` exists, `SECURITY DEFINER`, `search_path=public`.
 - `public.prepare_supplier_for_order(p_order_id uuid, p_reason text)` exists, `SECURITY DEFINER`, `search_path=public`.
 
+## R4B routine dependency-scan update
+
+The guarded cleanup migration's function-dependency scan was revised after a read-only R5 precondition run exposed PostgreSQL `ERROR 42809` from calling `pg_get_functiondef` against an aggregate `pg_proc` row. The scan now restricts eligible routines to ordinary functions/procedures in non-system namespaces and excludes only the exact stale Claude-era signatures already scheduled for exact revoke/drop.
+
+This update does not change migration history, does not repair remote history, does not restore the original Claude SQL, and does not apply migrations. A dry-run only still lists the cleanup migration followed by the approved Phase C migration.
+
 Execution-grant metadata reports `EXECUTE` for `anon`, `authenticated`, `postgres`, and `service_role` on both functions. This does not prove exploitability because the functions contain their own checks, but it is broader than the intended active source posture and should be cleaned up or revoked through an approved reconciliation migration.
 
 Claude-era columns and enum values found:

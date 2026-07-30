@@ -266,3 +266,9 @@ No. No migration is safe to apply in R4. Apply requires a later explicit DEVELOP
 ## AA. Exact recommended next prompt
 
 After reviewing the R4 report and dry-run result, commit the Checkout Phase C R3/R4 reports and revised cleanup migration. Do not apply migrations, run migration repair, or run RPC tests.
+
+## AB. R4B routine dependency scan fix
+
+R4B found and fixed one unsafe `pg_get_functiondef` dependency scan in the cleanup migration. The scan now filters `pg_proc.prokind in ('f', 'p')`, excludes system/temp namespaces, excludes only the exact stale Claude-era signatures handled by the cleanup migration, and reports only safe routine identity if an unexpected dependency remains.
+
+Read-only DEVELOPMENT validation confirmed `ERROR 42809` is resolved, the exact 23-row `orders.expires_at` precondition still holds, aggregate/window routines are not scanned, and no unexpected routine dependency exists. A dry-run only still shows cleanup first and Phase C second; no migration was applied.

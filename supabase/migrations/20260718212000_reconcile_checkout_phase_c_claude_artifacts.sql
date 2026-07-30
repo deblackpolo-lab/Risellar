@@ -7,6 +7,7 @@ declare
   v_count bigint;
   v_updated_count bigint;
   v_column text;
+  v_routine_identity text;
 begin
   if exists (
     select 1
@@ -350,21 +351,41 @@ begin
               detail = 'Unexpected trigger dependency on public.orders.expires_at exists.';
     end if;
 
-    select count(*)
-    into v_count
-    from pg_proc p
-    join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public'
-      and p.proname not in ('create_order_from_draft', 'prepare_supplier_for_order')
-      and (
-        pg_get_functiondef(p.oid) ilike '%orders.expires_at%'
-        or pg_get_functiondef(p.oid) ilike '%o.expires_at%'
-      );
+    with eligible_routines as materialized (
+      select
+        p.oid,
+        n.nspname,
+        p.proname,
+        pg_catalog.pg_get_function_identity_arguments(p.oid) as identity_args
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      where p.prokind in ('f', 'p')
+        and n.nspname not in ('pg_catalog', 'information_schema')
+        and n.nspname not like 'pg_toast%'
+        and n.nspname not like 'pg_temp%'
+        and p.oid <> coalesce(to_regprocedure('public.create_order_from_draft(uuid)'), '0'::oid)
+        and p.oid <> coalesce(to_regprocedure('public.prepare_supplier_for_order(uuid,text)'), '0'::oid)
+    ),
+    routine_definitions as (
+      select
+        format('%I.%I(%s)', er.nspname, er.proname, er.identity_args) as routine_identity,
+        pg_catalog.pg_get_functiondef(er.oid) as routine_definition
+      from eligible_routines er
+    ),
+    unexpected_dependencies as (
+      select routine_identity
+      from routine_definitions
+      where routine_definition ilike '%orders.expires_at%'
+        or routine_definition ilike '%o.expires_at%'
+    )
+    select count(*), min(routine_identity)
+    into v_count, v_routine_identity
+    from unexpected_dependencies;
 
     if v_count <> 0 then
       raise exception 'CLAUDE_EXPIRES_AT_SCHEMA_DEPENDENCY_FOUND'
         using errcode = 'P0001',
-              detail = 'Unexpected function dependency on public.orders.expires_at exists.';
+              detail = format('Unexpected function dependency on public.orders.expires_at exists: %s', v_routine_identity);
     end if;
 
     update public.orders

@@ -86,6 +86,12 @@ The RPC requires:
 
 `draft`, `abandoned`, unknown, and converted-without-existing-order states are blocked.
 
+## R4B cleanup dependency-scan compatibility note
+
+Before applying this Phase C migration to DEVELOPMENT, R4B corrected the preceding cleanup migration's routine dependency scan so `pg_get_functiondef` is only evaluated for ordinary functions/procedures in non-system namespaces. This prevents PostgreSQL aggregate entries from blocking the cleanup migration before Phase C can apply.
+
+The Phase C migration itself remains unchanged. The dry-run still shows the guarded cleanup migration first and this Phase C migration second.
+
 ## I. Stock-Locking/Reservation Behavior
 
 The RPC:
