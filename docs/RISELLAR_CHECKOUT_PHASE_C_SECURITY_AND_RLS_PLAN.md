@@ -1,5 +1,16 @@
 # Risellar Checkout Phase C Security and RLS Plan
 
+## R6 direct-write hardening update
+
+R6 added a forward DEVELOPMENT-applied migration that revokes direct `insert`, `update`, `delete`, and `truncate` privileges from `anon` and `authenticated` on the checkout-created commercial order/stock tables:
+
+- `orders`
+- `order_items`
+- `stock_reservations`
+- `product_variants`
+
+Controlled writes remain through audited SECURITY DEFINER RPCs. RLS was not weakened, no broad `USING (true)` or `WITH CHECK (true)` policy was added, and final checkout confirmation UI remains disabled.
+
 ## Core Principle
 
 Order creation and stock reservation must be done through audited server/database boundaries. The browser must not write order, order item, reservation, inventory movement, payment, delivery, commission, settlement, or withdrawal records directly.

@@ -195,3 +195,7 @@ Yes. R5 may be retried only with a separate explicit DEVELOPMENT apply prompt.
 ## Z. Exact recommended next prompt
 
 Commit and push the Checkout Phase C R4B cleanup routine dependency scan fix. Stage only the cleanup migration and R4B report-related docs. Do not apply migrations, run migration repair, run Phase C RPC tests, or enable checkout confirmation UI.
+
+## AA. R5/R6 follow-up
+
+R5 later applied the corrected cleanup migration and Phase C migration to DEVELOPMENT. R6 then fixed the Phase C order/stock boundary failures with a forward direct-write grant hardening migration and a development-only test-harness correction. The Phase C boundary suite passed after R6. True two-session concurrency remains pending.

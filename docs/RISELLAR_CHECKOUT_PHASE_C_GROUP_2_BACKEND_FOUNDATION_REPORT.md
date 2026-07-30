@@ -92,6 +92,12 @@ Before applying this Phase C migration to DEVELOPMENT, R4B corrected the precedi
 
 The Phase C migration itself remains unchanged. The dry-run still shows the guarded cleanup migration first and this Phase C migration second.
 
+## R6 order stock/security correction note
+
+After the Phase C migration was applied to DEVELOPMENT, the first boundary test exposed four failures. R6 diagnosed those failures as test-harness context issues plus overly broad direct write grants on order/stock commercial tables. A forward R6 migration revoked direct writes on `orders`, `order_items`, `stock_reservations`, and `product_variants` for `anon` and `authenticated`; the RPC body did not require replacement.
+
+The corrected development-only boundary test passed. True two-session concurrency remains pending and the final checkout confirmation UI remains disabled.
+
 ## I. Stock-Locking/Reservation Behavior
 
 The RPC:

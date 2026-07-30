@@ -1,5 +1,18 @@
 # Risellar Checkout Phase C RPC Test Plan
 
+## R6 boundary result update
+
+R6 reran the development-only `create_order_from_checkout_draft` boundary suite after applying the forward direct-write grant hardening migration and correcting the test harness context. The suite passed with all returned assertions marked `passed = true`.
+
+The four previous failures were resolved:
+
+- customer commercial snapshot mutation is blocked by permission/RLS
+- reserved stock increments once
+- duplicate confirmation returns the same order and does not double-reserve
+- insufficient-stock failure leaves no partial order/item/reservation and preserves reserved-stock baseline
+
+True two-session oversell concurrency is still not verified. Do not treat the single-session boundary suite as concurrency proof.
+
 ## Test Script
 
 Future development-only script:

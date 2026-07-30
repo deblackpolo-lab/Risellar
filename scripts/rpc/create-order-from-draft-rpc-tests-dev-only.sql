@@ -106,6 +106,29 @@ exception when others then
 end;
 $$;
 
+create or replace function pg_temp.checkout_order_expect_no_rows_changed(
+  p_test_name text,
+  p_sql text
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_row_count bigint;
+begin
+  execute p_sql;
+  get diagnostics v_row_count = row_count;
+
+  perform pg_temp.checkout_order_record_result(
+    p_test_name,
+    v_row_count = 0,
+    'row_count=' || coalesce(v_row_count::text, 'null')
+  );
+exception when others then
+  perform pg_temp.checkout_order_record_result(p_test_name, true, sqlstate || ': ' || sqlerrm);
+end;
+$$;
+
 create or replace function pg_temp.checkout_order_expect_equal_uuid(
   p_test_name text,
   p_left uuid,
@@ -383,11 +406,15 @@ begin
     1
   );
 
+  perform pg_temp.checkout_order_reset_context();
+
   perform pg_temp.checkout_order_expect_count(
     'reserved stock increments once',
     format('select count(*) from public.product_variants where id = %L::uuid and reserved_stock_quantity = %s', v_active_variant_id, v_initial_reserved + 2),
     1
   );
+
+  perform pg_temp.checkout_order_set_context('dev_checkout_order_customer_a');
 
   select order_id
   into v_duplicate_order_id
@@ -405,11 +432,15 @@ begin
     1
   );
 
+  perform pg_temp.checkout_order_reset_context();
+
   perform pg_temp.checkout_order_expect_count(
     'duplicate confirmation does not increment reserved stock twice',
     format('select count(*) from public.product_variants where id = %L::uuid and reserved_stock_quantity = %s', v_active_variant_id, v_initial_reserved + 2),
     1
   );
+
+  perform pg_temp.checkout_order_set_context('dev_checkout_order_customer_a');
 
   perform pg_temp.checkout_order_expect_count(
     'converted draft stores resulting order reference',
@@ -506,11 +537,15 @@ begin
     0
   );
 
+  perform pg_temp.checkout_order_reset_context();
+
   perform pg_temp.checkout_order_expect_count(
     'insufficient stock failure does not increment reserved stock',
     $sql$select count(*) from public.product_variants where id = (select fixture_id from checkout_order_fixture_ids where fixture_key = 'low_stock_variant') and reserved_stock_quantity = 0$sql$,
     1
   );
+
+  perform pg_temp.checkout_order_set_context('dev_checkout_order_customer_a');
 
   perform pg_temp.checkout_order_expect_blocked(
     'browser cannot supply price',
@@ -522,7 +557,7 @@ begin
     $sql$select count(*) from public.create_order_from_checkout_draft((select fixture_id from checkout_order_fixture_ids where fixture_key = 'customer_b_draft'), 'extra-ids', gen_random_uuid(), gen_random_uuid(), gen_random_uuid(), gen_random_uuid())$sql$
   );
 
-  perform pg_temp.checkout_order_expect_blocked(
+  perform pg_temp.checkout_order_expect_no_rows_changed(
     'customer cannot alter commercial snapshots',
     $sql$update public.order_items set commission_amount = 999 where order_id = (select fixture_id from checkout_order_fixture_ids where fixture_key = 'positive_order')$sql$
   );

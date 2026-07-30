@@ -1,5 +1,13 @@
 # Risellar Checkout Phase C Stock Reservation Design
 
+## R6 verification update
+
+R6 confirmed the active stock model uses `total_stock_quantity`, `reserved_stock_quantity`, and `sold_stock_quantity` on `product_variants`, with reservation rows in `stock_reservations`.
+
+The first boundary-test stock failures were caused by reading supplier/internal `product_variants` rows from simulated customer context. The RPC had incremented reserved stock correctly. The corrected harness checks stock mutation from owner context while preserving customer-facing reservation and order assertions.
+
+The single-session boundary suite now passes. True two-session oversell concurrency remains pending.
+
 ## Current Stock Model
 
 `public.product_variants` is the current source of stock truth:
