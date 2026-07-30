@@ -13,3 +13,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .codex-dev-server.*.log
+.local-recovery/
+session.jwt
+session.cookie
+debug.log
+dev.err
+dev.out
+*.local-session
+*.auth-debug
+playwright/.auth/
