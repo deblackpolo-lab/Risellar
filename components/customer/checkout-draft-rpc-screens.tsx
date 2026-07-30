@@ -1,12 +1,15 @@
-import { PackageCheck, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
+import { PackageCheck, ShieldCheck } from "lucide-react";
 import { CheckoutDraftAbandonForm, CheckoutDraftAddressForm } from "@/components/customer/checkout-draft-action-forms";
+import { CheckoutOrderConfirmationForm } from "@/components/customer/checkout-order-confirmation-form";
 import { MobileShell } from "@/components/layout";
-import { Button, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
 import {
   type CheckoutDraft,
   type CheckoutDraftActionState
 } from "@/lib/checkout/draft";
 import type { CustomerDeliveryAddress } from "@/lib/customer/profile-address";
+import type { CheckoutOrderConfirmationState } from "@/lib/orders/confirm-checkout-order";
 
 function formatGhc(value: number | null, currencyCode: string) {
   if (value === null) {
@@ -22,7 +25,7 @@ function snapshotText(snapshot: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim() ? value : "Not set";
 }
 
-function ActionMessage({ state }: { state: CheckoutDraftActionState }) {
+function ActionMessage({ state }: { state: CheckoutDraftActionState | CheckoutOrderConfirmationState }) {
   if (!state.message) {
     return null;
   }
@@ -64,6 +67,18 @@ function AbandonDraftForm({ draft }: { draft: CheckoutDraft }) {
   return <CheckoutDraftAbandonForm draft={draft} />;
 }
 
+function confirmationStateFromError(error: CheckoutDraftActionState | CheckoutOrderConfirmationState | null): CheckoutOrderConfirmationState {
+  if (
+    error?.code === "ACKNOWLEDGEMENT_REQUIRED" ||
+    error?.code === "CHECKOUT_DRAFT_NOT_READY" ||
+    error?.code === "INSUFFICIENT_STOCK"
+  ) {
+    return error;
+  }
+
+  return { code: "OK", message: "" };
+}
+
 export function CheckoutDraftReviewScreen({
   addresses,
   draft,
@@ -71,7 +86,7 @@ export function CheckoutDraftReviewScreen({
 }: {
   addresses: CustomerDeliveryAddress[];
   draft: CheckoutDraft | null;
-  error: CheckoutDraftActionState | null;
+  error: CheckoutDraftActionState | CheckoutOrderConfirmationState | null;
 }) {
   if (!draft) {
     return (
@@ -86,6 +101,9 @@ export function CheckoutDraftReviewScreen({
       </MobileShell>
     );
   }
+
+  const canConfirm = draft.draftStatus === "review_pending" && Boolean(draft.deliveryAddressId);
+  const convertedOrderId = typeof draft.convertedOrderId === "string" && draft.convertedOrderId ? draft.convertedOrderId : null;
 
   return (
     <MobileShell>
@@ -124,18 +142,28 @@ export function CheckoutDraftReviewScreen({
         <div className="flex gap-3">
           <ShieldCheck className="h-5 w-5 flex-none text-[#8A5A00]" aria-hidden="true" />
           <div>
-        <p className="text-sm font-bold text-[#8A5A00]">Final confirmation disabled</p>
+            <p className="text-sm font-bold text-[#8A5A00]">Pay on Delivery confirmation</p>
             <p className="mt-1 text-sm leading-6 text-[#8A5A00]">
-              The next phase will create orders and reserve stock after a separate backend approval. This page cannot place an order.
+              No payment is collected now. Delivery arrangements and any delivery fee will be confirmed separately.
             </p>
           </div>
         </div>
       </Card>
 
-      <Button className="w-full" disabled type="button">
-        <Truck className="h-4 w-4" aria-hidden="true" />
-        Order confirmation coming next
-      </Button>
+      {convertedOrderId ? (
+        <Link
+          className="inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 text-sm font-semibold text-white shadow-[var(--shadow-sm)]"
+          href={`/customer/orders/${convertedOrderId}`}
+        >
+          View order
+        </Link>
+      ) : (
+        <CheckoutOrderConfirmationForm
+          canConfirm={canConfirm}
+          checkoutDraftId={draft.draftId}
+          state={confirmationStateFromError(error)}
+        />
+      )}
 
       <AbandonDraftForm draft={draft} />
     </MobileShell>

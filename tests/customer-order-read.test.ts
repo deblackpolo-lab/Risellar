@@ -172,17 +172,22 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
   it("keeps final confirmation, payment, delivery, preparation, and finance implementation out of customer order read sources", () => {
     const sources = [
       "lib/orders/customer-order-read.ts",
+      "lib/orders/confirm-checkout-order.ts",
       "app/checkout/draft",
+      "app/customer/orders",
       "components/customer/checkout-draft-rpc-screens.tsx",
-      "components/customer/checkout-draft-action-forms.tsx"
+      "components/customer/checkout-draft-action-forms.tsx",
+      "components/customer/checkout-order-confirmation-form.tsx"
     ].map(readSourceTree).join("\n");
 
     expect(sources).toContain("get_customer_order_safe");
+    expect(sources).toContain("create_order_from_checkout_draft");
+    expect(sources).toContain("Place Pay on Delivery Order");
     expect(sources).not.toContain("Place order");
-    expect(sources).not.toContain("create_order_from_checkout_draft(");
     expect(sources).not.toContain("insert(");
     expect(sources).not.toContain("update(");
     expect(sources).not.toContain("delivery_quotes");
+    expect(sources).not.toContain("prepare_supplier_for_order");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("commission");
     expect(sources).not.toContain("settlement");

@@ -16,6 +16,10 @@ import {
   type CheckoutDraftActionState
 } from "@/lib/checkout/draft";
 import { listCustomerDeliveryAddressesWithClient } from "@/lib/customer/profile-address";
+import {
+  confirmCheckoutDraftOrderWithClient,
+  mapCheckoutOrderConfirmationRpcError
+} from "@/lib/orders/confirm-checkout-order";
 import { createSupabaseUserServerClient } from "@/lib/supabase/server";
 
 async function getCheckoutDraftClient() {
@@ -38,6 +42,31 @@ async function getCheckoutDraftClient() {
   }
 
   return createSupabaseUserServerClient(accessToken);
+}
+
+async function resolveConvertedOrderId(
+  client: Awaited<ReturnType<typeof getCheckoutDraftClient>>,
+  checkoutDraftId: string,
+  convertedOrderId?: string | null
+) {
+  if (convertedOrderId) {
+    return convertedOrderId;
+  }
+
+  const { data, error } = await client
+    .from("orders")
+    .select("id")
+    .eq("checkout_draft_id", checkoutDraftId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data?.id) {
+    return null;
+  }
+
+  return String(data.id);
 }
 
 export async function startCheckoutDraftAction(formData: FormData) {
@@ -70,11 +99,17 @@ export async function getCheckoutDraftPageData(draftId: string) {
       getCheckoutDraftWithClient(supabase, draftId),
       listCustomerDeliveryAddressesWithClient(supabase)
     ]);
+    const convertedOrderId = draftResult.draft?.draftStatus === "converted"
+      ? await resolveConvertedOrderId(supabase, draftResult.draft.draftId, draftResult.draft.convertedOrderId)
+      : draftResult.draft?.convertedOrderId ?? null;
+    const draft = draftResult.draft
+      ? { ...draftResult.draft, convertedOrderId }
+      : null;
 
     return {
-      draft: draftResult.draft,
+      draft,
       addresses: addressResult.addresses,
-      error: draftResult.draft ? null : draftResult.state
+      error: draft ? null : draftResult.state
     };
   } catch (error) {
     return {
@@ -150,6 +185,39 @@ export async function abandonCheckoutDraftFormAction(formData: FormData) {
   } catch (error) {
     const state = mapCheckoutDraftRpcError(error);
     nextPath = `/checkout/draft/${draftId}?draft_error=${encodeURIComponent(state.code)}`;
+  }
+
+  redirect(nextPath);
+}
+
+export async function confirmCheckoutDraftOrderFormAction(formData: FormData) {
+  const draftId = formData.get("draft_id")?.toString() ?? "";
+  const acknowledged = formData.get("acknowledged_order_terms") === "on";
+  let nextPath = `/checkout/draft/${draftId}`;
+
+  if (!acknowledged) {
+    redirect(`${nextPath}?draft_error=ACKNOWLEDGEMENT_REQUIRED`);
+  }
+
+  try {
+    const supabase = await getCheckoutDraftClient();
+    const result = await confirmCheckoutDraftOrderWithClient(supabase, {
+      checkoutDraftId: draftId,
+      idempotencyKey: formData.get("idempotency_key")?.toString()
+    });
+
+    if (result.order) {
+      revalidatePath(`/checkout/draft/${draftId}`);
+      revalidatePath(`/customer/orders/${result.order.orderId}`);
+      nextPath = `/customer/orders/${result.order.orderId}?placed=1`;
+    } else {
+      nextPath = `/checkout/draft/${draftId}?draft_error=${encodeURIComponent(result.state.code)}`;
+    }
+  } catch (error) {
+    const state = mapCheckoutOrderConfirmationRpcError(error);
+    nextPath = state.code === "AUTH_REQUIRED"
+      ? `/sign-in?redirect_url=${encodeURIComponent(`/checkout/draft/${draftId}`)}`
+      : `/checkout/draft/${draftId}?draft_error=${encodeURIComponent(state.code)}`;
   }
 
   redirect(nextPath);

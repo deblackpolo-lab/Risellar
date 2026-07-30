@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { CheckoutDraftReviewScreen } from "@/components/customer/checkout-draft-rpc-screens";
 import {
   abandonCheckoutDraftWithClient,
   buildCheckoutDraftContactAddressPayload,
@@ -12,6 +14,8 @@ import {
   type CheckoutDraftRpcClient
 } from "@/lib/checkout/draft";
 import { canAccessRoute, getVerifiedRouteAccessProfile } from "@/lib/auth/route-guards";
+
+vi.mock("server-only", () => ({}));
 
 function createRpcSpyClient(response: { data?: unknown; error?: { code?: string; message?: string; details?: string } | null } = {}) {
   const calls: Array<{ name: string; args?: Record<string, unknown> }> = [];
@@ -125,6 +129,40 @@ describe("Checkout Phase B draft UI integration", () => {
     ).toThrow("Address id is required");
   });
 
+  it("shows the existing order link instead of confirmation form for converted drafts", () => {
+    render(
+      <CheckoutDraftReviewScreen
+        addresses={[]}
+        draft={{
+          draftId: "22222222-2222-4222-8222-222222222222",
+          draftStatus: "converted",
+          customerId: "33333333-3333-4333-8333-333333333333",
+          resellerProductId: "11111111-1111-4111-8111-111111111111",
+          productId: "44444444-4444-4444-8444-444444444444",
+          productName: "QA Product",
+          productSlug: "qa-product",
+          productImageSnapshot: {},
+          quantity: 1,
+          finalCustomerPriceAmount: 90,
+          lineTotalAmount: 90,
+          currencyCode: "GHS",
+          deliveryAddressId: "55555555-5555-4555-8555-555555555555",
+          customerContactSnapshot: {},
+          deliveryAddressSnapshot: {},
+          publicListingSnapshot: {},
+          convertedOrderId: "66666666-6666-4666-8666-666666666666",
+          abandonedAt: null,
+          createdAt: "2026-07-30T00:00:00.000Z",
+          updatedAt: "2026-07-30T00:00:00.000Z"
+        }}
+        error={null}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "View order" })).toHaveAttribute("href", "/customer/orders/66666666-6666-4666-8666-666666666666");
+    expect(screen.queryByRole("button", { name: /place pay on delivery order/i })).not.toBeInTheDocument();
+  });
+
   it("maps auth, listing, ownership, and abandoned draft errors safely", () => {
     expect(mapCheckoutDraftRpcError({ message: "AUTH_REQUIRED" })).toMatchObject({ code: "AUTH_REQUIRED" });
     expect(mapCheckoutDraftRpcError({ message: "CHECKOUT_LISTING_NOT_AVAILABLE" })).toMatchObject({ code: "CHECKOUT_LISTING_NOT_AVAILABLE" });
@@ -145,7 +183,9 @@ describe("Checkout Phase B draft UI integration", () => {
       "app/checkout/draft",
       "components/customer/checkout-draft-action-forms.tsx",
       "components/customer/checkout-draft-rpc-screens.tsx",
+      "components/customer/checkout-order-confirmation-form.tsx",
       "lib/checkout/draft.ts",
+      "lib/orders/confirm-checkout-order.ts",
       "app/shop/[shopSlug]/product/[productId]/page.tsx"
     ].map(readSourceTree).join("\n");
 
@@ -153,14 +193,15 @@ describe("Checkout Phase B draft UI integration", () => {
     expect(checkoutDraftSources).toContain("get_checkout_draft");
     expect(checkoutDraftSources).toContain("update_checkout_draft_contact_address");
     expect(checkoutDraftSources).toContain("abandon_checkout_draft");
+    expect(checkoutDraftSources).toContain("create_order_from_checkout_draft");
     expect(checkoutDraftSources).toContain("attachCheckoutDraftAddressFormAction");
     expect(checkoutDraftSources).toContain("abandonCheckoutDraftFormAction");
-    expect(checkoutDraftSources).toContain("Order confirmation coming next");
+    expect(checkoutDraftSources).toContain("Place Pay on Delivery Order");
     expect(checkoutDraftSources).not.toContain("Place order");
-    expect(checkoutDraftSources).not.toContain("create_order");
     expect(checkoutDraftSources).not.toContain("order_items");
     expect(checkoutDraftSources).not.toContain("reserve_stock");
-    expect(checkoutDraftSources).not.toContain("delivery_quote");
+    expect(checkoutDraftSources).not.toContain("delivery_quotes");
+    expect(checkoutDraftSources).not.toContain("prepare_supplier_for_order");
     expect(checkoutDraftSources).not.toContain("create_payment");
     expect(checkoutDraftSources).not.toContain("commission");
     expect(checkoutDraftSources).not.toContain("settlement");

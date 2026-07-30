@@ -32,6 +32,7 @@ export type CheckoutDraft = {
   customerContactSnapshot: Record<string, unknown>;
   deliveryAddressSnapshot: Record<string, unknown>;
   publicListingSnapshot: Record<string, unknown>;
+  convertedOrderId: string | null;
   abandonedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -274,6 +275,7 @@ function mapCheckoutDraftRow(row: unknown): CheckoutDraft {
     customerContactSnapshot: mapJsonObject(item.customer_contact_snapshot),
     deliveryAddressSnapshot: mapJsonObject(item.delivery_address_snapshot),
     publicListingSnapshot: mapJsonObject(item.public_listing_snapshot),
+    convertedOrderId: nullableString(item.converted_order_id),
     abandonedAt: nullableString(item.abandoned_at),
     createdAt: String(item.created_at ?? ""),
     updatedAt: String(item.updated_at ?? "")
