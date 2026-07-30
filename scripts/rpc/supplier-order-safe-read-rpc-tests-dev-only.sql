@@ -281,6 +281,7 @@ begin
   insert into public.checkout_drafts(
     id,
     customer_id,
+    customer_profile_id,
     reseller_id,
     shop_id,
     reseller_product_id,
@@ -288,8 +289,8 @@ begin
     variant_id,
     supplier_id,
     quantity,
-    final_customer_price_amount,
-    line_total_amount,
+    final_customer_price_snapshot_amount,
+    line_total_snapshot_amount,
     currency_code,
     draft_status,
     product_name_snapshot,
@@ -302,6 +303,7 @@ begin
     (
       v_draft_a_id,
       v_customer_id,
+      v_customer_profile_id,
       v_reseller_id,
       v_shop_id,
       v_listing_a_id,
@@ -322,6 +324,7 @@ begin
     (
       v_draft_b_id,
       v_customer_id,
+      v_customer_profile_id,
       v_reseller_id,
       v_shop_id,
       v_listing_b_id,

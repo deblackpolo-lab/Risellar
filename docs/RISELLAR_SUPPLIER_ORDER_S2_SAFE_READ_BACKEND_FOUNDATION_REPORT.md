@@ -252,3 +252,52 @@ Yes, after explicit approval. S3 should apply only the S2 migration to the confi
 ## AA. Exact Recommended Next Prompt
 
 Approve applying the Supplier Order Handling S2 supplier-safe read RPC migration to the confirmed DEVELOPMENT Supabase project named Risellar, then run the development-only supplier order safe-read RPC boundary tests once. Do not connect supplier order UI, do not add accept/reject behavior, do not release stock, do not connect production, and do not run destructive commands.
+
+## AB. S3 Development Boundary Test Fix Addendum
+
+After S2 was committed and applied to the confirmed DEVELOPMENT Risellar Supabase project, the first development-only boundary test run failed during fixture setup before meaningful assertions:
+
+```text
+ERROR: 42703: column "final_customer_price_amount" of relation "checkout_drafts" does not exist
+```
+
+The failure was classified as a development-only fixture/schema mismatch, not as evidence of a supplier ownership, cross-supplier isolation, privacy, pagination, RLS, or RPC implementation defect.
+
+Live schema inspection showed `public.checkout_drafts` stores customer price snapshots in:
+
+- `final_customer_price_snapshot_amount numeric not null`
+- `line_total_snapshot_amount numeric not null`
+
+The non-snapshot names `final_customer_price_amount` and `line_total_amount` are RPC return aliases from the checkout draft read contract, not storage columns on `public.checkout_drafts`. The live table also requires `customer_profile_id uuid not null`.
+
+The development-only supplier order safe-read SQL harness was corrected to:
+
+- insert `customer_profile_id`
+- use `final_customer_price_snapshot_amount`
+- use `line_total_snapshot_amount`
+- keep the existing fake development-only order, supplier, customer, reseller, listing, stock reservation, privacy, pagination, and no-side-effect assertions
+
+No migration, RPC, RLS policy, application source, supplier order UI, accept/reject behavior, stock release behavior, payment, delivery, preparation, settlement, commission, withdrawal, or refund implementation was changed.
+
+The corrected development-only boundary test was rerun once and passed. All returned assertions had `passed=true`. Marker-scoped cleanup verification returned zero remaining rows for the test profile, supplier, customer, address, reseller, shop, product, variant, listing, draft, order, order item, stock reservation, audit, delivery quote, settlement, commission, and withdrawal fixture categories.
+
+Post-fix verification:
+
+- `git diff --check`: passed, with only the normal Windows line-ending warning.
+- `npm test`: passed, 33 files and 178 tests.
+- `npm run lint`: passed.
+- `npm run build`: passed, 168 routes generated.
+- `npm run typecheck`: passed.
+- `npx tsc --noEmit`: passed.
+
+Security and scope scan result:
+
+- `.env.local`, `.local-recovery`, `.next`, `supabase/.temp`, and `.codex-dev-server.*.log` are ignored.
+- Nothing is staged.
+- No service-role imports were found in `app/` or `components/`.
+- No credentials, connection strings, project identifiers, private row identifiers, JWTs, cookies, or tokens were added to docs/source.
+- Supplier order UI remains disconnected.
+- Supplier accept/reject remains unimplemented.
+- S4 has not begun.
+
+S2/S3 is complete after the corrected boundary test pass. The corrected SQL harness and reports are safe to commit when explicitly requested. Supplier Order Handling S4 may begin only after that commit boundary is handled.
