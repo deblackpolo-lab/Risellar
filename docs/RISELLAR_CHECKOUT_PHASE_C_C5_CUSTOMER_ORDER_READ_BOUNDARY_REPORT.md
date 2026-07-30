@@ -355,3 +355,53 @@ Not yet. C6 should wait until the C5 read migration is applied to development an
 ## AB. Exact Recommended Next Prompt
 
 Approve applying the Checkout Phase C C5 customer order safe read RPC migration to the confirmed DEVELOPMENT Supabase project named "Risellar", then run the development-only customer order safe read RPC boundary tests. Do not enable final order confirmation, do not connect payment/delivery/preparation/finance flows, do not connect production Supabase, do not print secrets, and do not commit unless asked.
+
+## AC. C5-B1 Development Apply And Boundary Test Update
+
+After the original C5 migration was applied to the confirmed development Supabase project, the development-only boundary test exposed two test-harness drift issues and one live RPC implementation defect.
+
+Test-harness issues fixed:
+
+- `customer_delivery_addresses.address_status` was stale. The actual active-address rule is `deleted_at is null`; the fixture insert now omits `address_status`.
+- `information_schema.routine_columns` is not a PostgreSQL relation. The return-shape assertion now uses `pg_catalog.pg_proc` with `proargnames` and `proargmodes` for the `RETURNS TABLE` contract.
+
+RPC fix applied through forward migrations:
+
+- `20260730121000_fix_customer_order_safe_read_reservation_status.sql` replaced the invalid `reservation_status` comparison against `cancelled` with the actual enum value `failed`.
+- `20260730122000_revoke_anon_customer_order_safe_read.sql` removed an explicit `anon` execute grant and preserved authenticated-only execution.
+
+Development boundary test result:
+
+- `npx supabase db query --linked --file scripts/rpc/customer-order-safe-read-rpc-tests-dev-only.sql`: passed.
+- Every returned assertion had `passed=true`.
+
+Verified boundary behavior:
+
+- customer can read their own order
+- customer cannot read another customer's order
+- reseller is blocked
+- supplier_owner is blocked
+- active admin_staff is blocked from the customer-only boundary
+- anonymous execution is blocked by function grants
+- missing order returns zero rows
+- product snapshot, quantity, final customer price, total, currency, Pay on Delivery label, payment-not-collected label, customer contact snapshot, delivery address snapshot, and reservation label are present
+- supplier base price, platform margin, reseller margin/cost, settlement due amount, commission, internal/admin/risk fields, and raw participant/product linkage IDs remain absent
+
+No-side-effect and cleanup result:
+
+- read calls created no additional order, order item, stock reservation, delivery quote, commission, settlement, or withdrawal
+- marker-scoped cleanup checks returned zero fixtures after rollback
+
+Application verification:
+
+- `npm test`: passed, 31 test files and 165 tests
+- `npm run lint`: passed
+- `npm run build`: passed
+- `npm run typecheck`: passed
+- `npx tsc --noEmit`: passed
+
+Current C5 status:
+
+- C5 is complete at the read-boundary level after the corrective migrations and passing boundary test.
+- Final order confirmation remains disabled.
+- C6 may begin only after the corrective migration, corrected test harness, and reports are committed by explicit request.

@@ -281,8 +281,7 @@ begin
     area,
     street_address,
     landmark,
-    is_default,
-    address_status
+    is_default
   )
   values (
     v_address_id,
@@ -295,8 +294,7 @@ begin
     'Dev Area',
     'Development-only street',
     'Development-only landmark',
-    true,
-    'active'
+    true
   );
 
   insert into public.checkout_drafts(
@@ -473,15 +471,33 @@ begin
     now() + interval '1 hour'
   );
 
+  perform pg_temp.customer_order_safe_read_record_result(
+    'read RPC signature present',
+    exists (
+      select 1
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public'
+        and p.proname = 'get_customer_order_safe'
+        and pg_catalog.pg_get_function_identity_arguments(p.oid) = 'p_order_id uuid'
+        and p.proretset is true
+    ),
+    'public.get_customer_order_safe(p_order_id uuid) must exist and return a set'
+  );
+
   select array_agg(column_name order by column_name)
   into v_missing_columns
   from unnest(v_expected_columns) as expected(column_name)
   where not exists (
     select 1
-    from information_schema.routine_columns rc
-    where rc.specific_schema = 'public'
-      and rc.routine_name = 'get_customer_order_safe'
-      and rc.column_name = expected.column_name
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    cross join lateral pg_catalog.generate_subscripts(p.proargnames, 1) as arg(arg_index)
+    where n.nspname = 'public'
+      and p.proname = 'get_customer_order_safe'
+      and pg_catalog.pg_get_function_identity_arguments(p.oid) = 'p_order_id uuid'
+      and p.proargmodes[arg.arg_index] in ('o', 'b', 't')
+      and p.proargnames[arg.arg_index] = expected.column_name
   );
 
   perform pg_temp.customer_order_safe_read_record_result(
@@ -495,10 +511,14 @@ begin
   from unnest(v_forbidden_columns) as forbidden(column_name)
   where exists (
     select 1
-    from information_schema.routine_columns rc
-    where rc.specific_schema = 'public'
-      and rc.routine_name = 'get_customer_order_safe'
-      and rc.column_name = forbidden.column_name
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    cross join lateral pg_catalog.generate_subscripts(p.proargnames, 1) as arg(arg_index)
+    where n.nspname = 'public'
+      and p.proname = 'get_customer_order_safe'
+      and pg_catalog.pg_get_function_identity_arguments(p.oid) = 'p_order_id uuid'
+      and p.proargmodes[arg.arg_index] in ('o', 'b', 't')
+      and p.proargnames[arg.arg_index] = forbidden.column_name
   );
 
   perform pg_temp.customer_order_safe_read_record_result(
