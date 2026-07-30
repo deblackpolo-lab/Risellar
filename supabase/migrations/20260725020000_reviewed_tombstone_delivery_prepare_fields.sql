@@ -1,0 +1,6 @@
+-- Reviewed historical tombstone for remote-only DEVELOPMENT version 20260725020000.
+-- Original quarantined file: 20260725020000_add_delivery_and_prepare_timestamps.sql.
+-- The original unapproved Claude-era delivery/preparation field implementation is intentionally not restored.
+-- This file is comments only and has no schema, data, permission, RLS, RPC, enum, or transaction effect.
+-- Forward reconciliation is handled by 20260718212000_reconcile_checkout_phase_c_claude_artifacts.sql.
+-- Clean environments receive no Claude-era delivery/preparation behavior from this version.

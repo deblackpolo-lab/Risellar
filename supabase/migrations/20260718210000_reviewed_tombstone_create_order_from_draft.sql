@@ -1,0 +1,6 @@
+-- Reviewed historical tombstone for remote-only DEVELOPMENT version 20260718210000.
+-- Original quarantined file: 20260718210000_create_order_from_draft_rpc.sql.
+-- The original unapproved Claude-era order-from-draft implementation is intentionally not restored.
+-- This file is comments only and has no schema, data, permission, RLS, RPC, or transaction effect.
+-- Forward reconciliation is handled by 20260718212000_reconcile_checkout_phase_c_claude_artifacts.sql.
+-- Clean environments receive no Claude-era checkout/order behavior from this version.

@@ -1,0 +1,6 @@
+-- Reviewed historical tombstone for remote-only DEVELOPMENT version 20260724000000.
+-- Original quarantined file: 20260724000000_add_confirmation_fields.sql.
+-- The original unapproved Claude-era order confirmation-expiry implementation is intentionally not restored.
+-- This file is comments only and has no schema, data, permission, RLS, RPC, or transaction effect.
+-- Forward reconciliation is handled by 20260718212000_reconcile_checkout_phase_c_claude_artifacts.sql.
+-- Clean environments receive no Claude-era order-expiry behavior from this version.

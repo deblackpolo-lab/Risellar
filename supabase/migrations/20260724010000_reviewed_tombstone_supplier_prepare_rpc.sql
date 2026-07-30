@@ -1,0 +1,6 @@
+-- Reviewed historical tombstone for remote-only DEVELOPMENT version 20260724010000.
+-- Original quarantined file: 20260724010000_prepare_supplier_for_order_rpc.sql.
+-- The original unapproved Claude-era supplier-preparation implementation is intentionally not restored.
+-- This file is comments only and has no schema, data, permission, RLS, RPC, or transaction effect.
+-- Forward reconciliation is handled by 20260718212000_reconcile_checkout_phase_c_claude_artifacts.sql.
+-- Clean environments receive no Claude-era supplier-preparation behavior from this version.
