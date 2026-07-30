@@ -215,6 +215,14 @@ Result: passed. The dry-run did not apply migrations and showed exactly these pe
 
 The six no-op tombstones were not listed as pending, which confirms the remote-only history versions are reconciled for dry-run purposes. No real db push, migration repair, or Phase C RPC test was run.
 
+## P4. Reconciliation Group R4 cleanup-revision update
+
+Group R4 revised the cleanup migration locally after R3 verified backup and aggregate evidence for the 23 DEVELOPMENT `orders.expires_at` rows.
+
+The Phase C order-creation migration remains compatible because it does not reference `orders.expires_at`; reservation expiry remains on `stock_reservations.expires_at`. The development-only RPC test script still checks `stock_reservations.expires_at` and was not run in R4.
+
+The cleanup migration now performs exact reviewed assertions, nulls only `orders.expires_at` values after those assertions pass, verifies zero remain, and drops the obsolete column. It does not delete orders, change order status, alter order items, execute stale RPCs, enable confirmation UI, or connect payment/delivery/supplier-prep/finance flows.
+
 ## Q. Real db Push
 
 Real `npx supabase db push` was not run.

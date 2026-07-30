@@ -261,3 +261,11 @@ Yes. Next planning should focus on DEVELOPMENT backup/data handling for the 23 p
 ## AA. Exact recommended next prompt
 
 Commit the Checkout Phase C planning, reconciliation tombstones, guarded cleanup migration, Phase C migration revision, dry-run reports, and development-only test script. Do not apply migrations or run migration repair.
+
+## AB. Group R4 cleanup-revision update
+
+After R3 verified the DEVELOPMENT backup and exact 23-row aggregate evidence, Group R4 revised the guarded cleanup migration from a backup-required stop guard to the approved Option C data-handling path.
+
+The cleanup migration now keeps the same stale RPC cleanup, obsolete index cleanup, prep/delivery zero-population guards, clean-environment safety, and `delivery_person` enum deferral. It additionally asserts the exact reviewed `orders.expires_at` state, nulls only the reviewed non-null values, verifies exactly 23 updated rows and zero remaining non-null values, then drops `orders.expires_at`.
+
+No migration was applied by this documentation update.

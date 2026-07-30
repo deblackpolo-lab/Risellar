@@ -430,3 +430,13 @@ Result: passed. The dry-run showed only:
 2. `20260718213000_create_order_from_checkout_draft_rpc.sql`
 
 The six tombstone versions were not pending because the remote project already records those migration versions as applied. No unexpected migration appeared. No real db push, migration repair, remote history change, migration apply, or RPC test occurred.
+
+## AH. Group R4 cleanup-revision update
+
+Group R4 revised the forward cleanup migration using the R3 verified DEVELOPMENT backup/evidence package. The migration-history strategy remains unchanged:
+
+1. Six exact-version no-op tombstones.
+2. `20260718212000_reconcile_checkout_phase_c_claude_artifacts.sql`.
+3. `20260718213000_create_order_from_checkout_draft_rpc.sql`.
+
+The cleanup migration now implements the approved Option C path for the 23 DEVELOPMENT `orders.expires_at` values: assert the exact reviewed state, null only those values, verify zero remain, then drop `orders.expires_at`. Stale Claude RPC cleanup, obsolete index cleanup, prep/delivery column cleanup, and enum deferral remain aligned with R1/R2/R3. No migration repair or real db push was run as part of this report update.
