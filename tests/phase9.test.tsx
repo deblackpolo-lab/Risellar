@@ -25,8 +25,11 @@ describe("Phase 9 admin core dashboard", () => {
     render(<AdminDashboardScreen />);
 
     expect(screen.getByRole("heading", { name: "Admin Dashboard" })).toBeInTheDocument();
-    for (const item of ["Dashboard", "Orders", "Products", "Suppliers", "Resellers", "Customers", "Settlements", "Commissions", "Withdrawals", "Support", "Settings"]) {
+    for (const item of ["Dashboard", "Products", "Suppliers", "Resellers", "Customers", "Support", "Settings"]) {
       expect(screen.getByRole("link", { name: item })).toBeInTheDocument();
+    }
+    for (const hiddenItem of ["Orders", "Settlements", "Commissions", "Withdrawals"]) {
+      expect(screen.queryByRole("link", { name: hiddenItem })).not.toBeInTheDocument();
     }
     for (const metric of ["Total orders", "Pending confirmations", "Settlement due", "Overdue settlements", "Pending reseller commissions", "Active suppliers", "Active resellers", "Products pending approval"]) {
       expect(screen.getByText(metric)).toBeInTheDocument();
@@ -35,12 +38,12 @@ describe("Phase 9 admin core dashboard", () => {
       expect(screen.getByText(value)).toBeInTheDocument();
     }
     expect(screen.getByText("Revenue and platform margin")).toBeInTheDocument();
-    expect(screen.getByText("Recent orders")).toBeInTheDocument();
-    expect(screen.getByText("Supplier settlement summary")).toBeInTheDocument();
+    expect(screen.getByText("Orders coming soon")).toBeInTheDocument();
+    expect(screen.getByText("Finance workflows coming soon")).toBeInTheDocument();
     expect(screen.getByText("Product approval summary")).toBeInTheDocument();
     expect(screen.getByText("Support and dispute summary")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Review orders" })).toHaveAttribute("href", "/admin/orders");
-    expect(screen.getByRole("link", { name: "View settlements" })).toHaveAttribute("href", "/admin/settlements");
+    expect(screen.getByRole("link", { name: "Review products" })).toHaveAttribute("href", "/admin/products");
+    expect(screen.getByRole("link", { name: "Review onboarding" })).toHaveAttribute("href", "/admin/onboarding-requests");
   });
 
   it("renders orders list and static order detail with full admin financial visibility", () => {

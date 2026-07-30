@@ -1,11 +1,11 @@
-import { ClipboardList, Home, ShoppingBag, UserRound, Wallet } from "lucide-react";
+import { Headphones, Home, PackageCheck, ShoppingBag, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const navItems = [
   { href: "/reseller/dashboard", icon: Home, label: "Home" },
   { href: "/reseller/products", icon: ShoppingBag, label: "Shop" },
-  { href: "/reseller/orders", icon: ClipboardList, label: "Orders" },
-  { href: "/reseller/wallet", icon: Wallet, label: "Wallet" },
+  { href: "/reseller/my-products", icon: PackageCheck, label: "My products" },
+  { href: "/reseller/support", icon: Headphones, label: "Support" },
   { href: "/reseller/settings", icon: UserRound, label: "Account" }
 ];
 

@@ -358,7 +358,7 @@ export function SupplierPromotionPaymentProofScreen() {
         <Card title="Upload proof placeholder">
           <label className="block text-sm font-bold text-[var(--color-charcoal)]" htmlFor="promotion-reference-number">Reference number</label>
           <Input className="mt-2" id="promotion-reference-number" placeholder="PROMO-REF-00021" />
-          <Button className="mt-4 w-full" type="button">Submit Proof Mock</Button>
+          <Button className="mt-4 w-full" disabled type="button">Payment proof coming soon</Button>
         </Card>
         <p className="rounded-[var(--radius-md)] bg-[var(--color-warning-soft)] p-3 text-sm font-bold text-[#8A5A00]">Admin must approve promotion payment before boost becomes active.</p>
         <p className="rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] p-3 text-sm font-bold text-[var(--color-danger)]">No real payment is processed in this prototype.</p>

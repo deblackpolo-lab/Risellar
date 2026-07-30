@@ -175,7 +175,7 @@ export const roleRedirectRules: RoleRedirectRule[] = [
   { role: "customer", onboardingStatus: "not_started", redirectTo: "/checkout/account" },
   { role: "customer", onboardingStatus: "in_progress", redirectTo: "/checkout/delivery" },
   { role: "customer", onboardingStatus: "pending_review", redirectTo: "/checkout/account" },
-  { role: "customer", onboardingStatus: "complete", redirectTo: "/customer/orders" },
+  { role: "customer", onboardingStatus: "complete", redirectTo: "/customer/addresses" },
   { role: "reseller", onboardingStatus: "not_started", redirectTo: "/reseller/onboarding/welcome" },
   { role: "reseller", onboardingStatus: "in_progress", redirectTo: "/reseller/onboarding/profile" },
   { role: "reseller", onboardingStatus: "pending_review", redirectTo: "/reseller/onboarding/complete" },

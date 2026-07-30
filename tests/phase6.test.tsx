@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import {
@@ -62,14 +62,14 @@ describe("Phase 6 supplier PWA core", () => {
     expect(screen.getByRole("heading", { name: /KNUST Gadgets/i })).toBeInTheDocument();
     expect(screen.getByText("Verified Supplier")).toBeInTheDocument();
     expect(screen.getByText("Active products")).toBeInTheDocument();
-    expect(screen.getByText("Pending orders")).toBeInTheDocument();
-    expect(screen.getByText("Settlement due")).toBeInTheDocument();
+    expect(screen.getByText("Order prep")).toBeInTheDocument();
+    expect(screen.getByText("Settlements")).toBeInTheDocument();
     expect(screen.getByText("Low stock")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Product" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View Orders" })).toBeInTheDocument();
-    expect(screen.getByText(/settlements must be paid immediately after customer payment/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Orders coming soon" })).toBeDisabled();
+    expect(screen.getByText(/Supplier order preparation, customer payment, and settlement workflows are deferred/i)).toBeInTheDocument();
     expect(screen.getByText(/Inventory tools arrive in Phase 7/i)).toBeInTheDocument();
-    expect(screen.getByText(/Settlement details arrive in Phase 8/i)).toBeInTheDocument();
+    expect(screen.getByText(/Settlement workflow is deferred/i)).toBeInTheDocument();
   });
 
   it("renders product list, add product, product detail, and edit product supplier views", async () => {
@@ -100,7 +100,8 @@ describe("Phase 6 supplier PWA core", () => {
     rerender(<SupplierProductDetailScreen id="samsung-galaxy-a14" />);
     expect(screen.getByRole("heading", { name: "Samsung Galaxy A14" })).toBeInTheDocument();
     expect(screen.getByText("Active resellers")).toBeInTheDocument();
-    expect(screen.getByText("Orders this month")).toBeInTheDocument();
+    expect(screen.getByText("Order workflow")).toBeInTheDocument();
+    expect(screen.getByText("Coming soon")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Manage Inventory" })).toBeDisabled();
     expect(screen.getByText(/Coming in Phase 7/i)).toBeInTheDocument();
 
@@ -112,32 +113,30 @@ describe("Phase 6 supplier PWA core", () => {
     expect(screen.getByText("Product changes saved for review.")).toBeInTheDocument();
   });
 
-  it("renders supplier order list, order detail, and prepare order mock action", async () => {
-    const user = userEvent.setup();
+  it("renders supplier order list, order detail, and prepare order mock action", () => {
     const orderId = supplierCoreMock.orders[0].id;
     const { rerender } = render(<SupplierOrdersScreen />);
 
-    expect(screen.getByRole("heading", { name: /Orders/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Customer Confirmed" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Orders coming soon/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
     expect(screen.getByText(orderId)).toBeInTheDocument();
-    expect(screen.getByText("Pay on Delivery")).toBeInTheDocument();
-    expect(screen.getByText("Supplier base amount")).toBeInTheDocument();
+    expect(screen.getByText("Deferred")).toBeInTheDocument();
+    expect(screen.getByText("Preview only")).toBeInTheDocument();
     expect(screen.queryByText(/reseller margin strategy/i)).not.toBeInTheDocument();
 
     rerender(<SupplierOrderDetailScreen id={orderId} />);
     expect(screen.getByRole("heading", { name: orderId })).toBeInTheDocument();
     expect(screen.getByText("Customer delivery snapshot")).toBeInTheDocument();
-    expect(screen.getByText(/After customer pays, settle Risellar share immediately/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Mark Preparing" }));
-    expect(screen.getByText("Preparing")).toBeInTheDocument();
+    expect(screen.getByText(/does not update live order status, reserve stock, collect payment, start delivery, or create settlement records/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark Preparing coming soon" })).toBeDisabled();
 
     rerender(<SupplierPrepareOrderScreen id={orderId} />);
     expect(screen.getByRole("heading", { name: /Prepare order/i })).toBeInTheDocument();
     expect(screen.getByLabelText("Check product")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm variant and quantity")).toBeInTheDocument();
     expect(screen.getByText(/packing proof placeholder/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Mark as Ready" }));
-    expect(within(screen.getByRole("status")).getByText("Order ready for delivery arrangement.")).toBeInTheDocument();
+    expect(screen.getByText(/Preparation is a coming-soon placeholder/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark ready coming soon" })).toBeDisabled();
   });
 
   it("renders supplier notifications, settings, and support with mock-only actions", async () => {

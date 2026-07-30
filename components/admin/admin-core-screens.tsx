@@ -370,8 +370,8 @@ export function AdminDashboardScreen() {
     <AdminShell active="Dashboard">
       <AdminPageHeader eyebrow="Marketplace control center" title="Admin Dashboard">
         <div className="flex flex-wrap gap-2">
-          <Link className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 text-sm font-bold text-white shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-primary-dark)]" href="/admin/orders">Review orders<ArrowUpRight className="h-4 w-4" aria-hidden /></Link>
-          <Link className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-primary)] bg-white px-4 text-sm font-bold text-[var(--color-primary)] transition hover:bg-[var(--color-primary-subtle)]" href="/admin/settlements">View settlements<ReceiptText className="h-4 w-4" aria-hidden /></Link>
+          <Link className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-4 text-sm font-bold text-white shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-primary-dark)]" href="/admin/products">Review products<ArrowUpRight className="h-4 w-4" aria-hidden /></Link>
+          <Link className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-primary)] bg-white px-4 text-sm font-bold text-[var(--color-primary)] transition hover:bg-[var(--color-primary-subtle)]" href="/admin/onboarding-requests">Review onboarding<ReceiptText className="h-4 w-4" aria-hidden /></Link>
         </div>
       </AdminPageHeader>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -384,8 +384,8 @@ export function AdminDashboardScreen() {
         <RecentActivityList />
       </div>
       <div className="grid gap-5 xl:grid-cols-3">
-        <OrdersTable compact />
-        <FinanceMiniSummary title="Supplier settlement summary" rows={adminSettlements} />
+        <ComingSoonAdminSummary title="Orders coming soon" body="Order operations remain hidden from admin navigation until order creation, delivery, payment, stock reservation, settlement, and commission backends are approved." />
+        <ComingSoonAdminSummary title="Finance workflows coming soon" body="Settlement, commission, and withdrawal pages are preserved as mock routes only and are not discoverable from the admin dashboard." />
         <ProductApprovalSummary />
       </div>
       <Card title="Support and dispute summary">
@@ -627,25 +627,13 @@ function ProfileRows({ rows }: { rows: Array<[string, string]> }) {
   );
 }
 
-function FinanceMiniSummary({ title, rows }: { title: string; rows: AdminFinanceRow[] }) {
+function ComingSoonAdminSummary({ body, title }: { body: string; title: string }) {
   return (
     <Card title={title}>
-      <div className="space-y-3">
-        {rows.slice(0, 3).map((row) => (
-          <div className="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-3" key={row.id}>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{row.party}</p>
-              <p className="text-xs text-[var(--color-muted)]">{row.orderId}</p>
-              <p className="mt-1 text-[11px] font-semibold text-[var(--color-muted)]">{row.note}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-extrabold">{formatGhc(row.amount)}</p>
-              <StatusBadge status={row.status} />
-            </div>
-          </div>
-        ))}
+      <p className="text-sm leading-6 text-[var(--color-muted)]">{body}</p>
+      <div className="mt-4">
+        <StatusBadge status="Coming soon" />
       </div>
-      <Link className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[var(--color-primary)]" href="/admin/settlements">View settlement queue<ArrowUpRight className="h-4 w-4" aria-hidden /></Link>
     </Card>
   );
 }

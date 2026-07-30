@@ -46,7 +46,7 @@ describe("Phase 3 pilot screens", () => {
     expect(screen.getByText("Delivery cost will be confirmed before dispatch.")).toBeInTheDocument();
     expect(screen.getByText("We may ask you to confirm the order before processing.")).toBeInTheDocument();
     expect(screen.getByText("GH₵360-380")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Place Order" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Order placement coming soon" })).toBeDisabled();
     expect(screen.getByText("Awaiting Customer Confirmation")).toBeInTheDocument();
     expect(screen.queryByText("Reseller margin")).not.toBeInTheDocument();
     expect(screen.queryByText("Risellar margin")).not.toBeInTheDocument();

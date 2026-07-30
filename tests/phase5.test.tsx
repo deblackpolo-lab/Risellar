@@ -52,8 +52,8 @@ describe("Phase 5 customer mobile web checkout core", () => {
     expect(screen.getByLabelText(/Size/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Quantity/i)).toBeInTheDocument();
     expect(screen.getByText(/Delivery cost is estimated and will be confirmed before dispatch/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add to Cart" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy Now" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add to cart planned" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Buy later" })).toBeDisabled();
     expect(screen.queryByText(/supplier base/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/platform margin/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reseller margin/i)).not.toBeInTheDocument();
@@ -95,11 +95,11 @@ describe("Phase 5 customer mobile web checkout core", () => {
     expect(screen.getByRole("heading", { name: /Review your order/i })).toBeInTheDocument();
     expect(screen.getByLabelText("I understand delivery cost will be confirmed before dispatch.")).toBeInTheDocument();
     expect(screen.getByLabelText("I understand my order must be confirmed before processing.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Place Order" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Order placement coming soon" })).toBeDisabled();
 
     await user.click(screen.getByLabelText("I understand delivery cost will be confirmed before dispatch."));
     await user.click(screen.getByLabelText("I understand my order must be confirmed before processing."));
-    expect(screen.getByRole("button", { name: "Place Order" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Order placement coming soon" })).toBeDisabled();
   });
 
   it("renders success, order tracking, confirmation, quote approval, and support issue states", async () => {
@@ -107,13 +107,14 @@ describe("Phase 5 customer mobile web checkout core", () => {
     const orderId = customerCheckoutMock.order.id;
     const { rerender } = render(<CheckoutSuccessScreen />);
 
-    expect(screen.getByRole("heading", { name: /Order received/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Checkout coming soon/i })).toBeInTheDocument();
     expect(screen.getByText(orderId)).toBeInTheDocument();
-    expect(screen.getByText("Confirm Order")).toBeInTheDocument();
-    expect(screen.getByText(/Pay when item arrives/i)).toBeInTheDocument();
+    expect(screen.getByText("Confirm order coming soon")).toBeInTheDocument();
+    expect(screen.getByText(/Order creation, supplier preparation, stock reservation, payment, and delivery stay disconnected/i)).toBeInTheDocument();
 
     rerender(<CustomerOrdersScreen />);
-    expect(screen.getByRole("heading", { name: /My orders/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Orders coming soon/i })).toBeInTheDocument();
+    expect(screen.getByText(/No live customer order history yet/i)).toBeInTheDocument();
     expect(screen.getByText("Awaiting Customer Confirmation")).toBeInTheDocument();
 
     rerender(<CustomerOrderTrackingScreen id={orderId} />);
@@ -124,15 +125,15 @@ describe("Phase 5 customer mobile web checkout core", () => {
     rerender(<CustomerOrderConfirmScreen id={orderId} />);
     expect(screen.getByRole("heading", { name: /Confirm your order/i })).toBeInTheDocument();
     expect(screen.getByText(/item is reserved only after confirmation/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Confirm Order" }));
-    expect(screen.getByText("Customer Confirmed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirm order coming soon" })).toBeDisabled();
+    expect(screen.getByText("Awaiting Customer Confirmation")).toBeInTheDocument();
 
     rerender(<CustomerDeliveryQuoteScreen id={orderId} />);
     expect(screen.getByRole("heading", { name: /Delivery quote/i })).toBeInTheDocument();
     expect(screen.getByText("Final delivery quote")).toBeInTheDocument();
     expect(screen.getByText("Total to pay on delivery")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Approve Delivery Quote" }));
-    expect(screen.getByText("Delivery Approved")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delivery quote approval coming soon" })).toBeDisabled();
+    expect(screen.getByText("Delivery Quote Pending")).toBeInTheDocument();
 
     rerender(<CustomerSupportScreen />);
     expect(screen.getByRole("heading", { name: /Help and support/i })).toBeInTheDocument();

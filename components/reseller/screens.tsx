@@ -77,8 +77,8 @@ const onboardingCopy: Record<OnboardingStep, { title: string; eyebrow: string; b
 const navByRoute = {
   home: "Home",
   shop: "Shop",
-  orders: "Orders",
-  wallet: "Wallet",
+  orders: "Support",
+  wallet: "Support",
   account: "Account"
 } as const;
 
@@ -228,7 +228,7 @@ export function ResellerDashboardCoreScreen() {
 
         <div className="grid grid-cols-2 gap-3">
           <Metric label="Pending commission" value={formatGhc(resellerProfile.pendingCommission)} status="Commission Pending" />
-          <Metric label="Orders" value={`${resellerProfile.ordersThisMonth}`} status="Completed" />
+          <Metric label="Shop readiness" value="Live" status="Read-only" />
           <Metric label="Products shared" value={`${resellerProfile.productsShared}`} status="Trending" />
           <Metric label="Active products" value={`${resellerProfile.activeProducts}`} status="In Stock" />
         </div>
@@ -273,7 +273,7 @@ function ActionGrid() {
     <section>
       <h2 className="mb-3 text-base font-bold">Quick actions</h2>
       <div className="grid grid-cols-2 gap-3">
-        {["Browse Products", "Share My Shop", "View Orders", "Withdraw"].map((action, index) => (
+        {["Browse Products", "My Products", "Share My Shop", "Support"].map((action, index) => (
           <Button key={action} size="compact" variant={index === 0 ? "primary" : "outline"}>
             {action}
           </Button>
@@ -503,7 +503,7 @@ export function ResellerShopScreen({ empty = false }: { empty?: boolean }) {
       <ShopHeader />
       <div className="mt-4 grid grid-cols-3 gap-3">
         <Metric label="Products" value={`${shopProducts.length}`} status="Active" />
-        <Metric label="Orders" value={`${resellerProfile.ordersThisMonth}`} status="Completed" />
+        <Metric label="Shop status" value="Read-only" status="Checkout deferred" />
         <Metric label="Followers" value={`${resellerProfile.followers}`} status="Trending" />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
@@ -513,7 +513,7 @@ export function ResellerShopScreen({ empty = false }: { empty?: boolean }) {
       {shopProducts.length ? (
         <ProductSection products={shopProducts} title="Products in shop" />
       ) : (
-        <EmptyPanel action="Add Products" description="Add trusted products to start receiving Pay on Delivery orders." title="Your shop is empty" />
+        <EmptyPanel action="Add Products" description="Add trusted products to prepare a public read-only shop. Customer checkout is not connected yet." title="Your shop is empty" />
       )}
     </ResellerShell>
   );
@@ -606,9 +606,9 @@ export function ResellerOrdersScreen() {
   return (
     <ResellerShell active={navByRoute.orders} title="Orders">
       <header>
-        <h1 className="text-2xl font-bold">My orders</h1>
+        <h1 className="text-2xl font-bold">Orders coming soon</h1>
         <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
-          Commission becomes available after supplier settlement is verified.
+          Order history is a preserved design placeholder. No real customer orders, delivery, payment, settlement, commission, or withdrawal workflow is connected yet.
         </p>
       </header>
       <ScrollableChipRow className="mt-4">
@@ -663,6 +663,10 @@ export function ResellerOrderDetailScreen({ id }: { id: string }) {
           <StatusBadge status={order.status} />
         </div>
       </Card>
+      <Card className="mt-4 border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] p-4">
+        <p className="text-sm font-bold text-[#8A5A00]">Mock order preview only</p>
+        <p className="mt-1 text-sm leading-6 text-[#8A5A00]">This page does not read live orders, reserve stock, collect payment, start delivery, or release commission.</p>
+      </Card>
       <Card className="mt-4" title="Order summary">
         <div className="space-y-3 text-sm">
           <InfoRow label="Customer" value={order.customer} />
@@ -700,7 +704,7 @@ export function ResellerWalletScreen() {
       <p className="mt-4 rounded-[var(--radius-md)] bg-[var(--color-warning-soft)] p-3 text-sm text-[#8A5A00]">
         Pending commission cannot be withdrawn until supplier settlement is verified.
       </p>
-      <Button className="mt-4 w-full">Request Withdrawal</Button>
+      <Button className="mt-4 w-full" disabled>Withdrawals coming soon</Button>
       <TransactionList />
     </ResellerShell>
   );
@@ -720,7 +724,7 @@ export function ResellerWithdrawScreen() {
           <LabeledInput label="MoMo account" value={`${resellerProfile.momoProvider} • ${resellerProfile.momoNumber}`} />
         </div>
       </Card>
-      <Button className="mt-4 w-full">Request Withdrawal</Button>
+      <Button className="mt-4 w-full" disabled>Withdrawals coming soon</Button>
     </ResellerShell>
   );
 }

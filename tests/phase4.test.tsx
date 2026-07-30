@@ -91,8 +91,8 @@ describe("Phase 4 reseller PWA core", () => {
     expect(screen.getByText("Caption copied")).toBeInTheDocument();
 
     rerender(<ResellerOrdersScreen />);
-    expect(screen.getByText("Delivery Quote Pending")).toBeInTheDocument();
-    expect(screen.getByText(/Commission becomes available after supplier settlement is verified/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Orders coming soon/i })).toBeInTheDocument();
+    expect(screen.getByText(/No real customer orders, delivery, payment, settlement, commission, or withdrawal workflow is connected yet/i)).toBeInTheDocument();
 
     rerender(<ResellerWalletScreen />);
     expect(screen.getByText("Available balance")).toBeInTheDocument();

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { ClipboardList, Home, Landmark, Receipt, UserRound } from "lucide-react";
-import { Button, Card, FileUploadCard, Input, ScrollableChipRow, Select, StatusBadge, Textarea } from "@/components/ui";
+import { Home, Landmark, LifeBuoy, Package, UserRound } from "lucide-react";
+import { Button, Card, ScrollableChipRow, StatusBadge } from "@/components/ui";
 import { MobileShell } from "@/components/layout";
 import {
   formatGhc,
@@ -18,17 +18,17 @@ import {
 } from "@/lib/mock/supplier-settlements";
 import { cn } from "@/lib/utils/cn";
 
-type SettlementNavKey = "home" | "settlements" | "finance" | "orders" | "account";
+type SettlementNavKey = "home" | "products" | "finance" | "support" | "account";
 
 const navItems = [
   { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
-  { key: "settlements" as const, label: "Settle", href: "/supplier/settlements", icon: Receipt },
+  { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
   { key: "finance" as const, label: "Finance", href: "/supplier/finance", icon: Landmark },
-  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "support" as const, label: "Support", href: "/supplier/support", icon: LifeBuoy },
   { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
 
-function SettlementShell({ active = "settlements", children, title }: { active?: SettlementNavKey; children: ReactNode; title?: string }) {
+function SettlementShell({ active = "support", children, title }: { active?: SettlementNavKey; children: ReactNode; title?: string }) {
   return (
     <MobileShell title={title} footer={<SettlementBottomNav active={active} />}>
       {children}
@@ -149,9 +149,7 @@ function SettlementObligationCard({ settlement }: { settlement: SupplierSettleme
         <Link href={`/supplier/settlements/${settlement.id}`} className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-primary)] text-sm font-bold text-[var(--color-primary)]">
           View Details
         </Link>
-        <Link href={`/supplier/settlements/${settlement.id}/settle`} className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] text-sm font-bold text-white">
-          Settle
-        </Link>
+        <Button disabled>Settle coming soon</Button>
       </div>
     </Card>
   );
@@ -210,65 +208,6 @@ function RestrictionLevelCard({ level }: { level: RestrictionLevel }) {
       </div>
       <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">{level.description}</p>
       <p className="mt-2 text-sm font-semibold text-[var(--color-charcoal)]">{level.impact}</p>
-    </Card>
-  );
-}
-
-function SettlementProofForm({ settlement }: { settlement: SupplierSettlement }) {
-  const [submitted, setSubmitted] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const instructions = supplierSettlementMock.paymentInstructions;
-
-  return (
-    <Card title="Submit settlement proof">
-      <div className="space-y-4">
-        <TonePanel>Upload proof after sending the settlement amount.</TonePanel>
-        <TonePanel tone="info">Admin will verify your payment before reseller commission is released.</TonePanel>
-        <TonePanel>Submitting proof does not mean settlement is verified yet.</TonePanel>
-        <div className="rounded-[var(--radius-md)] bg-[var(--color-page)] p-3 text-sm">
-          <p className="text-xs text-[var(--color-muted)]">Amount to settle</p>
-          <p className="text-2xl font-extrabold text-[var(--color-primary)]">{formatGhc(getSettlementOutstanding(settlement) || settlement.amountDue)}</p>
-          <p className="mt-2 font-semibold">{instructions.accountName}</p>
-          <p>{instructions.momoNumber}</p>
-          <p className="text-[var(--color-muted)]">{instructions.businessReference}</p>
-        </div>
-        <Button variant="outline" className="w-full" onClick={() => setCopied(true)}>Copy Payment Instructions</Button>
-        {copied ? <div role="status" className="rounded-[var(--radius-md)] border border-[var(--color-success)]/25 bg-[var(--color-success-soft)] p-3 text-sm font-semibold text-[var(--color-primary)]">Payment instructions copied for this mock session.</div> : null}
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Payment method</span>
-          <Select aria-label="Payment method" defaultValue="MTN Mobile Money">
-            {supplierSettlementMock.paymentMethods.map((method) => (
-              <option key={method} value={method}>{method}</option>
-            ))}
-          </Select>
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {supplierSettlementMock.paymentMethods.map((method, index) => (
-            <label key={method} className="flex min-h-11 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm font-semibold">
-              <input aria-label={method} type="radio" name="settlement-method" defaultChecked={index === 0} />
-              {method}
-            </label>
-          ))}
-        </div>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Amount sent</span>
-          <Input aria-label="Amount sent" defaultValue={formatGhc(getSettlementOutstanding(settlement) || settlement.amountDue)} />
-        </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Transaction or reference number</span>
-          <Input aria-label="Transaction or reference number" defaultValue="MOMO-RSL-00021" />
-        </label>
-        <div>
-          <p className="mb-2 text-sm font-semibold">Upload proof placeholder</p>
-          <FileUploadCard hint="PNG, JPG or PDF. Max 5MB. Mock only." label="Upload proof placeholder" />
-        </div>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Settlement notes</span>
-          <Textarea aria-label="Settlement notes" defaultValue="Settlement sent after customer payment was received." />
-        </label>
-        {submitted ? <div role="status" className="rounded-[var(--radius-md)] border border-[var(--color-success)]/25 bg-[var(--color-success-soft)] p-3 text-sm font-semibold text-[var(--color-primary)]">Settlement proof submitted for admin verification.</div> : null}
-        <Button className="w-full" onClick={() => setSubmitted(true)}>Submit Proof</Button>
-      </div>
     </Card>
   );
 }
@@ -405,9 +344,9 @@ export function SettlementDetailScreen({ settlementId }: { settlementId: string 
         <p className="text-sm leading-6 text-[var(--color-muted)]">{settlement.linkedOrderSummary}</p>
       </Card>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <Link href={`/supplier/settlements/${settlement.id}/settle`} className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] text-sm font-bold text-white">Settle Now</Link>
-        <Link href={`/supplier/settlements/${settlement.id}/settle`} className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-primary)] text-sm font-bold text-[var(--color-primary)]">Upload Proof</Link>
-        <Button variant="outline">View Order</Button>
+        <Button disabled>Settle now coming soon</Button>
+        <Button disabled variant="outline">Upload proof coming soon</Button>
+        <Button disabled variant="outline">View order coming soon</Button>
         <Button variant="outline">Contact Support</Button>
       </div>
     </SettlementShell>
@@ -420,7 +359,10 @@ export function SettlementSettleScreen({ settlementId }: { settlementId: string 
   return (
     <SettlementShell title="Settle now">
       <SettlementHeader title="Settle now" description={settlement.settlementNumber} />
-      <SettlementProofForm settlement={settlement} />
+      <Card className="border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] p-4">
+        <p className="text-sm font-bold text-[#8A5A00]">Settlement proof is coming soon</p>
+        <p className="mt-1 text-sm leading-6 text-[#8A5A00]">No payout, proof upload, payment verification, commission release, or settlement mutation is connected in this recovery phase.</p>
+      </Card>
     </SettlementShell>
   );
 }
@@ -442,7 +384,7 @@ export function PartialSettlementsScreen() {
               <Row label="Amount paid" value={formatGhc(settlement.amountPaid)} />
               <Row label="Outstanding balance" value={formatGhc(getSettlementOutstanding(settlement))} danger strong />
             </dl>
-            <Link href={`/supplier/settlements/${settlement.id}/settle`} className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary)] text-sm font-bold text-white">Settle Balance</Link>
+            <Button className="mt-4 w-full" disabled>Settle balance coming soon</Button>
           </Card>
         ))}
       </div>
@@ -473,7 +415,7 @@ export function OverdueSettlementsScreen() {
             <p className="mt-2 text-sm text-[var(--color-muted)]">{settlement.daysOverdue} days overdue</p>
             <p className="mt-2 text-xl font-extrabold text-[var(--color-danger)]">{formatGhc(getSettlementOutstanding(settlement) || settlement.amountDue)}</p>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <Link href={`/supplier/settlements/${settlement.id}/settle`} className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-danger)] text-sm font-bold text-white">Settle Now</Link>
+              <Button disabled>Settle now coming soon</Button>
               <Button variant="outline">Contact Support</Button>
             </div>
           </Card>

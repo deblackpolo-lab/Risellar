@@ -87,7 +87,7 @@ describe("role onboarding request foundation", () => {
   });
 
   it("keeps role redirects predictable while onboarding requests are pending", () => {
-    expect(getRoleHomePath({ role: "customer", onboardingStatus: "complete" })).toBe("/customer/orders");
+    expect(getRoleHomePath({ role: "customer", onboardingStatus: "complete" })).toBe("/customer/addresses");
     expect(getRoleHomePath({ role: "reseller", onboardingStatus: "pending_review" })).toBe("/reseller/onboarding/complete");
     expect(getRoleHomePath({ role: "supplier_owner", onboardingStatus: "pending_review" })).toBe("/supplier/onboarding/pending");
   });

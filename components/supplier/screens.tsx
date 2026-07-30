@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Bell, ClipboardList, Home, Package, UserRound } from "lucide-react";
+import { Bell, Home, LifeBuoy, Package, UserRound } from "lucide-react";
 import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { ProductImageFrame, ProductImageGallery, ProductImagePreviewGrid } from "@/components/marketplace";
 import { Button, Card, Checkbox, Input, ScrollableChipRow, StatusBadge, Textarea } from "@/components/ui";
@@ -19,12 +19,12 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 type OnboardingStep = "welcome" | "business" | "category" | "verification" | "payout" | "agreement" | "pending" | "rejected";
-type SupplierNavKey = "home" | "products" | "orders" | "alerts" | "account";
+type SupplierNavKey = "home" | "products" | "support" | "alerts" | "account";
 
 const navItems = [
   { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
   { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
-  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
+  { key: "support" as const, label: "Support", href: "/supplier/support", icon: LifeBuoy },
   { key: "alerts" as const, label: "Alerts", href: "/supplier/notifications", icon: Bell },
   { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
@@ -398,8 +398,6 @@ export function SupplierOnboardingScreen({ step }: { step: OnboardingStep }) {
 
 export function SupplierDashboardScreen() {
   const activeProducts = supplierCoreMock.products.filter((product) => product.status === "Active").length;
-  const pendingOrders = supplierCoreMock.orders.filter((order) => ["Customer Confirmed", "Preparing", "Ready"].includes(order.status)).length;
-  const settlementDue = supplierCoreMock.orders.reduce((sum, order) => sum + (order.status === "Settlement Due" ? order.settlementDue : 0), 0);
   const lowStock = supplierCoreMock.products.filter((product) => product.stock <= product.lowStockThreshold).length;
 
   return (
@@ -414,28 +412,24 @@ export function SupplierDashboardScreen() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <SupplierStatusCard label="Active products" value={String(activeProducts)} detail="Approved for reseller selling" tone="success" />
-        <SupplierStatusCard label="Pending orders" value={String(pendingOrders)} detail="Need preparation updates" tone="warning" />
-        <SupplierStatusCard label="Settlement due" value={formatGhc(settlementDue)} detail="Pay after customer collection" tone="warning" />
+        <SupplierStatusCard label="Order prep" value="Soon" detail="Orders are not connected yet" tone="warning" />
+        <SupplierStatusCard label="Settlements" value="Soon" detail="Settlement workflow is deferred" tone="warning" />
         <SupplierStatusCard label="Low stock" value={String(lowStock)} detail="Stock management deepens later" tone="info" />
       </div>
       <Card title="Quick actions" className="mt-4">
         <div className="grid grid-cols-2 gap-2">
           <Button>Add Product</Button>
-          <Button variant="outline">View Orders</Button>
+          <Button variant="outline" disabled>Orders coming soon</Button>
           <Button variant="outline">View Products</Button>
           <Button variant="outline">View Settings</Button>
         </div>
       </Card>
       <ProductApprovalBanner>
-        Supplier settlements must be paid immediately after customer payment. Settlement details arrive in Phase 8.
+        Supplier order preparation, customer payment, and settlement workflows are deferred until their backend phases.
       </ProductApprovalBanner>
       <ProductApprovalBanner tone="success">Inventory tools arrive in Phase 7. This dashboard only shows stock summaries for now.</ProductApprovalBanner>
-      <Card title="Recent orders" className="mt-4">
-        <div className="space-y-3">
-          {supplierCoreMock.orders.slice(0, 2).map((order) => (
-            <SupplierOrderCard key={order.id} order={order} />
-          ))}
-        </div>
+      <Card title="Order workflow coming soon" className="mt-4">
+        <p className="text-sm leading-6 text-[var(--color-muted)]">Order preparation screens are preserved as design placeholders only. No live order, stock reservation, delivery, payment, or settlement mutation is connected.</p>
       </Card>
       <Card title="Product approval summary" className="mt-4">
         <div className="space-y-2 text-sm text-[var(--color-charcoal)]">
@@ -551,8 +545,8 @@ export function SupplierProductDetailScreen({ id }: { id: string }) {
             <dd className="font-bold text-[var(--color-charcoal)]">{product.activeResellers}</dd>
           </div>
           <div>
-            <dt className="text-xs text-[var(--color-muted)]">Orders this month</dt>
-            <dd className="font-bold text-[var(--color-charcoal)]">{product.ordersThisMonth}</dd>
+            <dt className="text-xs text-[var(--color-muted)]">Order workflow</dt>
+            <dd className="font-bold text-[var(--color-charcoal)]">Coming soon</dd>
           </div>
         </dl>
       </Card>
@@ -562,7 +556,7 @@ export function SupplierProductDetailScreen({ id }: { id: string }) {
       <div className="mt-4 space-y-2">
         <Button className="w-full">Edit Product</Button>
         <Button className="w-full" variant="outline">
-          View Orders
+          Orders coming soon
         </Button>
         <Button className="w-full" variant="outline" disabled>
           Manage Inventory
@@ -612,20 +606,20 @@ export function SupplierEditProductScreen({ id }: { id: string }) {
 }
 
 export function SupplierOrdersScreen() {
-  const filters = ["Customer Confirmed", "Preparing", "Ready", "Delivered", "Settlement Due"];
+  const filters = ["Preview", "No live orders", "No stock reservation", "No settlement"];
 
   return (
-    <SupplierMobileShell active="orders" title="Supplier orders">
-      <SupplierHeader title="Orders" description="Prepare confirmed orders and track settlement-sensitive payment states." />
+    <SupplierMobileShell active="support" title="Supplier orders">
+      <SupplierHeader title="Orders coming soon" description="This preserved supplier order design is not connected to live orders, preparation, stock reservation, delivery, payment, or settlement." />
       <Card className="mb-4 p-4">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="font-bold text-[var(--color-charcoal)]">Payment model</p>
-            <p className="font-bold text-[var(--color-primary)]">Pay on Delivery</p>
+            <p className="font-bold text-[var(--color-primary)]">Deferred</p>
           </div>
           <div className="flex items-center justify-between">
             <p className="font-bold text-[var(--color-charcoal)]">Amount label</p>
-            <p className="font-bold text-[var(--color-primary)]">Supplier base amount</p>
+            <p className="font-bold text-[var(--color-primary)]">Preview only</p>
           </div>
         </div>
       </Card>
@@ -648,12 +642,11 @@ export function SupplierOrdersScreen() {
 export function SupplierOrderDetailScreen({ id }: { id: string }) {
   const order = getSupplierOrder(id);
   const product = getSupplierProduct(order.productId);
-  const [status, setStatus] = useState(order.status);
 
   return (
-    <SupplierMobileShell active="orders" title="Order detail">
+    <SupplierMobileShell active="support" title="Order detail">
       <SupplierHeader title={order.id} description={`${product.name} · Qty ${order.quantity}`} />
-      <StatusBadge status={status === "Ready" ? "Preparing" : status} tone={status === "Ready" ? "info" : undefined} />
+      <StatusBadge status={order.status === "Ready" ? "Preview" : order.status} tone={order.status === "Ready" ? "info" : undefined} />
       <Card title="Customer delivery snapshot" className="mt-4">
         <dl className="space-y-3 text-sm">
           <div className="flex justify-between gap-3">
@@ -686,12 +679,11 @@ export function SupplierOrderDetailScreen({ id }: { id: string }) {
           </div>
         </dl>
       </Card>
-      <PreparationChecklist />
-      <ProductApprovalBanner>After customer pays, settle Risellar share immediately to avoid restrictions.</ProductApprovalBanner>
+      <ProductApprovalBanner>Supplier order preparation is coming soon. This page does not update live order status, reserve stock, collect payment, start delivery, or create settlement records.</ProductApprovalBanner>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button onClick={() => setStatus("Preparing")}>Mark Preparing</Button>
-        <Button variant="outline" onClick={() => setStatus("Ready")}>
-          Mark Ready
+        <Button disabled>Mark Preparing coming soon</Button>
+        <Button disabled variant="outline">
+          Mark Ready coming soon
         </Button>
       </div>
     </SupplierMobileShell>
@@ -701,19 +693,14 @@ export function SupplierOrderDetailScreen({ id }: { id: string }) {
 export function SupplierPrepareOrderScreen({ id }: { id: string }) {
   const order = getSupplierOrder(id);
   const product = getSupplierProduct(order.productId);
-  const [ready, setReady] = useState(false);
 
   return (
-    <SupplierMobileShell active="orders" title="Prepare order">
+    <SupplierMobileShell active="support" title="Prepare order">
       <SupplierHeader title="Prepare order" description={`${order.id} · ${product.name}`} />
+      <ProductApprovalBanner>Preparation is a coming-soon placeholder. No live order, stock, delivery, payment, or settlement mutation is connected.</ProductApprovalBanner>
       <PreparationChecklist />
-      {ready ? (
-        <div role="status" className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-success)]/25 bg-[var(--color-success-soft)] p-3 text-sm font-semibold text-[var(--color-primary)]">
-          <p>Order ready for delivery arrangement.</p>
-        </div>
-      ) : null}
-      <Button className="mt-4 w-full" onClick={() => setReady(true)}>
-        Mark as Ready
+      <Button className="mt-4 w-full" disabled>
+        Mark ready coming soon
       </Button>
     </SupplierMobileShell>
   );

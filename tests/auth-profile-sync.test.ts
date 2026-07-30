@@ -233,6 +233,7 @@ describe("auth route guard foundation", () => {
 
   it("returns role home paths from trusted profile role data", () => {
     expect(getRoleHomePath({ role: "customer", onboardingStatus: "not_started" })).toBe("/checkout/account");
+    expect(getRoleHomePath({ role: "customer", onboardingStatus: "complete" })).toBe("/customer/addresses");
     expect(getRoleHomePath({ role: "supplier_owner", onboardingStatus: "complete" })).toBe("/supplier/dashboard");
   });
 });

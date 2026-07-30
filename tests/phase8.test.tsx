@@ -60,29 +60,19 @@ describe("Phase 8 supplier settlements and financial control", () => {
     expect(screen.getByText("Outstanding amount")).toBeInTheDocument();
     expect(screen.getByText("Payment history")).toBeInTheDocument();
     expect(screen.getByText("Linked order summary")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Settle Now" })).toHaveAttribute("href", `/supplier/settlements/${settlement.id}/settle`);
-    expect(screen.getByRole("link", { name: "Upload Proof" })).toHaveAttribute("href", `/supplier/settlements/${settlement.id}/settle`);
-    expect(screen.getByRole("button", { name: "View Order" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settle now coming soon" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Upload proof coming soon" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "View order coming soon" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Contact Support" })).toBeInTheDocument();
   });
 
-  it("renders settle proof form with payment methods, upload placeholder, and submitted state", async () => {
-    const user = userEvent.setup();
+  it("renders settle proof route as a coming-soon placeholder without submission", () => {
     render(<SettlementSettleScreen settlementId="stl-rsr-20260713-00021" />);
 
     expect(screen.getByRole("heading", { name: /Settle now/i })).toBeInTheDocument();
-    expect(screen.getByText("Upload proof after sending the settlement amount.")).toBeInTheDocument();
-    expect(screen.getByText("Admin will verify your payment before reseller commission is released.")).toBeInTheDocument();
-    expect(screen.getByText("Submitting proof does not mean settlement is verified yet.")).toBeInTheDocument();
-    for (const method of ["MTN Mobile Money", "Telecel Cash", "AirtelTigo Money", "Bank Transfer"]) {
-      expect(screen.getByLabelText(method)).toBeInTheDocument();
-    }
-    expect(screen.getByLabelText("Amount sent")).toBeInTheDocument();
-    expect(screen.getByLabelText("Transaction or reference number")).toBeInTheDocument();
-    expect(screen.getAllByText("Upload proof placeholder").length).toBeGreaterThan(0);
-    expect(screen.getByLabelText("Settlement notes")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Submit Proof" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Settlement proof submitted for admin verification.");
+    expect(screen.getByText("Settlement proof is coming soon")).toBeInTheDocument();
+    expect(screen.getByText(/No payout, proof upload, payment verification, commission release, or settlement mutation is connected/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit Proof" })).not.toBeInTheDocument();
   });
 
   it("renders partial, overdue, history, and rules settlement states", () => {
@@ -91,7 +81,7 @@ describe("Phase 8 supplier settlements and financial control", () => {
     expect(screen.getByRole("heading", { name: /Partial settlements/i })).toBeInTheDocument();
     expect(screen.getByText("Partially Paid")).toBeInTheDocument();
     expect(screen.getByText("Reseller commission may remain pending until settlement is complete.")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Settle Balance" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Settle balance coming soon" }).length).toBeGreaterThan(0);
 
     rerender(<OverdueSettlementsScreen />);
     expect(screen.getByRole("heading", { name: /Overdue settlements/i })).toBeInTheDocument();

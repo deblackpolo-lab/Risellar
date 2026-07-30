@@ -205,8 +205,8 @@ export function PublicProductDetailScreen({ productId }: { shopSlug: string; pro
       </Card>
       <DeliveryEstimateCard />
       <div className="grid grid-cols-2 gap-3">
-        <Button className="w-full" variant="outline">Add to Cart</Button>
-        <Button className="w-full">Buy Now</Button>
+        <Button className="w-full" disabled variant="outline">Add to cart planned</Button>
+        <Button className="w-full" disabled>Buy later</Button>
       </div>
     </CustomerCheckoutShell>
   );
@@ -318,7 +318,7 @@ export function CheckoutCartScreen() {
         </div>
       </Card>
       <DeliveryEstimateCard />
-      <Button className="w-full" size="large">Proceed to Checkout</Button>
+      <Button className="w-full" disabled size="large">Checkout draft coming soon</Button>
     </CustomerCheckoutShell>
   );
 }
@@ -464,7 +464,7 @@ export function CheckoutPaymentScreen() {
       </Card>
       <CheckoutSummaryCard />
       <StatusBadge status="Awaiting Customer Confirmation" />
-      <Button className="w-full" size="large">Place Order</Button>
+      <Button className="w-full" disabled size="large">Order placement coming soon</Button>
     </CustomerCheckoutShell>
   );
 }
@@ -494,34 +494,32 @@ export function CheckoutReviewScreen() {
           I understand my order must be confirmed before processing.
         </label>
       </Card>
-      <Button className="w-full" disabled={!deliveryAccepted || !confirmationAccepted} size="large">Place Order</Button>
+      <Button className="w-full" disabled size="large">Order placement coming soon</Button>
     </CustomerCheckoutShell>
   );
 }
 
 export function CheckoutSuccessScreen() {
   return (
-    <CustomerCheckoutShell title="Order received" eyebrow="Thank you, Nana" backHref="/checkout/review">
+    <CustomerCheckoutShell title="Checkout coming soon" eyebrow="Draft-only recovery" backHref="/checkout/review">
       <Card className="text-center">
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[var(--color-success-soft)]">
           <Check className="h-10 w-10 text-[var(--color-success)]" aria-hidden="true" />
         </div>
-        <h2 className="mt-4 text-xl font-extrabold text-[var(--color-charcoal)]">Received and saved</h2>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">Your order has been created and is awaiting confirmation.</p>
+        <h2 className="mt-4 text-xl font-extrabold text-[var(--color-charcoal)]">No order was created</h2>
+        <p className="mt-2 text-sm text-[var(--color-muted)]">This preserved success design is disabled until order creation is approved.</p>
         <p className="mt-4 rounded-[var(--radius-md)] bg-[var(--color-muted-soft)] p-3 font-bold">{customerCheckoutMock.order.id}</p>
       </Card>
       <CheckoutSummaryCard />
       <Card title="What happens next?">
         <div className="grid gap-3 text-sm text-[var(--color-charcoal)]">
-          <p>Confirm Order so the reseller knows you are serious.</p>
-          <p>We contact the supplier after confirmation.</p>
-          <p>Delivery cost is confirmed before dispatch.</p>
-          <p>Pay when item arrives.</p>
+          <p>Checkout draft UI can return after the route-boundary cleanup.</p>
+          <p>Order creation, supplier preparation, stock reservation, payment, and delivery stay disconnected.</p>
         </div>
       </Card>
       <div className="grid gap-3">
-        <Button className="w-full">Confirm Order</Button>
-        <Button className="w-full" variant="outline">Track Order</Button>
+        <Button className="w-full" disabled>Confirm order coming soon</Button>
+        <Button className="w-full" disabled variant="outline">Track order coming soon</Button>
         <Button className="w-full" variant="ghost">Continue Shopping</Button>
       </div>
     </CustomerCheckoutShell>
@@ -544,7 +542,11 @@ function OrderStatusCard() {
 
 export function CustomerOrdersScreen() {
   return (
-    <CustomerCheckoutShell title="My orders" eyebrow="Customer account">
+    <CustomerCheckoutShell title="Orders coming soon" eyebrow="Customer account">
+      <Card className="border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)] p-4">
+        <p className="text-sm font-bold text-[#8A5A00]">No live customer order history yet</p>
+        <p className="mt-1 text-sm leading-6 text-[#8A5A00]">Customer contact and delivery addresses are live. Order placement, payment, delivery, and tracking are deferred.</p>
+      </Card>
       <OrderStatusCard />
       <DeliveryEstimateCard />
     </CustomerCheckoutShell>
@@ -596,7 +598,7 @@ export function CustomerOrderTrackingScreen({ id }: { id: string }) {
 }
 
 export function CustomerOrderConfirmScreen({ id }: { id: string }) {
-  const [confirmed, setConfirmed] = useState(false);
+  const confirmed = false;
 
   return (
     <CustomerCheckoutShell title="Confirm your order" eyebrow={id} backHref={`/customer/orders/${id}`}>
@@ -610,8 +612,8 @@ export function CustomerOrderConfirmScreen({ id }: { id: string }) {
           </div>
         </div>
       </Card>
-      <Button className="w-full" onClick={() => setConfirmed(true)} size="large">Confirm Order</Button>
-      <Button className="w-full" variant="outline">Cancel Order</Button>
+      <Button className="w-full" disabled size="large">Confirm order coming soon</Button>
+      <Button className="w-full" disabled variant="outline">Cancel order coming soon</Button>
     </CustomerCheckoutShell>
   );
 }
@@ -641,15 +643,15 @@ export function DeliveryQuoteApprovalCard() {
 }
 
 export function CustomerDeliveryQuoteScreen({ id }: { id: string }) {
-  const [approved, setApproved] = useState(false);
+  const approved = false;
 
   return (
     <CustomerCheckoutShell title="Delivery quote" eyebrow={id} backHref={`/customer/orders/${id}`}>
       <StatusBadge status={approved ? "Delivery Approved" : "Delivery Quote Pending"} />
       <DeliveryQuoteApprovalCard />
-      <Button className="w-full" onClick={() => setApproved(true)} size="large">Approve Delivery Quote</Button>
-      <Button className="w-full" variant="outline">Request Change</Button>
-      <Button className="w-full" variant="danger">Cancel Order Before Dispatch</Button>
+      <Button className="w-full" disabled size="large">Delivery quote approval coming soon</Button>
+      <Button className="w-full" disabled variant="outline">Request change coming soon</Button>
+      <Button className="w-full" disabled variant="danger">Cancel order coming soon</Button>
     </CustomerCheckoutShell>
   );
 }

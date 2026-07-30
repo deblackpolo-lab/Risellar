@@ -6,10 +6,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useState } from "react";
 import {
   AlertTriangle,
-  BadgeDollarSign,
-  Banknote,
   Bell,
-  ClipboardList,
   FileClock,
   LayoutDashboard,
   LifeBuoy,
@@ -28,7 +25,6 @@ import {
   UserCheck,
   UserRound,
   Users,
-  WalletCards
 } from "lucide-react";
 import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { SearchBar } from "@/components/ui/SearchBar";
@@ -44,14 +40,10 @@ const adminNavItems: AdminNavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Operations", href: "/admin/operations", icon: ListChecks },
   { label: "Onboarding Requests", href: "/admin/onboarding-requests", icon: UserCheck },
-  { label: "Orders", href: "/admin/orders", icon: ClipboardList },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Suppliers", href: "/admin/suppliers", icon: Store },
   { label: "Resellers", href: "/admin/resellers", icon: Users },
   { label: "Customers", href: "/admin/customers", icon: UserRound },
-  { label: "Settlements", href: "/admin/settlements", icon: WalletCards },
-  { label: "Commissions", href: "/admin/commissions", icon: BadgeDollarSign },
-  { label: "Withdrawals", href: "/admin/withdrawals", icon: Banknote },
   { label: "Promotions", href: "/admin/promotions", icon: Megaphone },
   { label: "Support", href: "/admin/support", icon: LifeBuoy },
   { label: "Disputes", href: "/admin/disputes", icon: MessageSquareWarning },
