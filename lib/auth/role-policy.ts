@@ -92,6 +92,12 @@ export const publicRoutePolicies: PublicRoutePolicy[] = [
 
 export const protectedRoutePolicies: AuthRoutePolicy[] = [
   {
+    pattern: "/checkout/draft/:slug*",
+    roles: ["customer"],
+    onboarding: ["complete"],
+    note: "Checkout draft review is customer-only and does not place orders."
+  },
+  {
     pattern: "/checkout/account",
     roles: ["customer"],
     onboarding: ["not_started", "in_progress", "complete"],

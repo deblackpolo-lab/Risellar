@@ -151,11 +151,15 @@ export function PublicShopRpcScreen({
 export function PublicShopProductRpcScreen({
   error,
   product,
-  shop
+  shop,
+  startCheckoutControl,
+  startCheckoutErrorCode
 }: {
   error: PublicShopError | null;
   product: PublicShopProduct | null;
   shop: PublicShopSummary | null;
+  startCheckoutControl?: React.ReactNode;
+  startCheckoutErrorCode?: string | null;
 }) {
   return (
     <MobileShell>
@@ -183,13 +187,22 @@ export function PublicShopProductRpcScreen({
           <Card className="bg-[var(--color-warning-soft)] p-4">
             <p className="text-sm font-bold text-[#8A5A00]">Checkout planned</p>
             <p className="mt-1 text-sm leading-6 text-[#8A5A00]">
-              This read-only product page does not create orders, reserve stock, collect payments, or start delivery.
+              Start checkout creates a customer-owned draft only. It does not create orders, reserve stock, collect payments, or start delivery.
             </p>
           </Card>
 
+          {startCheckoutErrorCode ? (
+            <Card className="border-[var(--color-danger)]/30 bg-red-50 p-4">
+              <p className="text-sm font-bold text-[var(--color-danger)]">{startCheckoutErrorCode}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">
+                Checkout draft creation did not start. Sign in as a customer and try again.
+              </p>
+            </Card>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-3">
             <Button className="w-full" disabled variant="outline">Add to cart planned</Button>
-            <Button className="w-full" disabled>Buy later</Button>
+            {startCheckoutControl ?? <Button className="w-full" disabled>Start checkout</Button>}
           </div>
 
           <Link
