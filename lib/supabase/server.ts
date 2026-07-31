@@ -35,6 +35,15 @@ export async function createSupabaseServerClient() {
   );
 }
 
+export function createSupabaseAnonServerClient() {
+  return createClient(requireServerEnv("NEXT_PUBLIC_SUPABASE_URL"), requireServerEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"), {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
 export function createSupabaseUserServerClient(accessToken: string) {
   if (!accessToken) {
     throw new Error("Missing Supabase user access token.");

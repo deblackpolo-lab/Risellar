@@ -203,6 +203,8 @@ describe("public reseller shop read-only foundation", () => {
 
     expect(publicShopSources).not.toContain("@clerk/nextjs");
     expect(publicShopSources).not.toContain("auth()");
+    expect(publicShopSources).toContain("createSupabaseAnonServerClient");
+    expect(publicShopSources).not.toContain("createSupabaseServerClient");
     expect(publicShopSources).not.toContain("createSupabaseUserServerClient");
     expect(publicShopSources).not.toContain("createSupabaseAdminClient");
     expect(publicShopSources).not.toContain("SUPABASE_SERVICE_ROLE_KEY");

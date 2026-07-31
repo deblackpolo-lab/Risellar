@@ -1,7 +1,7 @@
 import { CheckoutDraftStartForm } from "@/components/customer/checkout-draft-start-form";
 import { PublicShopProductRpcScreen } from "@/components/customer/public-shop-rpc-screens";
 import { readPublicResellerShopProductWithClient } from "@/lib/public-shop/catalog";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAnonServerClient } from "@/lib/supabase/server";
 
 export default async function PublicProductPage({
   params,
@@ -12,7 +12,7 @@ export default async function PublicProductPage({
 }) {
   const { productId, shopSlug } = await params;
   const query = await searchParams;
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAnonServerClient();
   const { error, product, shop } = await readPublicResellerShopProductWithClient(supabase, shopSlug, productId);
 
   return (

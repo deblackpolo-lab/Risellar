@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 
 const migrationPath = join(process.cwd(), "supabase/migrations/20260730130000_supplier_order_safe_read_rpc.sql");
 const sqlTestPath = join(process.cwd(), "scripts/rpc/supplier-order-safe-read-rpc-tests-dev-only.sql");
+const helperPath = join(process.cwd(), "lib/orders/supplier-order-read.ts");
 
 const migration = readFileSync(migrationPath, "utf8");
 const sqlTest = readFileSync(sqlTestPath, "utf8");
+const helper = readFileSync(helperPath, "utf8");
 
 const returnedFields = (functionName: string) => {
   const match = migration.match(new RegExp(`create or replace function public\\.${functionName}[\\s\\S]*?returns table \\(([\\s\\S]*?)\\)\\s*language`, "i"));
@@ -108,6 +110,14 @@ describe("Supplier order safe read RPC foundation", () => {
     expect(migration).toContain("when 'released' then 'Reservation released'");
     expect(migration).not.toContain("when 'supplier_confirmed'");
     expect(migration).not.toContain("when 'supplier_rejected'");
+  });
+
+  it("falls back to truthful labels for post-decision statuses when older RPC rows return a blank label", () => {
+    expect(helper).toContain("supplierOrderStatusLabel");
+    expect(helper).toContain('supplier_confirmed: "Supplier confirmed"');
+    expect(helper).toContain('supplier_rejected: "Rejected - stock released"');
+    expect(helper).toContain('text === "Order status unavailable"');
+    expect(helper).toContain("supplierOrderStatusLabelFromRow(item.order_status_label, orderStatus)");
   });
 
   it("adds a development-only rollback SQL harness with the required boundary coverage", () => {

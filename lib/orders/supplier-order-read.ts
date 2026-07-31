@@ -664,6 +664,33 @@ function requiredString(value: unknown, fallback: string) {
   return nullableString(value) ?? fallback;
 }
 
+function supplierOrderStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    placed_pending_confirmation: "New order - confirm or reject",
+    supplier_confirmed: "Supplier confirmed",
+    supplier_preparing: "Preparing order",
+    ready_for_delivery: "Ready for delivery",
+    delivery_arranged: "Delivery arranged",
+    out_for_delivery: "Out for delivery",
+    delivered: "Delivered",
+    payment_reported: "Payment reported",
+    completed: "Completed",
+    supplier_rejected: "Rejected - stock released"
+  };
+
+  return labels[status] ?? "Order status unavailable";
+}
+
+function supplierOrderStatusLabelFromRow(label: unknown, status: string) {
+  const text = nullableString(label);
+
+  if (!text || text === "Order status unavailable") {
+    return supplierOrderStatusLabel(status);
+  }
+
+  return text;
+}
+
 function optionalInteger(value: unknown) {
   if (value === null || value === undefined) {
     return null;
@@ -675,14 +702,15 @@ function optionalInteger(value: unknown) {
 
 function mapSupplierOrderRow(row: unknown): SupplierOrderSafe {
   const item = row as Record<string, unknown>;
+  const orderStatus = requiredString(item.order_status, "unknown");
 
   return {
     orderId: requiredString(item.order_id, ""),
     orderNumber: requiredString(item.order_number, "Order number unavailable"),
     createdAt: requiredString(item.created_at, ""),
     updatedAt: requiredString(item.updated_at, ""),
-    orderStatus: requiredString(item.order_status, "unknown"),
-    orderStatusLabel: requiredString(item.order_status_label, "Order status unavailable"),
+    orderStatus,
+    orderStatusLabel: supplierOrderStatusLabelFromRow(item.order_status_label, orderStatus),
     isSupplierActionable: Boolean(item.is_supplier_actionable),
     productName: requiredString(item.product_name, "Product unavailable"),
     productSlug: nullableString(item.product_slug),

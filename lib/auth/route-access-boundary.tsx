@@ -3,7 +3,12 @@ import "server-only";
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getFinanceSettlementAdminAccess, getFinanceWithdrawalAdminAccess, getRoleOnboardingAdminAccess } from "./admin-access";
+import {
+  getFinanceDashboardAdminAccess,
+  getFinanceSettlementAdminAccess,
+  getFinanceWithdrawalAdminAccess,
+  getRoleOnboardingAdminAccess
+} from "./admin-access";
 import { getCurrentSyncedProfile } from "./profile-sync";
 import { getUnauthorizedRoleRedirect } from "./role-redirect";
 import {
@@ -36,7 +41,12 @@ export async function RouteAccessBoundary({ children }: Readonly<{ children: Rea
 
     if (accessToken) {
       const adminAccess =
-        pathname === "/admin/finance" || pathname.startsWith("/admin/finance/")
+        pathname === "/admin/dashboard"
+          ? await getFinanceDashboardAdminAccess({
+              accessToken,
+              profile
+            })
+          : pathname === "/admin/finance" || pathname.startsWith("/admin/finance/")
           ? await getFinanceSettlementAdminAccess({
               accessToken,
               profile

@@ -2,12 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CheckoutPaymentPage from "@/app/checkout/payment/page";
 import { ProductDetailPilot } from "@/components/pilot/ProductDetailPilot";
-import ResellerDashboardPage from "@/app/reseller/dashboard/page";
+import { ResellerDashboardCoreScreen } from "@/components/reseller/screens";
 import { pilotCheckout, pilotProduct } from "@/lib/mock/pilot-screens";
 
 describe("Phase 3 pilot screens", () => {
   it("renders the reseller dashboard with mobile PWA operations and commission states", () => {
-    render(<ResellerDashboardPage />);
+    render(<ResellerDashboardCoreScreen />);
 
     expect(screen.getByRole("heading", { name: /Ama's Beauty Plug/i })).toBeInTheDocument();
     expect(screen.getByText("Legon, Accra")).toBeInTheDocument();
