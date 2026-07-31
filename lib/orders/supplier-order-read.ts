@@ -2,6 +2,7 @@ import "server-only";
 
 export {
   initialSupplierOrderState,
+  supplierOrderDeliveryMethodCodes,
   supplierOrderRejectReasonCodes,
   type SupplierOrderCode,
   type SupplierOrderSafe,
@@ -10,6 +11,7 @@ export {
 
 import {
   initialSupplierOrderState,
+  supplierOrderDeliveryMethodCodes,
   supplierOrderRejectReasonCodes,
   type SupplierOrderSafe,
   type SupplierOrderState
@@ -30,6 +32,17 @@ export type SupplierOrderDecisionInput = {
 export type SupplierOrderRejectInput = SupplierOrderDecisionInput & {
   reasonCode?: string | null;
   reasonNote?: string | null;
+};
+
+export type SupplierOrderDeliveryArrangementInput = SupplierOrderDecisionInput & {
+  deliveryMethod?: string | null;
+  agreedDeliveryFeeAmount?: string | number | null;
+  expectedDeliveryDate?: string | null;
+  expectedTimeWindow?: string | null;
+  courierDisplayName?: string | null;
+  courierPhone?: string | null;
+  customerInstruction?: string | null;
+  supplierPrivateNote?: string | null;
 };
 
 export type SupplierOrderRpcClient = {
@@ -72,9 +85,47 @@ function normalizeIdempotencyKey(value: string | null | undefined) {
 
 function normalizeStatus(value: string | null | undefined) {
   const text = cleanOptionalText(value);
-  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery"]);
+  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged"]);
 
   return text && allowed.has(text) ? text : null;
+}
+
+function normalizeDeliveryMethod(value: string | null | undefined) {
+  const text = cleanOptionalText(value);
+
+  if (!text || !supplierOrderDeliveryMethodCodes.includes(text as (typeof supplierOrderDeliveryMethodCodes)[number])) {
+    throw new Error("Choose a valid delivery method");
+  }
+
+  return text;
+}
+
+function normalizeDeliveryFee(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const amount = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(amount)) {
+    throw new Error("Delivery fee must be a valid amount");
+  }
+
+  if (amount < 0) {
+    throw new Error("Delivery fee must be zero or greater");
+  }
+
+  return Math.round(amount * 100) / 100;
+}
+
+function normalizeBoundedText(value: string | null | undefined, maxLength = 100) {
+  const text = cleanOptionalText(value);
+
+  if (text && text.length > maxLength) {
+    throw new Error("Delivery arrangement text is too long");
+  }
+
+  return text;
 }
 
 function normalizeLimit(value: number | null | undefined) {
@@ -124,6 +175,23 @@ export function buildMarkReadyForDeliverySupplierOrderPayload(input: SupplierOrd
   return {
     p_order_id: orderId,
     p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-ready-for-delivery:${orderId}`
+  };
+}
+
+export function buildArrangeSupplierOrderDeliveryPayload(input: SupplierOrderDeliveryArrangementInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+
+  return {
+    p_order_id: orderId,
+    p_delivery_method: normalizeDeliveryMethod(input.deliveryMethod),
+    p_agreed_delivery_fee_amount: normalizeDeliveryFee(input.agreedDeliveryFeeAmount),
+    p_expected_delivery_date: cleanOptionalText(input.expectedDeliveryDate),
+    p_expected_time_window: normalizeBoundedText(input.expectedTimeWindow),
+    p_courier_display_name: normalizeBoundedText(input.courierDisplayName, 120),
+    p_courier_phone: normalizeBoundedText(input.courierPhone, 40),
+    p_customer_instruction: normalizeBoundedText(input.customerInstruction, 500),
+    p_supplier_private_note: normalizeBoundedText(input.supplierPrivateNote, 500),
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-arrange-delivery:${orderId}`
   };
 }
 
@@ -212,6 +280,38 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
 
   if (combined.includes("already_ready")) {
     return { code: "ALREADY_READY", message: "This order is already ready for delivery." };
+  }
+
+  if (combined.includes("already_arranged")) {
+    return { code: "ALREADY_ARRANGED", message: "Delivery arrangement has already been recorded." };
+  }
+
+  if (combined.includes("invalid_delivery_method") || combined.includes("choose a valid delivery method")) {
+    return { code: "INVALID_DELIVERY_METHOD", message: "Choose a valid delivery method." };
+  }
+
+  if (combined.includes("invalid_delivery_fee") || combined.includes("delivery fee must")) {
+    return { code: "INVALID_DELIVERY_FEE", message: "Enter a valid delivery fee." };
+  }
+
+  if (combined.includes("delivery_fee_too_high")) {
+    return { code: "DELIVERY_FEE_TOO_HIGH", message: "The delivery fee is above the allowed limit." };
+  }
+
+  if (combined.includes("expected_date_in_past")) {
+    return { code: "EXPECTED_DATE_IN_PAST", message: "Choose today or a future expected delivery date." };
+  }
+
+  if (combined.includes("invalid_courier_phone")) {
+    return { code: "INVALID_COURIER_PHONE", message: "Enter a valid courier or rider phone number." };
+  }
+
+  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long")) {
+    return { code: "FIELD_TOO_LONG", message: "Keep delivery arrangement notes within the allowed length." };
+  }
+
+  if (combined.includes("conflicting_retry")) {
+    return { code: "CONFLICTING_RETRY", message: "This retry does not match the saved delivery arrangement. Refresh the order." };
   }
 
   if (combined.includes("preparation_not_started")) {
@@ -315,6 +415,20 @@ export async function markReadyForDeliverySupplierOrderWithClient(client: Suppli
   }
 }
 
+export async function arrangeSupplierOrderDeliveryWithClient(client: SupplierOrderRpcClient, input: SupplierOrderDeliveryArrangementInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_arrange_order_delivery", buildArrangeSupplierOrderDeliveryPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Delivery arrangement saved" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
 export async function rejectSupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderRejectInput) {
   try {
     const { data, error } = await client.rpc<unknown[]>("supplier_reject_order", buildRejectSupplierOrderPayload(input));
@@ -395,6 +509,17 @@ function mapSupplierOrderRow(row: unknown): SupplierOrderSafe {
     deliveryAddressSnapshot: mapJsonObject(item.delivery_address_snapshot),
     locationSummary: nullableString(item.location_summary),
     resellerShopName: nullableString(item.reseller_shop_name),
-    resellerShopSlug: nullableString(item.reseller_shop_slug)
+    resellerShopSlug: nullableString(item.reseller_shop_slug),
+    deliveryArrangementMethod: nullableString(item.delivery_arrangement_method),
+    deliveryArrangementMethodLabel: nullableString(item.delivery_arrangement_method_label),
+    deliveryArrangementFeeAmount: nullableNumber(item.delivery_arrangement_fee_amount),
+    deliveryArrangementCurrencyCode: nullableString(item.delivery_arrangement_currency_code),
+    deliveryArrangementExpectedDate: nullableString(item.delivery_arrangement_expected_date),
+    deliveryArrangementTimeWindow: nullableString(item.delivery_arrangement_time_window),
+    deliveryArrangementCourierName: nullableString(item.delivery_arrangement_courier_name),
+    deliveryArrangementCourierPhone: nullableString(item.delivery_arrangement_courier_phone),
+    deliveryArrangementCustomerInstruction: nullableString(item.delivery_arrangement_customer_instruction),
+    deliveryArrangementSupplierPrivateNote: nullableString(item.delivery_arrangement_supplier_private_note),
+    deliveryArrangedAt: nullableString(item.delivery_arranged_at)
   };
 }

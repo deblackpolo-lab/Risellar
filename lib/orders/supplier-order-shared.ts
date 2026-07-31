@@ -14,7 +14,15 @@ export type SupplierOrderCode =
   | "ALREADY_REJECTED"
   | "ALREADY_PREPARING"
   | "ALREADY_READY"
+  | "ALREADY_ARRANGED"
   | "PREPARATION_NOT_STARTED"
+  | "INVALID_DELIVERY_METHOD"
+  | "INVALID_DELIVERY_FEE"
+  | "DELIVERY_FEE_TOO_HIGH"
+  | "EXPECTED_DATE_IN_PAST"
+  | "INVALID_COURIER_PHONE"
+  | "FIELD_TOO_LONG"
+  | "CONFLICTING_RETRY"
   | "INVALID_REJECTION_REASON"
   | "REJECTION_NOTE_TOO_LONG"
   | "STOCK_RELEASE_FAILED"
@@ -57,6 +65,17 @@ export type SupplierOrderSafe = {
   locationSummary?: string | null;
   resellerShopName: string | null;
   resellerShopSlug: string | null;
+  deliveryArrangementMethod: string | null;
+  deliveryArrangementMethodLabel: string | null;
+  deliveryArrangementFeeAmount: number | null;
+  deliveryArrangementCurrencyCode: string | null;
+  deliveryArrangementExpectedDate: string | null;
+  deliveryArrangementTimeWindow: string | null;
+  deliveryArrangementCourierName: string | null;
+  deliveryArrangementCourierPhone: string | null;
+  deliveryArrangementCustomerInstruction: string | null;
+  deliveryArrangementSupplierPrivateNote: string | null;
+  deliveryArrangedAt: string | null;
 };
 
 export const initialSupplierOrderState: SupplierOrderState = {
@@ -70,5 +89,14 @@ export const supplierOrderRejectReasonCodes = [
   "unable_to_fulfil",
   "incorrect_listing",
   "supplier_temporarily_closed",
+  "other"
+] as const;
+
+export const supplierOrderDeliveryMethodCodes = [
+  "supplier_rider",
+  "third_party_courier",
+  "ride_hailing",
+  "customer_pickup",
+  "manually_arranged",
   "other"
 ] as const;

@@ -25,6 +25,16 @@ export type CustomerOrderSafe = {
   paymentCollectionLabel: string;
   deliveryStatusLabel: string;
   deliveryQuoteLabel: string;
+  deliveryArrangementMethodLabel: string | null;
+  deliveryArrangementFeeAmount: number | null;
+  deliveryArrangementCurrencyCode: string | null;
+  deliveryArrangementExpectedDate: string | null;
+  deliveryArrangementTimeWindow: string | null;
+  deliveryArrangementCourierName: string | null;
+  deliveryArrangementCourierPhone: string | null;
+  deliveryArrangementCustomerInstruction: string | null;
+  deliveryArrangedAt: string | null;
+  deliveryArrangementNotice: string | null;
   productName: string;
   productSlug: string | null;
   productImageSnapshot: Record<string, unknown>;
@@ -152,6 +162,16 @@ function mapCustomerOrderRow(row: unknown): CustomerOrderSafe {
     paymentCollectionLabel: requiredString(item.payment_collection_label, "Payment not collected"),
     deliveryStatusLabel: requiredString(item.delivery_status_label, "Delivery not arranged yet"),
     deliveryQuoteLabel: requiredString(item.delivery_quote_label, "Delivery fee not confirmed"),
+    deliveryArrangementMethodLabel: nullableString(item.delivery_arrangement_method_label),
+    deliveryArrangementFeeAmount: nullableNumber(item.delivery_arrangement_fee_amount),
+    deliveryArrangementCurrencyCode: nullableString(item.delivery_arrangement_currency_code),
+    deliveryArrangementExpectedDate: nullableString(item.delivery_arrangement_expected_date),
+    deliveryArrangementTimeWindow: nullableString(item.delivery_arrangement_time_window),
+    deliveryArrangementCourierName: nullableString(item.delivery_arrangement_courier_name),
+    deliveryArrangementCourierPhone: nullableString(item.delivery_arrangement_courier_phone),
+    deliveryArrangementCustomerInstruction: nullableString(item.delivery_arrangement_customer_instruction),
+    deliveryArrangedAt: nullableString(item.delivery_arranged_at),
+    deliveryArrangementNotice: nullableString(item.delivery_arrangement_notice),
     productName: requiredString(item.product_name, "Product unavailable"),
     productSlug: nullableString(item.product_slug),
     productImageSnapshot: mapJsonObject(item.product_image_snapshot),

@@ -6,11 +6,13 @@ import { canAccessRoute, getVerifiedRouteAccessProfile } from "@/lib/auth/route-
 import {
   acceptSupplierOrderWithClient,
   buildAcceptSupplierOrderPayload,
+  buildArrangeSupplierOrderDeliveryPayload,
   buildListSupplierOrdersSafePayload,
   buildMarkReadyForDeliverySupplierOrderPayload,
   buildRejectSupplierOrderPayload,
   buildStartPreparingSupplierOrderPayload,
   buildSupplierOrderDetailPayload,
+  arrangeSupplierOrderDeliveryWithClient,
   listSupplierOrdersSafeWithClient,
   markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
@@ -82,7 +84,18 @@ const pendingOrder: SupplierOrderSafe = {
   recipientWhatsapp: "Masked WhatsApp",
   deliveryAddressSnapshot: { region: "Greater Accra", city: "Accra", area: "QA Area", landmark: "QA Landmark" },
   resellerShopName: "QA Reseller Shop",
-  resellerShopSlug: "qa-reseller-shop"
+  resellerShopSlug: "qa-reseller-shop",
+  deliveryArrangementMethod: null,
+  deliveryArrangementMethodLabel: null,
+  deliveryArrangementFeeAmount: null,
+  deliveryArrangementCurrencyCode: null,
+  deliveryArrangementExpectedDate: null,
+  deliveryArrangementTimeWindow: null,
+  deliveryArrangementCourierName: null,
+  deliveryArrangementCourierPhone: null,
+  deliveryArrangementCustomerInstruction: null,
+  deliveryArrangementSupplierPrivateNote: null,
+  deliveryArrangedAt: null
 };
 
 describe("Supplier Order Handling S6 UI integration", () => {
@@ -216,6 +229,75 @@ describe("Supplier Order Handling S6 UI integration", () => {
     }
   });
 
+  it("calls delivery arrangement RPC with server-resolved supplier, currency, status, stock, and payment fields", async () => {
+    const { calls, client } = createRpcSpyClient({ data: [{ order_id: pendingOrder.orderId, order_number: pendingOrder.orderNumber }] });
+
+    await arrangeSupplierOrderDeliveryWithClient(client, {
+      orderId: pendingOrder.orderId,
+      deliveryMethod: "third_party_courier",
+      agreedDeliveryFeeAmount: "25.50",
+      expectedDeliveryDate: "2026-08-01",
+      expectedTimeWindow: "Morning",
+      courierDisplayName: "QA Courier",
+      courierPhone: "+233200000000",
+      customerInstruction: "Call before arrival",
+      supplierPrivateNote: "Private supplier-only QA note",
+      idempotencyKey: `supplier-arrange-delivery:${pendingOrder.orderId}`
+    });
+
+    expect(calls).toEqual([
+      {
+        name: "supplier_arrange_order_delivery",
+        args: buildArrangeSupplierOrderDeliveryPayload({
+          orderId: pendingOrder.orderId,
+          deliveryMethod: "third_party_courier",
+          agreedDeliveryFeeAmount: "25.50",
+          expectedDeliveryDate: "2026-08-01",
+          expectedTimeWindow: "Morning",
+          courierDisplayName: "QA Courier",
+          courierPhone: "+233200000000",
+          customerInstruction: "Call before arrival",
+          supplierPrivateNote: "Private supplier-only QA note",
+          idempotencyKey: `supplier-arrange-delivery:${pendingOrder.orderId}`
+        })
+      }
+    ]);
+    expect(calls[0].args).toMatchObject({
+      p_order_id: pendingOrder.orderId,
+      p_delivery_method: "third_party_courier",
+      p_agreed_delivery_fee_amount: 25.5,
+      p_expected_delivery_date: "2026-08-01",
+      p_expected_time_window: "Morning",
+      p_courier_display_name: "QA Courier",
+      p_courier_phone: "+233200000000",
+      p_customer_instruction: "Call before arrival",
+      p_supplier_private_note: "Private supplier-only QA note",
+      p_idempotency_key: `supplier-arrange-delivery:${pendingOrder.orderId}`
+    });
+
+    for (const forbiddenField of [
+      "p_supplier_id",
+      "p_customer_id",
+      "p_reseller_id",
+      "p_product_id",
+      "p_variant_id",
+      "p_order_status",
+      "p_currency",
+      "p_stock",
+      "p_payment_status",
+      "p_total"
+    ]) {
+      expect(calls[0].args).not.toHaveProperty(forbiddenField);
+    }
+  });
+
+  it("validates delivery arrangement inputs before calling the RPC", () => {
+    expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "book_uber" })).toThrow("Choose a valid delivery method");
+    expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", agreedDeliveryFeeAmount: "-1" })).toThrow("Delivery fee must be zero or greater");
+    expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", agreedDeliveryFeeAmount: "not money" })).toThrow("Delivery fee must be a valid amount");
+    expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", expectedTimeWindow: "x".repeat(101) })).toThrow("Delivery arrangement text is too long");
+  });
+
   it("requires valid rejection reasons and bounded notes", () => {
     expect(() => buildRejectSupplierOrderPayload({ orderId: pendingOrder.orderId, reasonCode: "" })).toThrow("Rejection reason is required");
     expect(() => buildRejectSupplierOrderPayload({ orderId: pendingOrder.orderId, reasonCode: "admin_override" })).toThrow("Choose a valid rejection reason");
@@ -234,6 +316,9 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(mapSupplierOrderRpcError({ message: "ALREADY_REJECTED" })).toMatchObject({ code: "ALREADY_REJECTED" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_PREPARING" })).toMatchObject({ code: "ALREADY_PREPARING" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_READY" })).toMatchObject({ code: "ALREADY_READY" });
+    expect(mapSupplierOrderRpcError({ message: "ALREADY_ARRANGED" })).toMatchObject({ code: "ALREADY_ARRANGED" });
+    expect(mapSupplierOrderRpcError({ message: "INVALID_DELIVERY_METHOD" })).toMatchObject({ code: "INVALID_DELIVERY_METHOD" });
+    expect(mapSupplierOrderRpcError({ message: "CONFLICTING_RETRY" })).toMatchObject({ code: "CONFLICTING_RETRY" });
     expect(mapSupplierOrderRpcError({ message: "PREPARATION_NOT_STARTED" })).toMatchObject({ code: "PREPARATION_NOT_STARTED" });
     expect(mapSupplierOrderRpcError({ message: "INVALID_REJECTION_REASON" })).toMatchObject({ code: "INVALID_REJECTION_REASON" });
     expect(mapSupplierOrderRpcError({ message: "REJECTION_NOTE_TOO_LONG" })).toMatchObject({ code: "REJECTION_NOTE_TOO_LONG" });
@@ -292,12 +377,48 @@ describe("Supplier Order Handling S6 UI integration", () => {
       <SupplierOrderDetailRpcScreen
         actionState={{ code: "OK", message: "Order is ready for delivery" }}
         order={{ ...pendingOrder, orderStatus: "ready_for_delivery", orderStatusLabel: "Ready for delivery", isSupplierActionable: false }}
+        arrangeDeliveryAction={vi.fn()}
         markReadyForDeliveryAction={vi.fn()}
       />
     );
     expect(screen.getByText("Order is ready for delivery")).toBeInTheDocument();
-    expect(screen.getByText("This order is prepared and waiting for delivery arrangement. No rider or delivery fee has been confirmed yet.")).toBeInTheDocument();
+    expect(screen.getByText("Record the manual delivery arrangement once you and the customer have agreed the handoff outside Risellar. This does not book a courier, assign a rider, collect payment, or mark the order delivered.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Delivery method" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Agreed delivery fee")).toBeInTheDocument();
+    expect(screen.getByLabelText("Expected date")).toBeInTheDocument();
+    expect(screen.getByLabelText("Courier or rider display name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Private supplier note")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save delivery arrangement" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Confirm this is a manual arrangement/i }));
+    expect(screen.getByRole("button", { name: "Save delivery arrangement" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Mark ready for delivery" })).not.toBeInTheDocument();
+
+    rerender(
+      <SupplierOrderDetailRpcScreen
+        actionState={{ code: "OK", message: "Delivery arrangement saved" }}
+        order={{
+          ...pendingOrder,
+          orderStatus: "delivery_arranged",
+          orderStatusLabel: "Delivery arranged",
+          deliveryArrangementMethodLabel: "Third-party courier",
+          deliveryArrangementFeeAmount: 25.5,
+          deliveryArrangementCurrencyCode: "GHS",
+          deliveryArrangementExpectedDate: "2026-08-01",
+          deliveryArrangementTimeWindow: "Morning",
+          deliveryArrangementCourierName: "QA Courier",
+          deliveryArrangementCourierPhone: "+233200000000",
+          deliveryArrangementCustomerInstruction: "Call before arrival",
+          deliveryArrangementSupplierPrivateNote: "Private supplier-only QA note",
+          deliveryArrangedAt: "2026-07-30T12:20:00.000Z"
+        }}
+        arrangeDeliveryAction={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Delivery arrangement saved")).toBeInTheDocument();
+    expect(screen.getByText("The delivery arrangement has been recorded. Payment has not been collected and the order has not been marked delivered.")).toBeInTheDocument();
+    expect(screen.getByText("Third-party courier")).toBeInTheDocument();
+    expect(screen.getByText("Private supplier-only QA note")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save delivery arrangement" })).not.toBeInTheDocument();
 
     expect(document.body.innerHTML).not.toMatch(/customer email|reseller margin|platform margin|commission|settlement|risk|raw stock/i);
   });
@@ -321,6 +442,8 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(sources).toContain("supplier_reject_order");
     expect(sources).toContain("supplier_start_preparing");
     expect(sources).toContain("supplier_mark_ready_for_delivery");
+    expect(sources).toContain("supplier_arrange_order_delivery");
+    expect(sources).toContain("supplier-arrange-delivery:");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("prepare_supplier_for_order");

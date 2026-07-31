@@ -5,6 +5,7 @@ import {
 import { initialSupplierOrderState, type SupplierOrderState } from "@/lib/orders/supplier-order-read";
 import {
   acceptSupplierOrderFormAction,
+  arrangeSupplierOrderDeliveryFormAction,
   getSupplierOrderForCurrentUser,
   markSupplierOrderReadyForDeliveryFormAction,
   rejectSupplierOrderFormAction,
@@ -28,6 +29,10 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     return { code: "OK", message: "Order is ready for delivery" };
   }
 
+  if (searchParams?.supplier_order_message === "DELIVERY_ARRANGED") {
+    return { code: "OK", message: "Delivery arrangement saved" };
+  }
+
   const errorCode = searchParams?.supplier_order_error;
 
   if (!errorCode) {
@@ -49,7 +54,15 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     ALREADY_REJECTED: "This order has already been rejected.",
     ALREADY_PREPARING: "Preparation has already started.",
     ALREADY_READY: "This order is already ready for delivery.",
+    ALREADY_ARRANGED: "Delivery arrangement has already been recorded.",
     PREPARATION_NOT_STARTED: "Preparation has not started for this order.",
+    INVALID_DELIVERY_METHOD: "Choose a valid delivery method.",
+    INVALID_DELIVERY_FEE: "Enter a valid delivery fee.",
+    DELIVERY_FEE_TOO_HIGH: "The delivery fee is above the allowed limit.",
+    EXPECTED_DATE_IN_PAST: "Choose today or a future expected delivery date.",
+    INVALID_COURIER_PHONE: "Enter a valid courier or rider phone number.",
+    FIELD_TOO_LONG: "Keep delivery arrangement notes within the allowed length.",
+    CONFLICTING_RETRY: "This retry does not match the saved delivery arrangement. Refresh the order.",
     INVALID_REJECTION_REASON: "Choose a valid rejection reason.",
     REJECTION_NOTE_TOO_LONG: "Keep the note within the allowed length.",
     STOCK_RELEASE_FAILED: "The reserved stock could not be released safely.",
@@ -79,6 +92,7 @@ export default async function SupplierOrderDetailPage({
     <SupplierOrderDetailRpcScreen
       acceptAction={acceptSupplierOrderFormAction}
       actionState={stateFromSearchParams(query)}
+      arrangeDeliveryAction={arrangeSupplierOrderDeliveryFormAction}
       markReadyForDeliveryAction={markSupplierOrderReadyForDeliveryFormAction}
       order={order}
       rejectAction={rejectSupplierOrderFormAction}

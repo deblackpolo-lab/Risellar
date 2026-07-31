@@ -22,6 +22,16 @@ function snapshotText(snapshot: Record<string, unknown>, key: string) {
   return typeof value === "string" && value.trim() ? value : "Not set";
 }
 
+function formatDateOnly(value: string | null) {
+  if (!value) {
+    return "Not set";
+  }
+
+  return new Intl.DateTimeFormat("en-GH", {
+    dateStyle: "medium"
+  }).format(new Date(`${value}T00:00:00`));
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-2 last:border-b-0 last:pb-0">
@@ -140,6 +150,25 @@ function CustomerOrderDetailScreen({ order, placed }: { order: CustomerOrderSafe
           <InfoRow label="Stock reservation" value={order.reservationStatusLabel} />
         </div>
       </Card>
+
+      {order.deliveryArrangementMethodLabel ? (
+        <Card title="Delivery arrangement">
+          <div className="grid gap-3 text-sm">
+            <InfoRow label="Method" value={order.deliveryArrangementMethodLabel} />
+            <InfoRow label="Agreed fee" value={formatMoney(order.deliveryArrangementFeeAmount, order.deliveryArrangementCurrencyCode ?? order.currencyCode)} />
+            <InfoRow label="Expected date" value={formatDateOnly(order.deliveryArrangementExpectedDate)} />
+            <InfoRow label="Time window" value={order.deliveryArrangementTimeWindow ?? "Not set"} />
+            <InfoRow label="Courier/rider" value={order.deliveryArrangementCourierName ?? "Not set"} />
+            <InfoRow label="Courier phone" value={order.deliveryArrangementCourierPhone ?? "Not set"} />
+            <InfoRow label="Instruction" value={order.deliveryArrangementCustomerInstruction ?? "Not set"} />
+          </div>
+          {order.deliveryArrangementNotice ? (
+            <p className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-primary)]/20 bg-[var(--color-accent-soft)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+              {order.deliveryArrangementNotice}
+            </p>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card title="Contact and delivery snapshot">
         <div className="grid gap-3 text-sm">

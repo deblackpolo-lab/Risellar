@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getCurrentSyncedProfile } from "@/lib/auth/profile-sync";
 import {
   acceptSupplierOrderWithClient,
+  arrangeSupplierOrderDeliveryWithClient,
   getSupplierOrderSafeWithClient,
   listSupplierOrdersSafeWithClient,
   markReadyForDeliverySupplierOrderWithClient,
@@ -141,6 +142,46 @@ export async function markSupplierOrderReadyForDeliveryFormAction(formData: Form
     revalidatePath(`/supplier/orders/${orderId}`);
     nextPath = result.order
       ? `/supplier/orders/${orderId}?supplier_order_message=READY_FOR_DELIVERY`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
+  } catch (error) {
+    const state = mapSupplierOrderRpcError(error);
+    nextPath = state.code === "AUTH_REQUIRED"
+      ? `/sign-in?redirect_url=${encodeURIComponent(`/supplier/orders/${orderId}`)}`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(state.code)}`;
+  }
+
+  redirect(nextPath);
+}
+
+export async function arrangeSupplierOrderDeliveryFormAction(formData: FormData) {
+  const orderId = formData.get("order_id")?.toString() ?? "";
+  let nextPath = `/supplier/orders/${orderId}`;
+
+  try {
+    const acknowledgement = formData.get("delivery_arrangement_acknowledgement")?.toString();
+
+    if (acknowledgement !== "confirmed") {
+      throw new Error("VALIDATION_ERROR");
+    }
+
+    const supabase = await getSupplierOrderClient();
+    const result = await arrangeSupplierOrderDeliveryWithClient(supabase, {
+      orderId,
+      deliveryMethod: formData.get("delivery_method")?.toString(),
+      agreedDeliveryFeeAmount: formData.get("agreed_delivery_fee_amount")?.toString(),
+      expectedDeliveryDate: formData.get("expected_delivery_date")?.toString(),
+      expectedTimeWindow: formData.get("expected_time_window")?.toString(),
+      courierDisplayName: formData.get("courier_display_name")?.toString(),
+      courierPhone: formData.get("courier_phone")?.toString(),
+      customerInstruction: formData.get("customer_instruction")?.toString(),
+      supplierPrivateNote: formData.get("supplier_private_note")?.toString(),
+      idempotencyKey: formData.get("idempotency_key")?.toString()
+    });
+
+    revalidatePath("/supplier/orders");
+    revalidatePath(`/supplier/orders/${orderId}`);
+    nextPath = result.order
+      ? `/supplier/orders/${orderId}?supplier_order_message=DELIVERY_ARRANGED`
       : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
   } catch (error) {
     const state = mapSupplierOrderRpcError(error);

@@ -62,6 +62,16 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
           payment_collection_label: "Payment not collected",
           delivery_status_label: "Delivery not arranged yet",
           delivery_quote_label: "Delivery fee not confirmed",
+          delivery_arrangement_method_label: "Third-party courier",
+          delivery_arrangement_fee_amount: 25,
+          delivery_arrangement_currency_code: "GHS",
+          delivery_arrangement_expected_date: "2026-08-01",
+          delivery_arrangement_time_window: "Morning",
+          delivery_arrangement_courier_name: "QA Courier",
+          delivery_arrangement_courier_phone: "+233200000000",
+          delivery_arrangement_customer_instruction: "Call before arrival",
+          delivery_arranged_at: "2026-07-30T12:20:00.000Z",
+          delivery_arrangement_notice: "You will pay according to the Pay on Delivery arrangement.",
           product_name: "QA Product",
           product_slug: "qa-product",
           product_image_snapshot: { image_count: 1 },
@@ -87,8 +97,12 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
       productName: "QA Product",
       paymentMethodLabel: "Pay on Delivery",
       paymentCollectionLabel: "Payment not collected",
-      reservationStatusLabel: "Stock reserved for this order"
+      reservationStatusLabel: "Stock reserved for this order",
+      deliveryArrangementMethodLabel: "Third-party courier",
+      deliveryArrangementCustomerInstruction: "Call before arrival",
+      deliveryArrangementNotice: "You will pay according to the Pay on Delivery arrangement."
     });
+    expect(JSON.stringify(result.order)).not.toMatch(/supplier private|supplier_private_note|idempotency|arranged_by/i);
     expect(calls).toEqual([
       {
         name: "get_customer_order_safe",
@@ -128,6 +142,16 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
       "paymentCollectionLabel",
       "deliveryStatusLabel",
       "deliveryQuoteLabel",
+      "deliveryArrangementMethodLabel",
+      "deliveryArrangementFeeAmount",
+      "deliveryArrangementCurrencyCode",
+      "deliveryArrangementExpectedDate",
+      "deliveryArrangementTimeWindow",
+      "deliveryArrangementCourierName",
+      "deliveryArrangementCourierPhone",
+      "deliveryArrangementCustomerInstruction",
+      "deliveryArrangedAt",
+      "deliveryArrangementNotice",
       "productName",
       "productSlug",
       "productImageSnapshot",

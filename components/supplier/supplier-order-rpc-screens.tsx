@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, CheckCircle2, PackageCheck, RotateCw, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, PackageCheck, RotateCw, Truck, XCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { Button, Card, Select, StatusBadge, Textarea } from "@/components/ui";
 import {
   initialSupplierOrderState,
+  supplierOrderDeliveryMethodCodes,
   supplierOrderRejectReasonCodes,
   type SupplierOrderSafe,
   type SupplierOrderState
@@ -32,6 +33,16 @@ function formatDate(value: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatDateOnly(value: string | null) {
+  if (!value) {
+    return "Not set";
+  }
+
+  return new Intl.DateTimeFormat("en-GH", {
+    dateStyle: "medium"
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function snapshotText(snapshot: Record<string, unknown>, key: string) {
@@ -87,6 +98,10 @@ function ActionMessage({ state }: { state: SupplierOrderState }) {
 }
 
 function statusGroup(status: string) {
+  if (status === "delivery_arranged") {
+    return "Arranged";
+  }
+
   if (status === "ready_for_delivery") {
     return "Ready";
   }
@@ -113,6 +128,7 @@ export function SupplierOrdersRpcScreen({ orders, error }: { orders: SupplierOrd
       ["Confirmed", []],
       ["Preparing", []],
       ["Ready", []],
+      ["Arranged", []],
       ["Rejected", []]
     ]);
 
@@ -194,9 +210,11 @@ export function SupplierOrderDetailRpcScreen({
   markReadyForDeliveryAction,
   order,
   rejectAction,
-  startPreparingAction
+  startPreparingAction,
+  arrangeDeliveryAction
 }: {
   acceptAction?: SupplierOrderAction;
+  arrangeDeliveryAction?: SupplierOrderAction;
   actionState?: SupplierOrderState;
   markReadyForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
@@ -258,6 +276,7 @@ export function SupplierOrderDetailRpcScreen({
           <ActionMessage state={actionState} />
           <SupplierOrderDecisionActions
             acceptAction={acceptAction}
+            arrangeDeliveryAction={arrangeDeliveryAction}
             markReadyForDeliveryAction={markReadyForDeliveryAction}
             order={order}
             rejectAction={rejectAction}
@@ -274,9 +293,11 @@ export function SupplierOrderDecisionActions({
   markReadyForDeliveryAction,
   order,
   rejectAction,
-  startPreparingAction
+  startPreparingAction,
+  arrangeDeliveryAction
 }: {
   acceptAction?: SupplierOrderAction;
+  arrangeDeliveryAction?: SupplierOrderAction;
   markReadyForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
@@ -285,6 +306,10 @@ export function SupplierOrderDecisionActions({
   const [fulfilmentAcknowledged, setFulfilmentAcknowledged] = useState(false);
   const [preparationAcknowledged, setPreparationAcknowledged] = useState(false);
   const [readyAcknowledged, setReadyAcknowledged] = useState(false);
+  const [deliveryAcknowledged, setDeliveryAcknowledged] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState("manually_arranged");
+  const [customerInstruction, setCustomerInstruction] = useState("");
+  const [supplierPrivateNote, setSupplierPrivateNote] = useState("");
   const [reasonCode, setReasonCode] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const canAct = order.isSupplierActionable && order.orderStatus === "placed_pending_confirmation";
@@ -294,6 +319,10 @@ export function SupplierOrderDecisionActions({
     !order.reservationStatusLabel.toLowerCase().includes("expired");
   const canMarkReady =
     order.orderStatus === "supplier_preparing" &&
+    order.reservationStatusLabel.toLowerCase().includes("reserved") &&
+    !order.reservationStatusLabel.toLowerCase().includes("expired");
+  const canArrangeDelivery =
+    order.orderStatus === "ready_for_delivery" &&
     order.reservationStatusLabel.toLowerCase().includes("reserved") &&
     !order.reservationStatusLabel.toLowerCase().includes("expired");
 
@@ -353,6 +382,120 @@ export function SupplierOrderDecisionActions({
             icon={<PackageCheck className="h-4 w-4" aria-hidden="true" />}
             label="Mark ready for delivery"
             pendingLabel="Marking order ready..."
+          />
+        </form>
+      </Card>
+    );
+  }
+
+  if (canArrangeDelivery && arrangeDeliveryAction) {
+    return (
+      <Card title="Arrange delivery">
+        <form action={arrangeDeliveryAction} className="grid gap-4">
+          <input name="order_id" type="hidden" value={order.orderId} />
+          <input name="idempotency_key" type="hidden" value={`supplier-arrange-delivery:${order.orderId}`} />
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Record the manual delivery arrangement once you and the customer have agreed the handoff outside Risellar. This does not book a courier, assign a rider, collect payment, or mark the order delivered.
+          </p>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Delivery method
+            <Select name="delivery_method" required value={deliveryMethod} onChange={(event) => setDeliveryMethod(event.target.value)}>
+              {supplierOrderDeliveryMethodCodes.map((method) => (
+                <option key={method} value={method}>
+                  {method.replaceAll("_", " ")}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Agreed delivery fee
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              min="0"
+              name="agreed_delivery_fee_amount"
+              placeholder="Optional"
+              step="0.01"
+              type="number"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Expected date
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              name="expected_delivery_date"
+              type="date"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Expected time window
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              maxLength={100}
+              name="expected_time_window"
+              placeholder="Optional"
+              type="text"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Courier or rider display name
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              maxLength={120}
+              name="courier_display_name"
+              placeholder="Optional"
+              type="text"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Courier or rider phone
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              maxLength={40}
+              name="courier_phone"
+              placeholder="Optional"
+              type="tel"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Customer instruction
+            <Textarea
+              aria-label="Customer instruction"
+              maxLength={500}
+              name="customer_instruction"
+              placeholder="Optional instruction visible to the customer"
+              value={customerInstruction}
+              onChange={(event) => setCustomerInstruction(event.target.value)}
+            />
+            <span className="text-xs font-semibold text-[var(--color-muted)]">{customerInstruction.length}/500</span>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Private supplier note
+            <Textarea
+              aria-label="Private supplier note"
+              maxLength={500}
+              name="supplier_private_note"
+              placeholder="Optional internal supplier note"
+              value={supplierPrivateNote}
+              onChange={(event) => setSupplierPrivateNote(event.target.value)}
+            />
+            <span className="text-xs font-semibold text-[var(--color-muted)]">{supplierPrivateNote.length}/500</span>
+          </label>
+          <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+            <input
+              checked={deliveryAcknowledged}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+              name="delivery_arrangement_acknowledgement"
+              onChange={(event) => setDeliveryAcknowledged(event.currentTarget.checked)}
+              type="checkbox"
+              value="confirmed"
+            />
+            Confirm this is a manual arrangement outside Risellar and no payment, delivery booking, rider assignment, tracking, or completion is being triggered.
+          </label>
+          <SupplierSubmitButton
+            disabled={!deliveryAcknowledged}
+            icon={<Truck className="h-4 w-4" aria-hidden="true" />}
+            label="Save delivery arrangement"
+            pendingLabel="Saving arrangement..."
           />
         </form>
       </Card>
@@ -452,6 +595,29 @@ function SupplierSubmitButton({
 }
 
 function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
+  if (order.orderStatus === "delivery_arranged") {
+    return (
+      <Card title="Delivery arranged">
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            The delivery arrangement has been recorded. Payment has not been collected and the order has not been marked delivered.
+          </p>
+          <div className="grid gap-3 text-sm">
+            <InfoRow label="Method" value={order.deliveryArrangementMethodLabel ?? "Not set"} />
+            <InfoRow label="Agreed fee" value={formatMoney(order.deliveryArrangementFeeAmount, order.deliveryArrangementCurrencyCode ?? order.currencyCode)} />
+            <InfoRow label="Expected date" value={formatDateOnly(order.deliveryArrangementExpectedDate)} />
+            <InfoRow label="Time window" value={order.deliveryArrangementTimeWindow ?? "Not set"} />
+            <InfoRow label="Courier/rider" value={order.deliveryArrangementCourierName ?? "Not set"} />
+            <InfoRow label="Courier phone" value={order.deliveryArrangementCourierPhone ?? "Not set"} />
+            <InfoRow label="Customer instruction" value={order.deliveryArrangementCustomerInstruction ?? "Not set"} />
+            <InfoRow label="Private note" value={order.deliveryArrangementSupplierPrivateNote ?? "Not set"} />
+            <InfoRow label="Recorded" value={formatDate(order.deliveryArrangedAt)} />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   const content =
     order.orderStatus === "ready_for_delivery"
       ? "This order is prepared and waiting for delivery arrangement. No rider or delivery fee has been confirmed yet."
@@ -479,7 +645,8 @@ function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
 }
 
 function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
-  const isReady = order.orderStatus === "ready_for_delivery";
+  const isArranged = order.orderStatus === "delivery_arranged";
+  const isReady = order.orderStatus === "ready_for_delivery" || isArranged;
   const isConfirmed = order.orderStatus === "supplier_confirmed" || order.orderStatus === "supplier_preparing" || isReady;
   const isPreparing = order.orderStatus === "supplier_preparing" || isReady;
   const steps =
@@ -497,8 +664,8 @@ function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
             active: true
           },
           { label: "Preparing order", state: isReady ? "Complete" : isPreparing ? "Current" : "Inactive", active: isPreparing },
-          { label: "Ready for delivery", state: isReady ? "Current" : "Inactive", active: isReady },
-          { label: "Delivery arrangement", state: "Inactive", active: false },
+          { label: "Ready for delivery", state: isArranged ? "Complete" : isReady ? "Current" : "Inactive", active: isReady },
+          { label: "Delivery arrangement", state: isArranged ? "Current" : "Inactive", active: isArranged },
           { label: "Payment confirmation", state: "Inactive", active: false },
           { label: "Completed", state: "Inactive", active: false }
         ];
