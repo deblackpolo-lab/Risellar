@@ -116,21 +116,27 @@ describe("Supplier order accept/reject backend contract", () => {
     expect(combinedBodies).not.toContain("payment_collection_status = 'collected'");
   });
 
-  it("keeps safe-read surfaces compatible with supplier decisions and does not connect supplier UI", () => {
+  it("keeps safe-read surfaces compatible with supplier decisions and connects supplier UI only through RPC actions", () => {
     expect(migration).toContain("when o.order_status::text = 'supplier_confirmed' then 'Supplier confirmed'");
     expect(migration).toContain("when o.order_status::text = 'supplier_rejected' then 'Rejected - stock released'");
     expect(migration).toContain("when o.order_status::text = 'supplier_confirmed' then 'Supplier confirmed your order'");
     expect(migration).toContain("when o.order_status::text = 'supplier_rejected' then 'Supplier could not fulfil this order'");
 
-    for (const uiPath of [
+    const supplierOrderSources = [
+      "app/supplier/orders/actions.ts",
       "app/supplier/orders/page.tsx",
       "app/supplier/orders/[id]/page.tsx",
-      "components/supplier/screens.tsx"
-    ]) {
-      const source = readIfExists(join(process.cwd(), uiPath));
-      expect(source).not.toContain("supplier_accept_order");
-      expect(source).not.toContain("supplier_reject_order");
-    }
+      "components/supplier/supplier-order-rpc-screens.tsx",
+      "lib/orders/supplier-order-read.ts"
+    ].map((uiPath) => readIfExists(join(process.cwd(), uiPath))).join("\n");
+
+    expect(supplierOrderSources).toContain("list_supplier_orders_safe");
+    expect(supplierOrderSources).toContain("get_supplier_order_safe");
+    expect(supplierOrderSources).toContain("supplier_accept_order");
+    expect(supplierOrderSources).toContain("supplier_reject_order");
+    expect(supplierOrderSources).not.toContain("createSupabaseAdminClient");
+    expect(supplierOrderSources).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+    expect(supplierOrderSources).not.toMatch(/\bfrom\("orders"\)\.update|\bfrom\("stock_reservations"\)\.update/i);
   });
 
   it("adds active development-only decision and concurrency SQL harnesses", () => {

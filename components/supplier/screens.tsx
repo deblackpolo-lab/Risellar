@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { Bell, Home, LifeBuoy, Package, UserRound } from "lucide-react";
+import { ClipboardList, Home, LifeBuoy, Package, UserRound } from "lucide-react";
 import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { ProductImageFrame, ProductImageGallery, ProductImagePreviewGrid } from "@/components/marketplace";
 import { Button, Card, Checkbox, Input, ScrollableChipRow, StatusBadge, Textarea } from "@/components/ui";
@@ -19,13 +19,13 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 type OnboardingStep = "welcome" | "business" | "category" | "verification" | "payout" | "agreement" | "pending" | "rejected";
-type SupplierNavKey = "home" | "products" | "support" | "alerts" | "account";
+type SupplierNavKey = "home" | "products" | "orders" | "support" | "account";
 
 const navItems = [
   { key: "home" as const, label: "Home", href: "/supplier/dashboard", icon: Home },
   { key: "products" as const, label: "Products", href: "/supplier/products", icon: Package },
+  { key: "orders" as const, label: "Orders", href: "/supplier/orders", icon: ClipboardList },
   { key: "support" as const, label: "Support", href: "/supplier/support", icon: LifeBuoy },
-  { key: "alerts" as const, label: "Alerts", href: "/supplier/notifications", icon: Bell },
   { key: "account" as const, label: "Account", href: "/supplier/settings", icon: UserRound }
 ];
 
@@ -412,24 +412,26 @@ export function SupplierDashboardScreen() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <SupplierStatusCard label="Active products" value={String(activeProducts)} detail="Approved for reseller selling" tone="success" />
-        <SupplierStatusCard label="Order prep" value="Soon" detail="Orders are not connected yet" tone="warning" />
+        <SupplierStatusCard label="Order decisions" value="Live" detail="Accept or reject reserved POD orders" tone="info" />
         <SupplierStatusCard label="Settlements" value="Soon" detail="Settlement workflow is deferred" tone="warning" />
         <SupplierStatusCard label="Low stock" value={String(lowStock)} detail="Stock management deepens later" tone="info" />
       </div>
       <Card title="Quick actions" className="mt-4">
         <div className="grid grid-cols-2 gap-2">
           <Button>Add Product</Button>
-          <Button variant="outline" disabled>Orders coming soon</Button>
+          <Link className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm font-bold text-[var(--color-primary)]" href="/supplier/orders">
+            View Orders
+          </Link>
           <Button variant="outline">View Products</Button>
           <Button variant="outline">View Settings</Button>
         </div>
       </Card>
       <ProductApprovalBanner>
-        Supplier order preparation, customer payment, and settlement workflows are deferred until their backend phases.
+        Supplier accept/reject decisions are live. Preparation, customer payment collection, delivery, and settlement workflows are deferred until their backend phases.
       </ProductApprovalBanner>
       <ProductApprovalBanner tone="success">Inventory tools arrive in Phase 7. This dashboard only shows stock summaries for now.</ProductApprovalBanner>
-      <Card title="Order workflow coming soon" className="mt-4">
-        <p className="text-sm leading-6 text-[var(--color-muted)]">Order preparation screens are preserved as design placeholders only. No live order, stock reservation, delivery, payment, or settlement mutation is connected.</p>
+      <Card title="Order decision workflow" className="mt-4">
+        <p className="text-sm leading-6 text-[var(--color-muted)]">Suppliers can accept or reject reserved Pay on Delivery orders. No preparation, delivery, payment, settlement, commission, or withdrawal workflow is connected.</p>
       </Card>
       <Card title="Product approval summary" className="mt-4">
         <div className="space-y-2 text-sm text-[var(--color-charcoal)]">
@@ -609,7 +611,7 @@ export function SupplierOrdersScreen() {
   const filters = ["Preview", "No live orders", "No stock reservation", "No settlement"];
 
   return (
-    <SupplierMobileShell active="support" title="Supplier orders">
+    <SupplierMobileShell active="orders" title="Supplier orders">
       <SupplierHeader title="Orders coming soon" description="This preserved supplier order design is not connected to live orders, preparation, stock reservation, delivery, payment, or settlement." />
       <Card className="mb-4 p-4">
         <div className="space-y-3">
@@ -644,7 +646,7 @@ export function SupplierOrderDetailScreen({ id }: { id: string }) {
   const product = getSupplierProduct(order.productId);
 
   return (
-    <SupplierMobileShell active="support" title="Order detail">
+    <SupplierMobileShell active="orders" title="Order detail">
       <SupplierHeader title={order.id} description={`${product.name} · Qty ${order.quantity}`} />
       <StatusBadge status={order.status === "Ready" ? "Preview" : order.status} tone={order.status === "Ready" ? "info" : undefined} />
       <Card title="Customer delivery snapshot" className="mt-4">
@@ -695,7 +697,7 @@ export function SupplierPrepareOrderScreen({ id }: { id: string }) {
   const product = getSupplierProduct(order.productId);
 
   return (
-    <SupplierMobileShell active="support" title="Prepare order">
+    <SupplierMobileShell active="orders" title="Prepare order">
       <SupplierHeader title="Prepare order" description={`${order.id} · ${product.name}`} />
       <ProductApprovalBanner>Preparation is a coming-soon placeholder. No live order, stock, delivery, payment, or settlement mutation is connected.</ProductApprovalBanner>
       <PreparationChecklist />
@@ -708,7 +710,7 @@ export function SupplierPrepareOrderScreen({ id }: { id: string }) {
 
 export function SupplierNotificationsScreen() {
   return (
-    <SupplierMobileShell active="alerts" title="Supplier notifications">
+    <SupplierMobileShell active="support" title="Supplier notifications">
       <SupplierHeader title="Notifications" description="Operational updates for products, orders, verification, and settlements." />
       <div className="space-y-3">
         {supplierCoreMock.notifications.map((notification) => (

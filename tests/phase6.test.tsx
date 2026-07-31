@@ -62,12 +62,13 @@ describe("Phase 6 supplier PWA core", () => {
     expect(screen.getByRole("heading", { name: /KNUST Gadgets/i })).toBeInTheDocument();
     expect(screen.getByText("Verified Supplier")).toBeInTheDocument();
     expect(screen.getByText("Active products")).toBeInTheDocument();
-    expect(screen.getByText("Order prep")).toBeInTheDocument();
+    expect(screen.getByText("Order decisions")).toBeInTheDocument();
     expect(screen.getByText("Settlements")).toBeInTheDocument();
     expect(screen.getByText("Low stock")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Product" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Orders coming soon" })).toBeDisabled();
-    expect(screen.getByText(/Supplier order preparation, customer payment, and settlement workflows are deferred/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View Orders" })).toHaveAttribute("href", "/supplier/orders");
+    expect(screen.getByText(/Supplier accept\/reject decisions are live/i)).toBeInTheDocument();
+    expect(screen.getByText(/No preparation, delivery, payment, settlement, commission, or withdrawal workflow is connected/i)).toBeInTheDocument();
     expect(screen.getByText(/Inventory tools arrive in Phase 7/i)).toBeInTheDocument();
     expect(screen.getByText(/Settlement workflow is deferred/i)).toBeInTheDocument();
   });

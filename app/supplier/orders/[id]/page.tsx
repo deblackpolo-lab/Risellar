@@ -1,7 +1,71 @@
-import { SupplierOrderDetailScreen } from "@/components/supplier/screens";
+import {
+  SupplierOrderDetailRpcScreen,
+  SupplierOrderNotFoundRpcScreen
+} from "@/components/supplier/supplier-order-rpc-screens";
+import { initialSupplierOrderState, type SupplierOrderState } from "@/lib/orders/supplier-order-read";
+import {
+  acceptSupplierOrderFormAction,
+  getSupplierOrderForCurrentUser,
+  rejectSupplierOrderFormAction
+} from "../actions";
 
-export default async function SupplierOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function stateFromSearchParams(searchParams?: { supplier_order_message?: string; supplier_order_error?: string }): SupplierOrderState {
+  if (searchParams?.supplier_order_message === "ACCEPTED") {
+    return { code: "OK", message: "Order accepted" };
+  }
+
+  if (searchParams?.supplier_order_message === "REJECTED") {
+    return { code: "OK", message: "Order rejected and reserved stock released" };
+  }
+
+  const errorCode = searchParams?.supplier_order_error;
+
+  if (!errorCode) {
+    return initialSupplierOrderState;
+  }
+
+  const messages: Partial<Record<SupplierOrderState["code"], string>> = {
+    AUTH_REQUIRED: "Sign in to manage this order.",
+    SUPABASE_AUTH_TOKEN_MISSING: "We could not verify your supplier session. Please sign in again.",
+    SUPPLIER_REQUIRED: "Use an approved supplier account.",
+    ORDER_NOT_FOUND: "This order is unavailable.",
+    ORDER_NOT_ACTIONABLE: "This order can no longer be accepted or rejected.",
+    RESERVATION_NOT_FOUND: "The stock reservation is unavailable.",
+    RESERVATION_EXPIRED: "The stock reservation has expired.",
+    RESERVATION_NOT_ACTIVE: "This order no longer has an active stock reservation.",
+    ALREADY_CONFIRMED: "This order has already been accepted.",
+    ALREADY_REJECTED: "This order has already been rejected.",
+    INVALID_REJECTION_REASON: "Choose a valid rejection reason.",
+    REJECTION_NOTE_TOO_LONG: "Keep the note within the allowed length.",
+    STOCK_RELEASE_FAILED: "The reserved stock could not be released safely.",
+    UNKNOWN: "We could not confirm the result. Refresh the order before trying again."
+  };
+
+  const code = errorCode as SupplierOrderState["code"];
+  return { code, message: messages[code] ?? "We could not confirm the result. Refresh the order before trying again." };
+}
+
+export default async function SupplierOrderDetailPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ supplier_order_message?: string; supplier_order_error?: string }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
+  const { order, state } = await getSupplierOrderForCurrentUser(id);
 
-  return <SupplierOrderDetailScreen id={id} />;
+  if (!order) {
+    return <SupplierOrderNotFoundRpcScreen state={state} />;
+  }
+
+  return (
+    <SupplierOrderDetailRpcScreen
+      acceptAction={acceptSupplierOrderFormAction}
+      actionState={stateFromSearchParams(query)}
+      order={order}
+      rejectAction={rejectSupplierOrderFormAction}
+    />
+  );
 }
