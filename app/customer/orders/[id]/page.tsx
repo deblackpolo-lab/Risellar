@@ -184,11 +184,16 @@ function CustomerOrderDetailScreen({ order, placed }: { order: CustomerOrderSafe
       {order.outForDeliveryAt ? (
         <Card title="Out for delivery">
           <div className="grid gap-3 text-sm">
-            <InfoRow label="Status" value="Your order is out for delivery" />
+            <InfoRow label="Status" value={order.deliveredAt ? "Your order has been delivered" : "Your order is out for delivery"} />
             <InfoRow label="Dispatched" value={formatDateTime(order.outForDeliveryAt)} />
             <InfoRow label="Instruction" value={order.customerDispatchInstruction ?? "Not set"} />
+            {order.deliveredAt ? <InfoRow label="Delivered" value={formatDateTime(order.deliveredAt)} /> : null}
           </div>
-          {order.dispatchNotice ? (
+          {order.deliveredNotice ? (
+            <p className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-primary)]/20 bg-[var(--color-accent-soft)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+              {order.deliveredNotice}
+            </p>
+          ) : order.dispatchNotice ? (
             <p className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-primary)]/20 bg-[var(--color-accent-soft)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
               {order.dispatchNotice}
             </p>

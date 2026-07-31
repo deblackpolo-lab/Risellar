@@ -100,7 +100,9 @@ const pendingOrder: SupplierOrderSafe = {
   deliveryArrangedAt: null,
   outForDeliveryAt: null,
   dispatchReference: null,
-  customerDispatchInstruction: null
+  customerDispatchInstruction: null,
+  deliveredAt: null,
+  deliveryConfirmationNote: null
 };
 
 describe("Supplier Order Handling S6 UI integration", () => {
@@ -541,10 +543,11 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(sources).toContain("supplier-arrange-delivery:");
     expect(sources).toContain("supplier_mark_order_out_for_delivery");
     expect(sources).toContain("supplier-out-for-delivery:");
+    expect(sources).toContain("supplier_mark_order_delivered");
+    expect(sources).toContain("supplier-delivered:");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("prepare_supplier_for_order");
-    expect(sources).not.toContain("mark_order_delivered");
     expect(sources).not.toContain("collect_payment");
     expect(sources).not.toContain("tracking_url");
     expect(sources).not.toContain("commission");

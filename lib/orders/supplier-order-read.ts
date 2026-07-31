@@ -50,6 +50,10 @@ export type SupplierOrderOutForDeliveryInput = SupplierOrderDecisionInput & {
   customerDispatchInstruction?: string | null;
 };
 
+export type SupplierOrderDeliveredInput = SupplierOrderDecisionInput & {
+  deliveryConfirmationNote?: string | null;
+};
+
 export type SupplierOrderRpcClient = {
   rpc<T = unknown>(name: string, args?: Record<string, unknown>): PromiseLike<{
     data: T | null;
@@ -90,7 +94,7 @@ function normalizeIdempotencyKey(value: string | null | undefined) {
 
 function normalizeStatus(value: string | null | undefined) {
   const text = cleanOptionalText(value);
-  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged", "out_for_delivery"]);
+  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged", "out_for_delivery", "delivered"]);
 
   return text && allowed.has(text) ? text : null;
 }
@@ -234,6 +238,25 @@ export function buildMarkSupplierOrderOutForDeliveryPayload(input: SupplierOrder
   };
 }
 
+export function buildMarkSupplierOrderDeliveredPayload(input: SupplierOrderDeliveredInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+  const deliveryConfirmationNote = cleanOptionalText(input.deliveryConfirmationNote);
+
+  if (deliveryConfirmationNote && deliveryConfirmationNote.length > 300) {
+    throw new Error("Delivery confirmation note is too long");
+  }
+
+  if (deliveryConfirmationNote && (/[<>]/.test(deliveryConfirmationNote) || /payment collected|cash collected|paid in full|id card|national id|passport|gps|latitude|longitude|live tracking/i.test(deliveryConfirmationNote))) {
+    throw new Error("Delivery confirmation note cannot include payment, identity, tracking, or sensitive details");
+  }
+
+  return {
+    p_order_id: orderId,
+    p_delivery_confirmation_note: deliveryConfirmationNote,
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-delivered:${orderId}`
+  };
+}
+
 export function buildRejectSupplierOrderPayload(input: SupplierOrderRejectInput) {
   const orderId = requireUuid(input.orderId, "Order id");
   const reasonCode = cleanOptionalText(input.reasonCode);
@@ -333,12 +356,28 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "ALREADY_OUT_FOR_DELIVERY", message: "This order is already out for delivery." };
   }
 
+  if (combined.includes("already_delivered")) {
+    return { code: "ALREADY_DELIVERED", message: "This order has already been marked delivered." };
+  }
+
+  if (combined.includes("order_not_out_for_delivery")) {
+    return { code: "ORDER_NOT_OUT_FOR_DELIVERY", message: "Mark this order out for delivery before marking it delivered." };
+  }
+
   if (combined.includes("delivery_arrangement_not_found")) {
     return { code: "DELIVERY_ARRANGEMENT_NOT_FOUND", message: "The delivery arrangement is unavailable." };
   }
 
+  if (combined.includes("dispatch_not_recorded")) {
+    return { code: "DISPATCH_NOT_RECORDED", message: "Dispatch has not been recorded for this order." };
+  }
+
   if (combined.includes("invalid_dispatch_field")) {
     return { code: "INVALID_DISPATCH_FIELD", message: "Dispatch details cannot include live tracking or verified delivery claims." };
+  }
+
+  if (combined.includes("invalid_delivery_note") || combined.includes("delivery confirmation note cannot")) {
+    return { code: "INVALID_DELIVERY_NOTE", message: "Delivery note cannot include payment, identity, tracking, or sensitive details." };
   }
 
   if (combined.includes("invalid_delivery_method") || combined.includes("choose a valid delivery method")) {
@@ -361,7 +400,7 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "INVALID_COURIER_PHONE", message: "Enter a valid courier or rider phone number." };
   }
 
-  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long") || combined.includes("dispatch reference is too long") || combined.includes("customer dispatch instruction is too long")) {
+  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long") || combined.includes("dispatch reference is too long") || combined.includes("customer dispatch instruction is too long") || combined.includes("delivery confirmation note is too long")) {
     return { code: "FIELD_TOO_LONG", message: "Shorten the information and try again." };
   }
 
@@ -498,6 +537,20 @@ export async function markSupplierOrderOutForDeliveryWithClient(client: Supplier
   }
 }
 
+export async function markSupplierOrderDeliveredWithClient(client: SupplierOrderRpcClient, input: SupplierOrderDeliveredInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_mark_order_delivered", buildMarkSupplierOrderDeliveredPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order marked as delivered" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
 export async function rejectSupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderRejectInput) {
   try {
     const { data, error } = await client.rpc<unknown[]>("supplier_reject_order", buildRejectSupplierOrderPayload(input));
@@ -592,6 +645,8 @@ function mapSupplierOrderRow(row: unknown): SupplierOrderSafe {
     deliveryArrangedAt: nullableString(item.delivery_arranged_at),
     outForDeliveryAt: nullableString(item.out_for_delivery_at),
     dispatchReference: nullableString(item.dispatch_reference),
-    customerDispatchInstruction: nullableString(item.customer_dispatch_instruction)
+    customerDispatchInstruction: nullableString(item.customer_dispatch_instruction),
+    deliveredAt: nullableString(item.delivered_at),
+    deliveryConfirmationNote: nullableString(item.delivery_confirmation_note)
   };
 }
