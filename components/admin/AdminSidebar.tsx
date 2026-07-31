@@ -25,6 +25,7 @@ import {
   UserCheck,
   UserRound,
   Users,
+  WalletCards,
 } from "lucide-react";
 import { AccountSignOutButton } from "@/components/auth/AccountSignOutButton";
 import { SearchBar } from "@/components/ui/SearchBar";
@@ -41,6 +42,7 @@ const adminNavItems: AdminNavItem[] = [
   { label: "Operations", href: "/admin/operations", icon: ListChecks },
   { label: "Onboarding Requests", href: "/admin/onboarding-requests", icon: UserCheck },
   { label: "Products", href: "/admin/products", icon: Package },
+  { label: "Settlements", href: "/admin/settlements", icon: WalletCards },
   { label: "Suppliers", href: "/admin/suppliers", icon: Store },
   { label: "Resellers", href: "/admin/resellers", icon: Users },
   { label: "Customers", href: "/admin/customers", icon: UserRound },

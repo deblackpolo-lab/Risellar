@@ -25,10 +25,10 @@ describe("Phase 9 admin core dashboard", () => {
     render(<AdminDashboardScreen />);
 
     expect(screen.getByRole("heading", { name: "Admin Dashboard" })).toBeInTheDocument();
-    for (const item of ["Dashboard", "Products", "Suppliers", "Resellers", "Customers", "Support", "Settings"]) {
+    for (const item of ["Dashboard", "Products", "Settlements", "Suppliers", "Resellers", "Customers", "Support", "Settings"]) {
       expect(screen.getByRole("link", { name: item })).toBeInTheDocument();
     }
-    for (const hiddenItem of ["Orders", "Settlements", "Commissions", "Withdrawals"]) {
+    for (const hiddenItem of ["Orders", "Commissions", "Withdrawals"]) {
       expect(screen.queryByRole("link", { name: hiddenItem })).not.toBeInTheDocument();
     }
     for (const metric of ["Total orders", "Pending confirmations", "Settlement due", "Overdue settlements", "Pending reseller commissions", "Active suppliers", "Active resellers", "Products pending approval"]) {

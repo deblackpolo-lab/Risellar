@@ -1,25 +1,28 @@
 import { auth } from "@clerk/nextjs/server";
 import { AdminShell } from "@/components/admin/AdminSidebar";
-import { AdminSettlementListScreen } from "@/components/admin/admin-supplier-settlement-rpc-screens";
+import { AdminSettlementDetailScreen } from "@/components/admin/admin-supplier-settlement-rpc-screens";
 import {
-  listPendingSupplierSettlementsWithClient,
+  getAdminSupplierSettlementSafeWithClient,
   mapAdminSettlementRpcError,
-  type AdminSupplierSettlement,
   type AdminSettlementCode
 } from "@/lib/admin/settlements/admin-supplier-settlement";
 import { createSupabaseUserServerClient } from "@/lib/supabase/server";
 
-type AdminSettlementsPageProps = {
+type AdminSettlementDetailPageProps = {
+  params: Promise<{
+    orderId: string;
+  }>;
   searchParams?: Promise<{
     error?: string;
     status?: string;
   }>;
 };
 
-export default async function AdminSettlementsPage({ searchParams }: AdminSettlementsPageProps) {
-  const params = await searchParams;
-  let settlements: AdminSupplierSettlement[] = [];
-  let errorCode = params?.error as AdminSettlementCode | undefined;
+export default async function AdminSettlementDetailPage({ params, searchParams }: AdminSettlementDetailPageProps) {
+  const { orderId } = await params;
+  const query = await searchParams;
+  let settlement = null;
+  let errorCode = query?.error as AdminSettlementCode | undefined;
 
   try {
     const { getToken, userId } = await auth();
@@ -34,8 +37,8 @@ export default async function AdminSettlementsPage({ searchParams }: AdminSettle
       throw new Error("SUPABASE_AUTH_TOKEN_MISSING");
     }
 
-    const result = await listPendingSupplierSettlementsWithClient(createSupabaseUserServerClient(accessToken));
-    settlements = result.settlements;
+    const result = await getAdminSupplierSettlementSafeWithClient(createSupabaseUserServerClient(accessToken), orderId);
+    settlement = result.settlement;
 
     if (result.state.code !== "OK") {
       errorCode = result.state.code;
@@ -46,7 +49,7 @@ export default async function AdminSettlementsPage({ searchParams }: AdminSettle
 
   return (
     <AdminShell searchPlaceholder="Search settlements, suppliers, orders...">
-      <AdminSettlementListScreen errorCode={errorCode} settlements={settlements} success={params?.status === "verified"} />
+      <AdminSettlementDetailScreen errorCode={errorCode} settlement={settlement} success={query?.status === "verified"} />
     </AdminShell>
   );
 }

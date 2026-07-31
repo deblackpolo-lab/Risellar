@@ -31,3 +31,30 @@ export async function getRoleOnboardingAdminAccess(input: {
     hasActiveAdminStaff: data === true
   };
 }
+
+export async function getFinanceSettlementAdminAccess(input: {
+  accessToken: string;
+  profile: RoleOnboardingProfile | null;
+}): Promise<RoleOnboardingAdminAccess> {
+  if (!input.profile) {
+    return {
+      profile: null,
+      hasActiveAdminStaff: false
+    };
+  }
+
+  const supabase = createSupabaseUserServerClient(input.accessToken);
+  const { data, error } = await supabase.rpc("admin_can_verify_supplier_settlements");
+
+  if (error) {
+    return {
+      profile: input.profile,
+      hasActiveAdminStaff: false
+    };
+  }
+
+  return {
+    profile: input.profile,
+    hasActiveAdminStaff: data === true
+  };
+}
