@@ -127,8 +127,8 @@ export function AdminSettlementListScreen({
         </Card>
       ) : (
         <div className="space-y-3">
-          {settlements.map((settlement) => (
-            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_28px_rgba(18,28,28,0.045)]" key={settlement.orderId}>
+          {settlements.map((settlement, index) => (
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_28px_rgba(18,28,28,0.045)]" key={`${settlement.orderId}:${index}`}>
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

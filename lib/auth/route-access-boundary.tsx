@@ -36,7 +36,12 @@ export async function RouteAccessBoundary({ children }: Readonly<{ children: Rea
 
     if (accessToken) {
       const adminAccess =
-        pathname === "/admin/settlements" || pathname.startsWith("/admin/settlements/")
+        pathname === "/admin/finance" || pathname.startsWith("/admin/finance/")
+          ? await getFinanceSettlementAdminAccess({
+              accessToken,
+              profile
+            })
+          : pathname === "/admin/settlements" || pathname.startsWith("/admin/settlements/")
           ? await getFinanceSettlementAdminAccess({
               accessToken,
               profile

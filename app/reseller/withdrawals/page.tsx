@@ -3,15 +3,16 @@ import { redirect } from "next/navigation";
 import { ResellerWithdrawalScreen } from "@/components/reseller/reseller-withdrawal-rpc-screens";
 import {
   getResellerWalletSafeWithClient,
-  listResellerPayoutAccountsSafeWithClient,
-  listResellerWithdrawalsSafeWithClient
+  listResellerPayoutAccountsSafeWithClient
 } from "@/lib/reseller/withdrawals/reseller-withdrawal";
+import { normalizeFinanceDate, normalizeFinanceStatus } from "@/lib/finance/filters";
+import { listResellerWithdrawalHistorySafeWithClient } from "@/lib/reseller/finance/reseller-finance";
 import { createSupabaseUserServerClient } from "@/lib/supabase/server";
 
 export default async function ResellerWithdrawalsPage({
   searchParams
 }: {
-  searchParams?: Promise<{ error?: string; status?: string }>;
+  searchParams?: Promise<{ error?: string; status?: string; from?: string; to?: string }>;
 }) {
   const params = await searchParams;
   const { getToken, userId } = await auth();
@@ -27,10 +28,15 @@ export default async function ResellerWithdrawalsPage({
   }
 
   const supabase = createSupabaseUserServerClient(accessToken);
+  const filters = {
+    status: normalizeFinanceStatus(params?.status, ["pending", "paid", "rejected", "cancelled"]),
+    dateFrom: normalizeFinanceDate(params?.from),
+    dateTo: normalizeFinanceDate(params?.to)
+  };
   const [walletResult, payoutResult, withdrawalResult] = await Promise.all([
     getResellerWalletSafeWithClient(supabase),
     listResellerPayoutAccountsSafeWithClient(supabase),
-    listResellerWithdrawalsSafeWithClient(supabase)
+    listResellerWithdrawalHistorySafeWithClient(supabase, filters)
   ]);
 
   return (
@@ -38,7 +44,7 @@ export default async function ResellerWithdrawalsPage({
       errorCode={params?.error}
       payoutAccounts={payoutResult.payoutAccounts}
       state={walletResult.state.code === "OK" ? payoutResult.state : walletResult.state}
-      success={params?.status}
+      success={params?.status === "requested" ? "requested" : undefined}
       wallet={walletResult.wallet}
       withdrawals={withdrawalResult.withdrawals}
     />

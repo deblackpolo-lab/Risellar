@@ -54,8 +54,8 @@ export function AdminResellerWithdrawalListScreen({
 
         <Card title="Pending manual payouts">
           <div className="space-y-3">
-            {withdrawals.length ? withdrawals.map((withdrawal) => (
-              <Link className="block rounded-[var(--radius-md)] border border-[var(--color-border)] p-4 transition hover:border-[var(--color-primary)]" href={`/admin/withdrawals/${withdrawal.withdrawalId}`} key={withdrawal.withdrawalId}>
+            {withdrawals.length ? withdrawals.map((withdrawal, index) => (
+              <Link className="block rounded-[var(--radius-md)] border border-[var(--color-border)] p-4 transition hover:border-[var(--color-primary)]" href={`/admin/withdrawals/${withdrawal.withdrawalId}`} key={`${withdrawal.withdrawalId}:${index}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-bold">{withdrawal.requestReference ?? "Withdrawal request"}</p>
