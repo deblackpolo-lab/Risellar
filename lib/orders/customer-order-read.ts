@@ -35,6 +35,9 @@ export type CustomerOrderSafe = {
   deliveryArrangementCustomerInstruction: string | null;
   deliveryArrangedAt: string | null;
   deliveryArrangementNotice: string | null;
+  outForDeliveryAt: string | null;
+  customerDispatchInstruction: string | null;
+  dispatchNotice: string | null;
   productName: string;
   productSlug: string | null;
   productImageSnapshot: Record<string, unknown>;
@@ -172,6 +175,9 @@ function mapCustomerOrderRow(row: unknown): CustomerOrderSafe {
     deliveryArrangementCustomerInstruction: nullableString(item.delivery_arrangement_customer_instruction),
     deliveryArrangedAt: nullableString(item.delivery_arranged_at),
     deliveryArrangementNotice: nullableString(item.delivery_arrangement_notice),
+    outForDeliveryAt: nullableString(item.out_for_delivery_at),
+    customerDispatchInstruction: nullableString(item.customer_dispatch_instruction),
+    dispatchNotice: nullableString(item.dispatch_notice),
     productName: requiredString(item.product_name, "Product unavailable"),
     productSlug: nullableString(item.product_slug),
     productImageSnapshot: mapJsonObject(item.product_image_snapshot),

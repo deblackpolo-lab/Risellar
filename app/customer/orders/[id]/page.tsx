@@ -32,6 +32,17 @@ function formatDateOnly(value: string | null) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "Not set";
+  }
+
+  return new Intl.DateTimeFormat("en-GH", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date(value));
+}
+
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-2 last:border-b-0 last:pb-0">
@@ -167,6 +178,24 @@ function CustomerOrderDetailScreen({ order, placed }: { order: CustomerOrderSafe
               {order.deliveryArrangementNotice}
             </p>
           ) : null}
+        </Card>
+      ) : null}
+
+      {order.outForDeliveryAt ? (
+        <Card title="Out for delivery">
+          <div className="grid gap-3 text-sm">
+            <InfoRow label="Status" value="Your order is out for delivery" />
+            <InfoRow label="Dispatched" value={formatDateTime(order.outForDeliveryAt)} />
+            <InfoRow label="Instruction" value={order.customerDispatchInstruction ?? "Not set"} />
+          </div>
+          {order.dispatchNotice ? (
+            <p className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-primary)]/20 bg-[var(--color-accent-soft)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+              {order.dispatchNotice}
+            </p>
+          ) : null}
+          <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">
+            Risellar does not provide live tracking, proof of delivery, or online payment collection in this step.
+          </p>
         </Card>
       ) : null}
 

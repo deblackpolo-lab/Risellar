@@ -98,6 +98,10 @@ function ActionMessage({ state }: { state: SupplierOrderState }) {
 }
 
 function statusGroup(status: string) {
+  if (status === "out_for_delivery") {
+    return "Out for delivery";
+  }
+
   if (status === "delivery_arranged") {
     return "Arranged";
   }
@@ -129,6 +133,7 @@ export function SupplierOrdersRpcScreen({ orders, error }: { orders: SupplierOrd
       ["Preparing", []],
       ["Ready", []],
       ["Arranged", []],
+      ["Out for delivery", []],
       ["Rejected", []]
     ]);
 
@@ -211,7 +216,8 @@ export function SupplierOrderDetailRpcScreen({
   order,
   rejectAction,
   startPreparingAction,
-  arrangeDeliveryAction
+  arrangeDeliveryAction,
+  markOutForDeliveryAction
 }: {
   acceptAction?: SupplierOrderAction;
   arrangeDeliveryAction?: SupplierOrderAction;
@@ -220,6 +226,7 @@ export function SupplierOrderDetailRpcScreen({
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
+  markOutForDeliveryAction?: SupplierOrderAction;
 }) {
   return (
     <SupplierOrdersShell eyebrow="Supplier order" title={order.orderNumber}>
@@ -277,6 +284,7 @@ export function SupplierOrderDetailRpcScreen({
           <SupplierOrderDecisionActions
             acceptAction={acceptAction}
             arrangeDeliveryAction={arrangeDeliveryAction}
+            markOutForDeliveryAction={markOutForDeliveryAction}
             markReadyForDeliveryAction={markReadyForDeliveryAction}
             order={order}
             rejectAction={rejectAction}
@@ -294,11 +302,13 @@ export function SupplierOrderDecisionActions({
   order,
   rejectAction,
   startPreparingAction,
-  arrangeDeliveryAction
+  arrangeDeliveryAction,
+  markOutForDeliveryAction
 }: {
   acceptAction?: SupplierOrderAction;
   arrangeDeliveryAction?: SupplierOrderAction;
   markReadyForDeliveryAction?: SupplierOrderAction;
+  markOutForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
@@ -307,9 +317,11 @@ export function SupplierOrderDecisionActions({
   const [preparationAcknowledged, setPreparationAcknowledged] = useState(false);
   const [readyAcknowledged, setReadyAcknowledged] = useState(false);
   const [deliveryAcknowledged, setDeliveryAcknowledged] = useState(false);
+  const [outForDeliveryAcknowledged, setOutForDeliveryAcknowledged] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("manually_arranged");
   const [customerInstruction, setCustomerInstruction] = useState("");
   const [supplierPrivateNote, setSupplierPrivateNote] = useState("");
+  const [dispatchCustomerInstruction, setDispatchCustomerInstruction] = useState("");
   const [reasonCode, setReasonCode] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const canAct = order.isSupplierActionable && order.orderStatus === "placed_pending_confirmation";
@@ -323,6 +335,10 @@ export function SupplierOrderDecisionActions({
     !order.reservationStatusLabel.toLowerCase().includes("expired");
   const canArrangeDelivery =
     order.orderStatus === "ready_for_delivery" &&
+    order.reservationStatusLabel.toLowerCase().includes("reserved") &&
+    !order.reservationStatusLabel.toLowerCase().includes("expired");
+  const canMarkOutForDelivery =
+    order.orderStatus === "delivery_arranged" &&
     order.reservationStatusLabel.toLowerCase().includes("reserved") &&
     !order.reservationStatusLabel.toLowerCase().includes("expired");
 
@@ -502,6 +518,67 @@ export function SupplierOrderDecisionActions({
     );
   }
 
+  if (canMarkOutForDelivery && markOutForDeliveryAction) {
+    return (
+      <Card title="Out for delivery">
+        <form action={markOutForDeliveryAction} className="grid gap-4">
+          <input name="order_id" type="hidden" value={order.orderId} />
+          <input name="idempotency_key" type="hidden" value={`supplier-out-for-delivery:${order.orderId}`} />
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Use this only after the order has been handed to the rider, courier, or customer pickup contact. Risellar does not provide live tracking or collect payment.
+          </p>
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-muted-soft)] p-3 text-sm">
+            <div className="grid gap-3">
+              <InfoRow label="Method" value={order.deliveryArrangementMethodLabel ?? "Not set"} />
+              <InfoRow label="Agreed fee" value={formatMoney(order.deliveryArrangementFeeAmount, order.deliveryArrangementCurrencyCode ?? order.currencyCode)} />
+              <InfoRow label="Customer instruction" value={order.deliveryArrangementCustomerInstruction ?? "Not set"} />
+              <InfoRow label="Private note" value={order.deliveryArrangementSupplierPrivateNote ?? "Not set"} />
+            </div>
+          </div>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Dispatch reference
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              maxLength={100}
+              name="dispatch_reference"
+              placeholder="Optional manual dispatch reference"
+              type="text"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Customer dispatch instruction
+            <Textarea
+              aria-label="Customer dispatch instruction"
+              maxLength={500}
+              name="customer_dispatch_instruction"
+              placeholder="Optional dispatch note visible to the customer"
+              value={dispatchCustomerInstruction}
+              onChange={(event) => setDispatchCustomerInstruction(event.target.value)}
+            />
+            <span className="text-xs font-semibold text-[var(--color-muted)]">{dispatchCustomerInstruction.length}/500</span>
+          </label>
+          <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+            <input
+              checked={outForDeliveryAcknowledged}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+              name="out_for_delivery_acknowledgement"
+              onChange={(event) => setOutForDeliveryAcknowledged(event.currentTarget.checked)}
+              type="checkbox"
+              value="confirmed"
+            />
+            Confirm the order has been handed off outside Risellar. This does not collect payment, mark delivery complete, or create live tracking.
+          </label>
+          <SupplierSubmitButton
+            disabled={!outForDeliveryAcknowledged}
+            icon={<Truck className="h-4 w-4" aria-hidden="true" />}
+            label="Mark as out for delivery"
+            pendingLabel="Updating delivery status..."
+          />
+        </form>
+      </Card>
+    );
+  }
+
   if (!canAct) {
     return <TerminalOrderState order={order} />;
   }
@@ -595,6 +672,28 @@ function SupplierSubmitButton({
 }
 
 function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
+  if (order.orderStatus === "out_for_delivery") {
+    return (
+      <Card title="Out for delivery">
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            The order has been dispatched. Payment has not been collected and the order has not been marked delivered.
+          </p>
+          <div className="grid gap-3 text-sm">
+            <InfoRow label="Dispatch reference" value={order.dispatchReference ?? "Not set"} />
+            <InfoRow label="Customer dispatch instruction" value={order.customerDispatchInstruction ?? "Not set"} />
+            <InfoRow label="Dispatched" value={formatDate(order.outForDeliveryAt)} />
+            <InfoRow label="Payment" value={order.paymentStatusLabel} />
+            <InfoRow label="Method" value={order.deliveryArrangementMethodLabel ?? "Not set"} />
+            <InfoRow label="Agreed fee" value={formatMoney(order.deliveryArrangementFeeAmount, order.deliveryArrangementCurrencyCode ?? order.currencyCode)} />
+            <InfoRow label="Customer instruction" value={order.deliveryArrangementCustomerInstruction ?? "Not set"} />
+            <InfoRow label="Private note" value={order.deliveryArrangementSupplierPrivateNote ?? "Not set"} />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   if (order.orderStatus === "delivery_arranged") {
     return (
       <Card title="Delivery arranged">
@@ -645,7 +744,8 @@ function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
 }
 
 function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
-  const isArranged = order.orderStatus === "delivery_arranged";
+  const isOutForDelivery = order.orderStatus === "out_for_delivery";
+  const isArranged = order.orderStatus === "delivery_arranged" || isOutForDelivery;
   const isReady = order.orderStatus === "ready_for_delivery" || isArranged;
   const isConfirmed = order.orderStatus === "supplier_confirmed" || order.orderStatus === "supplier_preparing" || isReady;
   const isPreparing = order.orderStatus === "supplier_preparing" || isReady;
@@ -665,7 +765,8 @@ function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
           },
           { label: "Preparing order", state: isReady ? "Complete" : isPreparing ? "Current" : "Inactive", active: isPreparing },
           { label: "Ready for delivery", state: isArranged ? "Complete" : isReady ? "Current" : "Inactive", active: isReady },
-          { label: "Delivery arrangement", state: isArranged ? "Current" : "Inactive", active: isArranged },
+          { label: "Delivery arrangement", state: isOutForDelivery ? "Complete" : isArranged ? "Current" : "Inactive", active: isArranged },
+          { label: "Out for delivery", state: isOutForDelivery ? "Current" : "Inactive", active: isOutForDelivery },
           { label: "Payment confirmation", state: "Inactive", active: false },
           { label: "Completed", state: "Inactive", active: false }
         ];

@@ -8,6 +8,7 @@ import {
   acceptSupplierOrderWithClient,
   arrangeSupplierOrderDeliveryWithClient,
   getSupplierOrderSafeWithClient,
+  markSupplierOrderOutForDeliveryWithClient,
   listSupplierOrdersSafeWithClient,
   markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
@@ -182,6 +183,40 @@ export async function arrangeSupplierOrderDeliveryFormAction(formData: FormData)
     revalidatePath(`/supplier/orders/${orderId}`);
     nextPath = result.order
       ? `/supplier/orders/${orderId}?supplier_order_message=DELIVERY_ARRANGED`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
+  } catch (error) {
+    const state = mapSupplierOrderRpcError(error);
+    nextPath = state.code === "AUTH_REQUIRED"
+      ? `/sign-in?redirect_url=${encodeURIComponent(`/supplier/orders/${orderId}`)}`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(state.code)}`;
+  }
+
+  redirect(nextPath);
+}
+
+export async function markSupplierOrderOutForDeliveryFormAction(formData: FormData) {
+  const orderId = formData.get("order_id")?.toString() ?? "";
+  let nextPath = `/supplier/orders/${orderId}`;
+
+  try {
+    const acknowledgement = formData.get("out_for_delivery_acknowledgement")?.toString();
+
+    if (acknowledgement !== "confirmed") {
+      throw new Error("VALIDATION_ERROR");
+    }
+
+    const supabase = await getSupplierOrderClient();
+    const result = await markSupplierOrderOutForDeliveryWithClient(supabase, {
+      orderId,
+      dispatchReference: formData.get("dispatch_reference")?.toString(),
+      customerDispatchInstruction: formData.get("customer_dispatch_instruction")?.toString(),
+      idempotencyKey: formData.get("idempotency_key")?.toString()
+    });
+
+    revalidatePath("/supplier/orders");
+    revalidatePath(`/supplier/orders/${orderId}`);
+    nextPath = result.order
+      ? `/supplier/orders/${orderId}?supplier_order_message=OUT_FOR_DELIVERY`
       : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
   } catch (error) {
     const state = mapSupplierOrderRpcError(error);

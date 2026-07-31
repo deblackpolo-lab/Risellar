@@ -8,12 +8,14 @@ import {
   buildAcceptSupplierOrderPayload,
   buildArrangeSupplierOrderDeliveryPayload,
   buildListSupplierOrdersSafePayload,
+  buildMarkSupplierOrderOutForDeliveryPayload,
   buildMarkReadyForDeliverySupplierOrderPayload,
   buildRejectSupplierOrderPayload,
   buildStartPreparingSupplierOrderPayload,
   buildSupplierOrderDetailPayload,
   arrangeSupplierOrderDeliveryWithClient,
   listSupplierOrdersSafeWithClient,
+  markSupplierOrderOutForDeliveryWithClient,
   markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
   rejectSupplierOrderWithClient,
@@ -95,7 +97,10 @@ const pendingOrder: SupplierOrderSafe = {
   deliveryArrangementCourierPhone: null,
   deliveryArrangementCustomerInstruction: null,
   deliveryArrangementSupplierPrivateNote: null,
-  deliveryArrangedAt: null
+  deliveryArrangedAt: null,
+  outForDeliveryAt: null,
+  dispatchReference: null,
+  customerDispatchInstruction: null
 };
 
 describe("Supplier Order Handling S6 UI integration", () => {
@@ -291,11 +296,64 @@ describe("Supplier Order Handling S6 UI integration", () => {
     }
   });
 
+  it("calls out-for-delivery RPC with server-resolved supplier, status, reservation, stock, and payment fields", async () => {
+    const { calls, client } = createRpcSpyClient({ data: [{ order_id: pendingOrder.orderId, order_number: pendingOrder.orderNumber }] });
+
+    await markSupplierOrderOutForDeliveryWithClient(client, {
+      orderId: pendingOrder.orderId,
+      dispatchReference: "QA-DISPATCH-001",
+      customerDispatchInstruction: "Meet the courier at the main gate",
+      idempotencyKey: `supplier-out-for-delivery:${pendingOrder.orderId}`
+    });
+
+    expect(calls).toEqual([
+      {
+        name: "supplier_mark_order_out_for_delivery",
+        args: buildMarkSupplierOrderOutForDeliveryPayload({
+          orderId: pendingOrder.orderId,
+          dispatchReference: "QA-DISPATCH-001",
+          customerDispatchInstruction: "Meet the courier at the main gate",
+          idempotencyKey: `supplier-out-for-delivery:${pendingOrder.orderId}`
+        })
+      }
+    ]);
+    expect(calls[0].args).toMatchObject({
+      p_order_id: pendingOrder.orderId,
+      p_dispatch_reference: "QA-DISPATCH-001",
+      p_customer_dispatch_instruction: "Meet the courier at the main gate",
+      p_idempotency_key: `supplier-out-for-delivery:${pendingOrder.orderId}`
+    });
+
+    for (const forbiddenField of [
+      "p_supplier_id",
+      "p_customer_id",
+      "p_reseller_id",
+      "p_product_id",
+      "p_variant_id",
+      "p_order_status",
+      "p_currency",
+      "p_stock",
+      "p_payment_status",
+      "p_total",
+      "p_delivered_at",
+      "p_payment_collected",
+      "p_tracking_url"
+    ]) {
+      expect(calls[0].args).not.toHaveProperty(forbiddenField);
+    }
+  });
+
   it("validates delivery arrangement inputs before calling the RPC", () => {
     expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "book_uber" })).toThrow("Choose a valid delivery method");
     expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", agreedDeliveryFeeAmount: "-1" })).toThrow("Delivery fee must be zero or greater");
     expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", agreedDeliveryFeeAmount: "not money" })).toThrow("Delivery fee must be a valid amount");
     expect(() => buildArrangeSupplierOrderDeliveryPayload({ orderId: pendingOrder.orderId, deliveryMethod: "supplier_rider", expectedTimeWindow: "x".repeat(101) })).toThrow("Delivery arrangement text is too long");
+  });
+
+  it("validates out-for-delivery inputs before calling the RPC", () => {
+    expect(() => buildMarkSupplierOrderOutForDeliveryPayload({ orderId: pendingOrder.orderId, dispatchReference: "x".repeat(101) })).toThrow("Dispatch reference is too long");
+    expect(() => buildMarkSupplierOrderOutForDeliveryPayload({ orderId: pendingOrder.orderId, customerDispatchInstruction: "x".repeat(501) })).toThrow("Customer dispatch instruction is too long");
+    expect(() => buildMarkSupplierOrderOutForDeliveryPayload({ orderId: pendingOrder.orderId, customerDispatchInstruction: "Live tracking: https://example.test" })).toThrow("Dispatch details cannot include live tracking or verified delivery claims");
   });
 
   it("requires valid rejection reasons and bounded notes", () => {
@@ -317,6 +375,10 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(mapSupplierOrderRpcError({ message: "ALREADY_PREPARING" })).toMatchObject({ code: "ALREADY_PREPARING" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_READY" })).toMatchObject({ code: "ALREADY_READY" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_ARRANGED" })).toMatchObject({ code: "ALREADY_ARRANGED" });
+    expect(mapSupplierOrderRpcError({ message: "ALREADY_OUT_FOR_DELIVERY" })).toMatchObject({ code: "ALREADY_OUT_FOR_DELIVERY" });
+    expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_ARRANGED" })).toMatchObject({ code: "ORDER_NOT_ARRANGED" });
+    expect(mapSupplierOrderRpcError({ message: "DELIVERY_ARRANGEMENT_NOT_FOUND" })).toMatchObject({ code: "DELIVERY_ARRANGEMENT_NOT_FOUND" });
+    expect(mapSupplierOrderRpcError({ message: "INVALID_DISPATCH_FIELD" })).toMatchObject({ code: "INVALID_DISPATCH_FIELD" });
     expect(mapSupplierOrderRpcError({ message: "INVALID_DELIVERY_METHOD" })).toMatchObject({ code: "INVALID_DELIVERY_METHOD" });
     expect(mapSupplierOrderRpcError({ message: "CONFLICTING_RETRY" })).toMatchObject({ code: "CONFLICTING_RETRY" });
     expect(mapSupplierOrderRpcError({ message: "PREPARATION_NOT_STARTED" })).toMatchObject({ code: "PREPARATION_NOT_STARTED" });
@@ -412,13 +474,46 @@ describe("Supplier Order Handling S6 UI integration", () => {
           deliveryArrangedAt: "2026-07-30T12:20:00.000Z"
         }}
         arrangeDeliveryAction={vi.fn()}
+        markOutForDeliveryAction={vi.fn()}
       />
     );
     expect(screen.getByText("Delivery arrangement saved")).toBeInTheDocument();
-    expect(screen.getByText("The delivery arrangement has been recorded. Payment has not been collected and the order has not been marked delivered.")).toBeInTheDocument();
+    expect(screen.getByText("Use this only after the order has been handed to the rider, courier, or customer pickup contact. Risellar does not provide live tracking or collect payment.")).toBeInTheDocument();
     expect(screen.getByText("Third-party courier")).toBeInTheDocument();
     expect(screen.getByText("Private supplier-only QA note")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Save delivery arrangement" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Dispatch reference")).toBeInTheDocument();
+    expect(screen.getByLabelText("Customer dispatch instruction")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark as out for delivery" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Confirm the order has been handed off/i }));
+    expect(screen.getByRole("button", { name: "Mark as out for delivery" })).toBeEnabled();
+
+    rerender(
+      <SupplierOrderDetailRpcScreen
+        actionState={{ code: "OK", message: "Order marked as out for delivery" }}
+        order={{
+          ...pendingOrder,
+          orderStatus: "out_for_delivery",
+          orderStatusLabel: "Out for delivery",
+          deliveryArrangementMethodLabel: "Third-party courier",
+          deliveryArrangementFeeAmount: 25.5,
+          deliveryArrangementCurrencyCode: "GHS",
+          deliveryArrangementCustomerInstruction: "Call before arrival",
+          deliveryArrangementSupplierPrivateNote: "Private supplier-only QA note",
+          deliveryArrangedAt: "2026-07-30T12:20:00.000Z",
+          outForDeliveryAt: "2026-07-30T13:00:00.000Z",
+          dispatchReference: "QA-DISPATCH-001",
+          customerDispatchInstruction: "Meet the courier at the main gate"
+        }}
+        markOutForDeliveryAction={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Order marked as out for delivery")).toBeInTheDocument();
+    expect(screen.getByText("The order has been dispatched. Payment has not been collected and the order has not been marked delivered.")).toBeInTheDocument();
+    expect(screen.getByText("QA-DISPATCH-001")).toBeInTheDocument();
+    expect(screen.getByText("Meet the courier at the main gate")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark as out for delivery" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delivered/i })).not.toBeInTheDocument();
 
     expect(document.body.innerHTML).not.toMatch(/customer email|reseller margin|platform margin|commission|settlement|risk|raw stock/i);
   });
@@ -444,9 +539,14 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(sources).toContain("supplier_mark_ready_for_delivery");
     expect(sources).toContain("supplier_arrange_order_delivery");
     expect(sources).toContain("supplier-arrange-delivery:");
+    expect(sources).toContain("supplier_mark_order_out_for_delivery");
+    expect(sources).toContain("supplier-out-for-delivery:");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("prepare_supplier_for_order");
+    expect(sources).not.toContain("mark_order_delivered");
+    expect(sources).not.toContain("collect_payment");
+    expect(sources).not.toContain("tracking_url");
     expect(sources).not.toContain("commission");
     expect(sources).not.toContain("settlement");
     expect(sources).not.toContain("withdrawal");

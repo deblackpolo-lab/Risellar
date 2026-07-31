@@ -6,6 +6,8 @@ Supplier Order Handling S6 connects the supplier order list and detail screens t
 
 No preparation, delivery, payment collection, commission, settlement, withdrawal, refund, cancellation, or admin transition workflow was connected.
 
+Later recovery work extended the same supplier order UI pattern through preparation, ready-for-delivery, delivery arrangement, and Delivery Phase 2 out-for-delivery. See `docs/RISELLAR_DELIVERY_PHASE_2_OUT_FOR_DELIVERY_UI_AND_LIVE_QA_REPORT.md` for the out-for-delivery-specific implementation and live QA evidence.
+
 ## B. Routes Connected
 
 - `/supplier/orders`

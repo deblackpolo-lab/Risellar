@@ -6,6 +6,8 @@ Live browser QA was completed in the confirmed development environment with the 
 
 The supplier order list/detail UI loaded, one dev-only pending order was accepted through the browser, and a different dev-only pending order was rejected through the browser. Database verification confirmed the expected status, reservation, stock, idempotency, customer-safe status, and side-effect boundaries.
 
+Later Delivery Phase 2 browser QA reused the accepted development order after delivery arrangement and verified the `delivery_arranged` -> `out_for_delivery` transition through the supplier UI. See `docs/RISELLAR_DELIVERY_PHASE_2_OUT_FOR_DELIVERY_UI_AND_LIVE_QA_REPORT.md`.
+
 ## B. Supplier Session Verification
 
 `/auth/qa-profile-sync` confirmed:

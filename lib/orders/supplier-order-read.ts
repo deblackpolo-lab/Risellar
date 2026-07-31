@@ -45,6 +45,11 @@ export type SupplierOrderDeliveryArrangementInput = SupplierOrderDecisionInput &
   supplierPrivateNote?: string | null;
 };
 
+export type SupplierOrderOutForDeliveryInput = SupplierOrderDecisionInput & {
+  dispatchReference?: string | null;
+  customerDispatchInstruction?: string | null;
+};
+
 export type SupplierOrderRpcClient = {
   rpc<T = unknown>(name: string, args?: Record<string, unknown>): PromiseLike<{
     data: T | null;
@@ -85,9 +90,19 @@ function normalizeIdempotencyKey(value: string | null | undefined) {
 
 function normalizeStatus(value: string | null | undefined) {
   const text = cleanOptionalText(value);
-  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged"]);
+  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged", "out_for_delivery"]);
 
   return text && allowed.has(text) ? text : null;
+}
+
+function assertDispatchTextIsSafe(text: string | null) {
+  if (!text) {
+    return;
+  }
+
+  if (/[<>]/.test(text) || /gps|latitude|longitude|live tracking|verified by risellar|rider verified/i.test(text)) {
+    throw new Error("Dispatch details cannot include live tracking or verified delivery claims");
+  }
 }
 
 function normalizeDeliveryMethod(value: string | null | undefined) {
@@ -195,6 +210,30 @@ export function buildArrangeSupplierOrderDeliveryPayload(input: SupplierOrderDel
   };
 }
 
+export function buildMarkSupplierOrderOutForDeliveryPayload(input: SupplierOrderOutForDeliveryInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+  const dispatchReference = cleanOptionalText(input.dispatchReference);
+  const customerDispatchInstruction = cleanOptionalText(input.customerDispatchInstruction);
+
+  if (dispatchReference && dispatchReference.length > 100) {
+    throw new Error("Dispatch reference is too long");
+  }
+
+  if (customerDispatchInstruction && customerDispatchInstruction.length > 500) {
+    throw new Error("Customer dispatch instruction is too long");
+  }
+
+  assertDispatchTextIsSafe(dispatchReference);
+  assertDispatchTextIsSafe(customerDispatchInstruction);
+
+  return {
+    p_order_id: orderId,
+    p_dispatch_reference: dispatchReference,
+    p_customer_dispatch_instruction: customerDispatchInstruction,
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-out-for-delivery:${orderId}`
+  };
+}
+
 export function buildRejectSupplierOrderPayload(input: SupplierOrderRejectInput) {
   const orderId = requireUuid(input.orderId, "Order id");
   const reasonCode = cleanOptionalText(input.reasonCode);
@@ -254,6 +293,10 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "ORDER_NOT_PREPARING", message: "Start preparing this order before marking it ready." };
   }
 
+  if (combined.includes("order_not_arranged")) {
+    return { code: "ORDER_NOT_ARRANGED", message: "Arrange delivery before marking this order out for delivery." };
+  }
+
   if (combined.includes("reservation_not_found")) {
     return { code: "RESERVATION_NOT_FOUND", message: "The stock reservation is unavailable." };
   }
@@ -286,6 +329,18 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "ALREADY_ARRANGED", message: "Delivery arrangement has already been recorded." };
   }
 
+  if (combined.includes("already_out_for_delivery")) {
+    return { code: "ALREADY_OUT_FOR_DELIVERY", message: "This order is already out for delivery." };
+  }
+
+  if (combined.includes("delivery_arrangement_not_found")) {
+    return { code: "DELIVERY_ARRANGEMENT_NOT_FOUND", message: "The delivery arrangement is unavailable." };
+  }
+
+  if (combined.includes("invalid_dispatch_field")) {
+    return { code: "INVALID_DISPATCH_FIELD", message: "Dispatch details cannot include live tracking or verified delivery claims." };
+  }
+
   if (combined.includes("invalid_delivery_method") || combined.includes("choose a valid delivery method")) {
     return { code: "INVALID_DELIVERY_METHOD", message: "Choose a valid delivery method." };
   }
@@ -306,12 +361,12 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "INVALID_COURIER_PHONE", message: "Enter a valid courier or rider phone number." };
   }
 
-  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long")) {
-    return { code: "FIELD_TOO_LONG", message: "Keep delivery arrangement notes within the allowed length." };
+  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long") || combined.includes("dispatch reference is too long") || combined.includes("customer dispatch instruction is too long")) {
+    return { code: "FIELD_TOO_LONG", message: "Shorten the information and try again." };
   }
 
   if (combined.includes("conflicting_retry")) {
-    return { code: "CONFLICTING_RETRY", message: "This retry does not match the saved delivery arrangement. Refresh the order." };
+    return { code: "CONFLICTING_RETRY", message: "This retry does not match the saved order update. Refresh the order." };
   }
 
   if (combined.includes("preparation_not_started")) {
@@ -429,6 +484,20 @@ export async function arrangeSupplierOrderDeliveryWithClient(client: SupplierOrd
   }
 }
 
+export async function markSupplierOrderOutForDeliveryWithClient(client: SupplierOrderRpcClient, input: SupplierOrderOutForDeliveryInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_mark_order_out_for_delivery", buildMarkSupplierOrderOutForDeliveryPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order marked as out for delivery" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
 export async function rejectSupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderRejectInput) {
   try {
     const { data, error } = await client.rpc<unknown[]>("supplier_reject_order", buildRejectSupplierOrderPayload(input));
@@ -520,6 +589,9 @@ function mapSupplierOrderRow(row: unknown): SupplierOrderSafe {
     deliveryArrangementCourierPhone: nullableString(item.delivery_arrangement_courier_phone),
     deliveryArrangementCustomerInstruction: nullableString(item.delivery_arrangement_customer_instruction),
     deliveryArrangementSupplierPrivateNote: nullableString(item.delivery_arrangement_supplier_private_note),
-    deliveryArrangedAt: nullableString(item.delivery_arranged_at)
+    deliveryArrangedAt: nullableString(item.delivery_arranged_at),
+    outForDeliveryAt: nullableString(item.out_for_delivery_at),
+    dispatchReference: nullableString(item.dispatch_reference),
+    customerDispatchInstruction: nullableString(item.customer_dispatch_instruction)
   };
 }

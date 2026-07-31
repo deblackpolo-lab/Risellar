@@ -7,6 +7,7 @@ import {
   acceptSupplierOrderFormAction,
   arrangeSupplierOrderDeliveryFormAction,
   getSupplierOrderForCurrentUser,
+  markSupplierOrderOutForDeliveryFormAction,
   markSupplierOrderReadyForDeliveryFormAction,
   rejectSupplierOrderFormAction,
   startSupplierOrderPreparingFormAction
@@ -33,6 +34,10 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     return { code: "OK", message: "Delivery arrangement saved" };
   }
 
+  if (searchParams?.supplier_order_message === "OUT_FOR_DELIVERY") {
+    return { code: "OK", message: "Order marked as out for delivery" };
+  }
+
   const errorCode = searchParams?.supplier_order_error;
 
   if (!errorCode) {
@@ -47,6 +52,7 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     ORDER_NOT_ACTIONABLE: "This order cannot start preparation.",
     ORDER_NOT_CONFIRMED: "Accept this order before starting preparation.",
     ORDER_NOT_PREPARING: "Start preparing this order before marking it ready.",
+    ORDER_NOT_ARRANGED: "Arrange delivery before marking this order out for delivery.",
     RESERVATION_NOT_FOUND: "The stock reservation is unavailable.",
     RESERVATION_EXPIRED: "The stock reservation has expired.",
     RESERVATION_NOT_ACTIVE: "This order no longer has an active stock reservation.",
@@ -55,14 +61,17 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     ALREADY_PREPARING: "Preparation has already started.",
     ALREADY_READY: "This order is already ready for delivery.",
     ALREADY_ARRANGED: "Delivery arrangement has already been recorded.",
+    ALREADY_OUT_FOR_DELIVERY: "This order is already out for delivery.",
+    DELIVERY_ARRANGEMENT_NOT_FOUND: "The delivery arrangement is unavailable.",
+    INVALID_DISPATCH_FIELD: "Dispatch details cannot include live tracking or verified delivery claims.",
     PREPARATION_NOT_STARTED: "Preparation has not started for this order.",
     INVALID_DELIVERY_METHOD: "Choose a valid delivery method.",
     INVALID_DELIVERY_FEE: "Enter a valid delivery fee.",
     DELIVERY_FEE_TOO_HIGH: "The delivery fee is above the allowed limit.",
     EXPECTED_DATE_IN_PAST: "Choose today or a future expected delivery date.",
     INVALID_COURIER_PHONE: "Enter a valid courier or rider phone number.",
-    FIELD_TOO_LONG: "Keep delivery arrangement notes within the allowed length.",
-    CONFLICTING_RETRY: "This retry does not match the saved delivery arrangement. Refresh the order.",
+    FIELD_TOO_LONG: "Shorten the information and try again.",
+    CONFLICTING_RETRY: "This retry does not match the saved order update. Refresh the order.",
     INVALID_REJECTION_REASON: "Choose a valid rejection reason.",
     REJECTION_NOTE_TOO_LONG: "Keep the note within the allowed length.",
     STOCK_RELEASE_FAILED: "The reserved stock could not be released safely.",
@@ -93,6 +102,7 @@ export default async function SupplierOrderDetailPage({
       acceptAction={acceptSupplierOrderFormAction}
       actionState={stateFromSearchParams(query)}
       arrangeDeliveryAction={arrangeSupplierOrderDeliveryFormAction}
+      markOutForDeliveryAction={markSupplierOrderOutForDeliveryFormAction}
       markReadyForDeliveryAction={markSupplierOrderReadyForDeliveryFormAction}
       order={order}
       rejectAction={rejectSupplierOrderFormAction}

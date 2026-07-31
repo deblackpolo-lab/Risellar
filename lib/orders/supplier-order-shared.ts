@@ -15,6 +15,10 @@ export type SupplierOrderCode =
   | "ALREADY_PREPARING"
   | "ALREADY_READY"
   | "ALREADY_ARRANGED"
+  | "ALREADY_OUT_FOR_DELIVERY"
+  | "ORDER_NOT_ARRANGED"
+  | "DELIVERY_ARRANGEMENT_NOT_FOUND"
+  | "INVALID_DISPATCH_FIELD"
   | "PREPARATION_NOT_STARTED"
   | "INVALID_DELIVERY_METHOD"
   | "INVALID_DELIVERY_FEE"
@@ -76,6 +80,9 @@ export type SupplierOrderSafe = {
   deliveryArrangementCustomerInstruction: string | null;
   deliveryArrangementSupplierPrivateNote: string | null;
   deliveryArrangedAt: string | null;
+  outForDeliveryAt: string | null;
+  dispatchReference: string | null;
+  customerDispatchInstruction: string | null;
 };
 
 export const initialSupplierOrderState: SupplierOrderState = {

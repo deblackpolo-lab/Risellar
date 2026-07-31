@@ -72,6 +72,9 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
           delivery_arrangement_customer_instruction: "Call before arrival",
           delivery_arranged_at: "2026-07-30T12:20:00.000Z",
           delivery_arrangement_notice: "You will pay according to the Pay on Delivery arrangement.",
+          out_for_delivery_at: "2026-07-30T13:00:00.000Z",
+          customer_dispatch_instruction: "Meet the courier at the main gate",
+          dispatch_notice: "Risellar has not collected the order or delivery fee. Please pay according to the Pay on Delivery arrangement.",
           product_name: "QA Product",
           product_slug: "qa-product",
           product_image_snapshot: { image_count: 1 },
@@ -100,9 +103,12 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
       reservationStatusLabel: "Stock reserved for this order",
       deliveryArrangementMethodLabel: "Third-party courier",
       deliveryArrangementCustomerInstruction: "Call before arrival",
-      deliveryArrangementNotice: "You will pay according to the Pay on Delivery arrangement."
+      deliveryArrangementNotice: "You will pay according to the Pay on Delivery arrangement.",
+      outForDeliveryAt: "2026-07-30T13:00:00.000Z",
+      customerDispatchInstruction: "Meet the courier at the main gate",
+      dispatchNotice: "Risellar has not collected the order or delivery fee. Please pay according to the Pay on Delivery arrangement."
     });
-    expect(JSON.stringify(result.order)).not.toMatch(/supplier private|supplier_private_note|idempotency|arranged_by/i);
+    expect(JSON.stringify(result.order)).not.toMatch(/supplier private|supplier_private_note|dispatch_reference|idempotency|arranged_by|tracking|payment_collected/i);
     expect(calls).toEqual([
       {
         name: "get_customer_order_safe",
@@ -152,6 +158,9 @@ describe("Checkout Phase C C5 customer order read boundary", () => {
       "deliveryArrangementCustomerInstruction",
       "deliveryArrangedAt",
       "deliveryArrangementNotice",
+      "outForDeliveryAt",
+      "customerDispatchInstruction",
+      "dispatchNotice",
       "productName",
       "productSlug",
       "productImageSnapshot",
