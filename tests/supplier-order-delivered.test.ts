@@ -116,9 +116,10 @@ describe("Supplier delivered order flow", () => {
     expect(screen).toContain("mark as delivered");
     expect(screen).toContain("order.orderstatus === \"out_for_delivery\"");
     expect(screen).toContain("order.orderstatus === \"delivered\"");
-    expect(screen).toContain("payment has not yet been confirmed in risellar");
+    expect(screen).toContain("payment has not yet been reported in risellar");
     expect(screen).not.toContain("confirm payment");
-    expect(screen).not.toContain("payment received");
+    expect(screen).not.toContain("payment provider");
+    expect(screen).not.toContain("payment verified by risellar");
     expect(screen).not.toContain("upload proof");
     expect(screen).not.toContain("tracking_url");
     expect(screen).not.toContain("proof_of_delivery");

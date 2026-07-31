@@ -17,12 +17,19 @@ export type SupplierOrderCode =
   | "ALREADY_ARRANGED"
   | "ALREADY_OUT_FOR_DELIVERY"
   | "ALREADY_DELIVERED"
+  | "ALREADY_REPORTED"
   | "ORDER_NOT_ARRANGED"
   | "ORDER_NOT_OUT_FOR_DELIVERY"
+  | "ORDER_NOT_DELIVERED"
   | "DELIVERY_ARRANGEMENT_NOT_FOUND"
   | "DISPATCH_NOT_RECORDED"
   | "INVALID_DISPATCH_FIELD"
   | "INVALID_DELIVERY_NOTE"
+  | "INVALID_PAYMENT_FIELD"
+  | "PAYMENT_METHOD_NOT_SUPPORTED"
+  | "PAYMENT_ALREADY_COLLECTED"
+  | "STOCK_STATE_INCONSISTENT"
+  | "FINANCIAL_SNAPSHOT_INVALID"
   | "PREPARATION_NOT_STARTED"
   | "INVALID_DELIVERY_METHOD"
   | "INVALID_DELIVERY_FEE"
@@ -89,6 +96,13 @@ export type SupplierOrderSafe = {
   customerDispatchInstruction: string | null;
   deliveredAt: string | null;
   deliveryConfirmationNote: string | null;
+  paymentReportedAt: string | null;
+  paymentReference: string | null;
+  supplierPaymentPrivateNote: string | null;
+  platformAmountDue: number | null;
+  resellerCommissionDue: number | null;
+  settlementStatusLabel: string | null;
+  commissionStatusLabel: string | null;
 };
 
 export const initialSupplierOrderState: SupplierOrderState = {

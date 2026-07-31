@@ -98,6 +98,10 @@ function ActionMessage({ state }: { state: SupplierOrderState }) {
 }
 
 function statusGroup(status: string) {
+  if (status === "payment_reported") {
+    return "Payment reported";
+  }
+
   if (status === "delivered") {
     return "Delivered";
   }
@@ -139,6 +143,7 @@ export function SupplierOrdersRpcScreen({ orders, error }: { orders: SupplierOrd
       ["Arranged", []],
       ["Out for delivery", []],
       ["Delivered", []],
+      ["Payment reported", []],
       ["Rejected", []]
     ]);
 
@@ -219,6 +224,7 @@ export function SupplierOrderDetailRpcScreen({
   actionState = initialSupplierOrderState,
   markReadyForDeliveryAction,
   order,
+  reportPaymentReceivedAction,
   rejectAction,
   startPreparingAction,
   arrangeDeliveryAction,
@@ -231,6 +237,7 @@ export function SupplierOrderDetailRpcScreen({
   markDeliveredAction?: SupplierOrderAction;
   markReadyForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
+  reportPaymentReceivedAction?: SupplierOrderAction;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
   markOutForDeliveryAction?: SupplierOrderAction;
@@ -295,6 +302,7 @@ export function SupplierOrderDetailRpcScreen({
             markOutForDeliveryAction={markOutForDeliveryAction}
             markReadyForDeliveryAction={markReadyForDeliveryAction}
             order={order}
+            reportPaymentReceivedAction={reportPaymentReceivedAction}
             rejectAction={rejectAction}
             startPreparingAction={startPreparingAction}
           />
@@ -312,7 +320,8 @@ export function SupplierOrderDecisionActions({
   startPreparingAction,
   arrangeDeliveryAction,
   markOutForDeliveryAction,
-  markDeliveredAction
+  markDeliveredAction,
+  reportPaymentReceivedAction
 }: {
   acceptAction?: SupplierOrderAction;
   arrangeDeliveryAction?: SupplierOrderAction;
@@ -320,6 +329,7 @@ export function SupplierOrderDecisionActions({
   markReadyForDeliveryAction?: SupplierOrderAction;
   markOutForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
+  reportPaymentReceivedAction?: SupplierOrderAction;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
 }) {
@@ -329,11 +339,14 @@ export function SupplierOrderDecisionActions({
   const [deliveryAcknowledged, setDeliveryAcknowledged] = useState(false);
   const [outForDeliveryAcknowledged, setOutForDeliveryAcknowledged] = useState(false);
   const [deliveredAcknowledged, setDeliveredAcknowledged] = useState(false);
+  const [paymentReceivedAcknowledged, setPaymentReceivedAcknowledged] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("manually_arranged");
   const [customerInstruction, setCustomerInstruction] = useState("");
   const [supplierPrivateNote, setSupplierPrivateNote] = useState("");
   const [dispatchCustomerInstruction, setDispatchCustomerInstruction] = useState("");
   const [deliveryConfirmationNote, setDeliveryConfirmationNote] = useState("");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentPrivateNote, setPaymentPrivateNote] = useState("");
   const [reasonCode, setReasonCode] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const canAct = order.isSupplierActionable && order.orderStatus === "placed_pending_confirmation";
@@ -357,6 +370,7 @@ export function SupplierOrderDecisionActions({
     order.orderStatus === "out_for_delivery" &&
     order.reservationStatusLabel.toLowerCase().includes("reserved") &&
     !order.reservationStatusLabel.toLowerCase().includes("expired");
+  const canReportPayment = order.orderStatus === "delivered" && order.paymentStatusLabel.toLowerCase().includes("not collected");
 
   if (canStartPreparing && startPreparingAction) {
     return (
@@ -646,6 +660,73 @@ export function SupplierOrderDecisionActions({
     );
   }
 
+  if (canReportPayment && reportPaymentReceivedAction) {
+    return (
+      <Card title="Report payment received">
+        <form action={reportPaymentReceivedAction} className="grid gap-4">
+          <input name="order_id" type="hidden" value={order.orderId} />
+          <input name="idempotency_key" type="hidden" value={`supplier-payment-reported:${order.orderId}`} />
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Use this only after you have received the full Pay on Delivery amount from the customer.
+          </p>
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-warning)]/25 bg-[var(--color-warning-soft)] p-3 text-sm font-semibold leading-6 text-[#8A5A00]">
+            Reporting payment does not complete settlement with Risellar. The platform amount and reseller commission will remain pending until Risellar verifies your settlement.
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-muted-soft)] p-3 text-sm">
+            <div className="grid gap-3">
+              <InfoRow label="Customer total" value={formatMoney(order.customerTotalAmount, order.currencyCode)} />
+              <InfoRow label="Supplier amount" value={formatMoney(order.supplierAmountExpected, order.currencyCode)} />
+              <InfoRow label="Payment" value={order.paymentStatusLabel} />
+              <InfoRow label="Delivered" value={formatDate(order.deliveredAt)} />
+            </div>
+          </div>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Payment reference
+            <input
+              className="min-h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-charcoal)] outline-none focus:border-[var(--color-primary)]"
+              maxLength={100}
+              name="payment_reference"
+              placeholder="Optional cash, Mobile Money, or internal receipt reference"
+              type="text"
+              value={paymentReference}
+              onChange={(event) => setPaymentReference(event.target.value)}
+            />
+            <span className="text-xs font-semibold text-[var(--color-muted)]">Risellar has not verified this reference.</span>
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[var(--color-charcoal)]">
+            Private payment note
+            <Textarea
+              aria-label="Private payment note"
+              maxLength={300}
+              name="supplier_private_note"
+              placeholder="Only your business and authorised administration can see this note."
+              value={paymentPrivateNote}
+              onChange={(event) => setPaymentPrivateNote(event.target.value)}
+            />
+            <span className="text-xs font-semibold text-[var(--color-muted)]">{paymentPrivateNote.length}/300</span>
+          </label>
+          <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+            <input
+              checked={paymentReceivedAcknowledged}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+              name="payment_received_acknowledgement"
+              onChange={(event) => setPaymentReceivedAcknowledged(event.currentTarget.checked)}
+              type="checkbox"
+              value="confirmed"
+            />
+            I confirm that I received the full Pay on Delivery amount from the customer.
+          </label>
+          <SupplierSubmitButton
+            disabled={!paymentReceivedAcknowledged}
+            icon={<CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+            label="Report payment received"
+            pendingLabel="Reporting payment..."
+          />
+        </form>
+      </Card>
+    );
+  }
+
   if (!canAct) {
     return <TerminalOrderState order={order} />;
   }
@@ -739,12 +820,35 @@ function SupplierSubmitButton({
 }
 
 function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
+  if (order.orderStatus === "payment_reported") {
+    return (
+      <Card title="Payment reported">
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Your payment report has been recorded. The platform amount and reseller commission are still pending settlement verification.
+          </p>
+          <div className="grid gap-3 text-sm">
+            <InfoRow label="Reported" value={formatDate(order.paymentReportedAt)} />
+            <InfoRow label="Customer total" value={formatMoney(order.customerTotalAmount, order.currencyCode)} />
+            <InfoRow label="Supplier amount" value={formatMoney(order.supplierAmountExpected, order.currencyCode)} />
+            <InfoRow label="Platform amount due" value={formatMoney(order.platformAmountDue, order.currencyCode)} />
+            <InfoRow label="Reseller commission due" value={formatMoney(order.resellerCommissionDue, order.currencyCode)} />
+            <InfoRow label="Settlement status" value={order.settlementStatusLabel ?? "Pending settlement to Risellar"} />
+            <InfoRow label="Commission status" value={order.commissionStatusLabel ?? "Locked until settlement is verified"} />
+            <InfoRow label="Payment reference" value={order.paymentReference ?? "Not set"} />
+            <InfoRow label="Private payment note" value={order.supplierPaymentPrivateNote ?? "Not set"} />
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   if (order.orderStatus === "delivered") {
     return (
       <Card title="Delivered">
         <div className="grid gap-4">
           <p className="text-sm leading-6 text-[var(--color-muted)]">
-            The order was delivered. Payment has not yet been confirmed in Risellar.
+            The order was delivered. Payment has not yet been reported in Risellar.
           </p>
           <div className="grid gap-3 text-sm">
             <InfoRow label="Delivered" value={formatDate(order.deliveredAt)} />
@@ -833,7 +937,8 @@ function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
 }
 
 function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
-  const isDelivered = order.orderStatus === "delivered";
+  const isPaymentReported = order.orderStatus === "payment_reported";
+  const isDelivered = order.orderStatus === "delivered" || isPaymentReported;
   const isOutForDelivery = order.orderStatus === "out_for_delivery" || isDelivered;
   const isArranged = order.orderStatus === "delivery_arranged" || isOutForDelivery;
   const isReady = order.orderStatus === "ready_for_delivery" || isArranged;
@@ -857,8 +962,8 @@ function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
           { label: "Ready for delivery", state: isArranged ? "Complete" : isReady ? "Current" : "Inactive", active: isReady },
           { label: "Delivery arrangement", state: isOutForDelivery ? "Complete" : isArranged ? "Current" : "Inactive", active: isArranged },
           { label: "Out for delivery", state: isDelivered ? "Complete" : isOutForDelivery ? "Current" : "Inactive", active: isOutForDelivery },
-          { label: "Delivered", state: isDelivered ? "Current" : "Inactive", active: isDelivered },
-          { label: "Payment confirmation", state: "Inactive", active: false },
+          { label: "Delivered", state: isPaymentReported ? "Complete" : isDelivered ? "Current" : "Inactive", active: isDelivered },
+          { label: "Payment reported", state: isPaymentReported ? "Current" : "Inactive", active: isPaymentReported },
           { label: "Completed", state: "Inactive", active: false }
         ];
 

@@ -174,7 +174,7 @@ describe("Supplier fulfilment Phase 3 ready-for-delivery contract", () => {
     expect(sources).not.toContain(".from(\"stock_reservations\").update");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("create_payment");
-    expect(sources).not.toContain("settlement");
+    expect(sources).not.toMatch(/settlement complete|settlement verified|release_commission_after_settlement/i);
     expect(sources).not.toContain("withdrawal");
   });
 });

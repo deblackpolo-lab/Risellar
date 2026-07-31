@@ -54,6 +54,11 @@ export type SupplierOrderDeliveredInput = SupplierOrderDecisionInput & {
   deliveryConfirmationNote?: string | null;
 };
 
+export type SupplierOrderPaymentReportedInput = SupplierOrderDecisionInput & {
+  paymentReference?: string | null;
+  supplierPrivateNote?: string | null;
+};
+
 export type SupplierOrderRpcClient = {
   rpc<T = unknown>(name: string, args?: Record<string, unknown>): PromiseLike<{
     data: T | null;
@@ -94,7 +99,7 @@ function normalizeIdempotencyKey(value: string | null | undefined) {
 
 function normalizeStatus(value: string | null | undefined) {
   const text = cleanOptionalText(value);
-  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged", "out_for_delivery", "delivered"]);
+  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery", "delivery_arranged", "out_for_delivery", "delivered", "payment_reported"]);
 
   return text && allowed.has(text) ? text : null;
 }
@@ -257,6 +262,33 @@ export function buildMarkSupplierOrderDeliveredPayload(input: SupplierOrderDeliv
   };
 }
 
+export function buildReportSupplierOrderPaymentReceivedPayload(input: SupplierOrderPaymentReportedInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+  const paymentReference = cleanOptionalText(input.paymentReference);
+  const supplierPrivateNote = cleanOptionalText(input.supplierPrivateNote);
+
+  if (paymentReference && paymentReference.length > 100) {
+    throw new Error("Payment reference is too long");
+  }
+
+  if (supplierPrivateNote && supplierPrivateNote.length > 300) {
+    throw new Error("Payment note is too long");
+  }
+
+  const unsafePaymentText = /[<>]|pin|password|secret|card number|cvv|otp/i;
+
+  if ((paymentReference && unsafePaymentText.test(paymentReference)) || (supplierPrivateNote && unsafePaymentText.test(supplierPrivateNote))) {
+    throw new Error("Payment details cannot include secrets, card details, HTML, or OTPs");
+  }
+
+  return {
+    p_order_id: orderId,
+    p_payment_reference: paymentReference,
+    p_supplier_private_note: supplierPrivateNote,
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-payment-reported:${orderId}`
+  };
+}
+
 export function buildRejectSupplierOrderPayload(input: SupplierOrderRejectInput) {
   const orderId = requireUuid(input.orderId, "Order id");
   const reasonCode = cleanOptionalText(input.reasonCode);
@@ -360,8 +392,32 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "ALREADY_DELIVERED", message: "This order has already been marked delivered." };
   }
 
+  if (combined.includes("already_reported")) {
+    return { code: "ALREADY_REPORTED", message: "Payment has already been reported for this order." };
+  }
+
   if (combined.includes("order_not_out_for_delivery")) {
     return { code: "ORDER_NOT_OUT_FOR_DELIVERY", message: "Mark this order out for delivery before marking it delivered." };
+  }
+
+  if (combined.includes("order_not_delivered")) {
+    return { code: "ORDER_NOT_DELIVERED", message: "Mark this order delivered before reporting payment." };
+  }
+
+  if (combined.includes("payment_method_not_supported")) {
+    return { code: "PAYMENT_METHOD_NOT_SUPPORTED", message: "Only Pay on Delivery payment can be reported here." };
+  }
+
+  if (combined.includes("payment_already_collected")) {
+    return { code: "PAYMENT_ALREADY_COLLECTED", message: "Payment has already been recorded." };
+  }
+
+  if (combined.includes("stock_state_inconsistent")) {
+    return { code: "STOCK_STATE_INCONSISTENT", message: "The stock record is inconsistent. Contact support before continuing." };
+  }
+
+  if (combined.includes("financial_snapshot_invalid")) {
+    return { code: "FINANCIAL_SNAPSHOT_INVALID", message: "The order amounts could not be verified safely." };
   }
 
   if (combined.includes("delivery_arrangement_not_found")) {
@@ -378,6 +434,10 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
 
   if (combined.includes("invalid_delivery_note") || combined.includes("delivery confirmation note cannot")) {
     return { code: "INVALID_DELIVERY_NOTE", message: "Delivery note cannot include payment, identity, tracking, or sensitive details." };
+  }
+
+  if (combined.includes("invalid_payment_field") || combined.includes("payment details cannot")) {
+    return { code: "INVALID_PAYMENT_FIELD", message: "Payment details cannot include secrets, card details, HTML, or OTPs." };
   }
 
   if (combined.includes("invalid_delivery_method") || combined.includes("choose a valid delivery method")) {
@@ -400,7 +460,7 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
     return { code: "INVALID_COURIER_PHONE", message: "Enter a valid courier or rider phone number." };
   }
 
-  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long") || combined.includes("dispatch reference is too long") || combined.includes("customer dispatch instruction is too long") || combined.includes("delivery confirmation note is too long")) {
+  if (combined.includes("field_too_long") || combined.includes("delivery arrangement text is too long") || combined.includes("dispatch reference is too long") || combined.includes("customer dispatch instruction is too long") || combined.includes("delivery confirmation note is too long") || combined.includes("payment reference is too long") || combined.includes("payment note is too long")) {
     return { code: "FIELD_TOO_LONG", message: "Shorten the information and try again." };
   }
 
@@ -551,6 +611,20 @@ export async function markSupplierOrderDeliveredWithClient(client: SupplierOrder
   }
 }
 
+export async function reportSupplierOrderPaymentReceivedWithClient(client: SupplierOrderRpcClient, input: SupplierOrderPaymentReportedInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_report_order_payment_received", buildReportSupplierOrderPaymentReceivedPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Payment reported - settlement pending" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
 export async function rejectSupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderRejectInput) {
   try {
     const { data, error } = await client.rpc<unknown[]>("supplier_reject_order", buildRejectSupplierOrderPayload(input));
@@ -647,6 +721,13 @@ function mapSupplierOrderRow(row: unknown): SupplierOrderSafe {
     dispatchReference: nullableString(item.dispatch_reference),
     customerDispatchInstruction: nullableString(item.customer_dispatch_instruction),
     deliveredAt: nullableString(item.delivered_at),
-    deliveryConfirmationNote: nullableString(item.delivery_confirmation_note)
+    deliveryConfirmationNote: nullableString(item.delivery_confirmation_note),
+    paymentReportedAt: nullableString(item.payment_reported_at),
+    paymentReference: nullableString(item.payment_reference),
+    supplierPaymentPrivateNote: nullableString(item.supplier_payment_private_note),
+    platformAmountDue: nullableNumber(item.platform_amount_due),
+    resellerCommissionDue: nullableNumber(item.reseller_commission_due),
+    settlementStatusLabel: nullableString(item.settlement_status_label),
+    commissionStatusLabel: nullableString(item.commission_status_label)
   };
 }

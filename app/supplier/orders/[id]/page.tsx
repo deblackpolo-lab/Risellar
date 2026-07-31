@@ -10,6 +10,7 @@ import {
   markSupplierOrderDeliveredFormAction,
   markSupplierOrderOutForDeliveryFormAction,
   markSupplierOrderReadyForDeliveryFormAction,
+  reportSupplierOrderPaymentReceivedFormAction,
   rejectSupplierOrderFormAction,
   startSupplierOrderPreparingFormAction
 } from "../actions";
@@ -43,6 +44,10 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     return { code: "OK", message: "Order marked as delivered" };
   }
 
+  if (searchParams?.supplier_order_message === "PAYMENT_REPORTED") {
+    return { code: "OK", message: "Payment reported - settlement pending" };
+  }
+
   const errorCode = searchParams?.supplier_order_error;
 
   if (!errorCode) {
@@ -68,7 +73,14 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     ALREADY_ARRANGED: "Delivery arrangement has already been recorded.",
     ALREADY_OUT_FOR_DELIVERY: "This order is already out for delivery.",
     ALREADY_DELIVERED: "This order has already been marked delivered.",
+    ALREADY_REPORTED: "Payment has already been reported for this order.",
     ORDER_NOT_OUT_FOR_DELIVERY: "Mark this order out for delivery before marking it delivered.",
+    ORDER_NOT_DELIVERED: "Mark this order delivered before reporting payment.",
+    PAYMENT_METHOD_NOT_SUPPORTED: "Only Pay on Delivery payment can be reported here.",
+    PAYMENT_ALREADY_COLLECTED: "Payment has already been recorded.",
+    STOCK_STATE_INCONSISTENT: "The stock record is inconsistent. Contact support before continuing.",
+    FINANCIAL_SNAPSHOT_INVALID: "The order amounts could not be verified safely.",
+    INVALID_PAYMENT_FIELD: "Payment details cannot include secrets, card details, HTML, or OTPs.",
     DELIVERY_ARRANGEMENT_NOT_FOUND: "The delivery arrangement is unavailable.",
     DISPATCH_NOT_RECORDED: "Dispatch has not been recorded for this order.",
     INVALID_DISPATCH_FIELD: "Dispatch details cannot include live tracking or verified delivery claims.",
@@ -115,6 +127,7 @@ export default async function SupplierOrderDetailPage({
       markOutForDeliveryAction={markSupplierOrderOutForDeliveryFormAction}
       markReadyForDeliveryAction={markSupplierOrderReadyForDeliveryFormAction}
       order={order}
+      reportPaymentReceivedAction={reportSupplierOrderPaymentReceivedFormAction}
       rejectAction={rejectSupplierOrderFormAction}
       startPreparingAction={startSupplierOrderPreparingFormAction}
     />

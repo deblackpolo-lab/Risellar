@@ -9,6 +9,7 @@ import {
   buildArrangeSupplierOrderDeliveryPayload,
   buildListSupplierOrdersSafePayload,
   buildMarkSupplierOrderOutForDeliveryPayload,
+  buildReportSupplierOrderPaymentReceivedPayload,
   buildMarkReadyForDeliverySupplierOrderPayload,
   buildRejectSupplierOrderPayload,
   buildStartPreparingSupplierOrderPayload,
@@ -16,6 +17,7 @@ import {
   arrangeSupplierOrderDeliveryWithClient,
   listSupplierOrdersSafeWithClient,
   markSupplierOrderOutForDeliveryWithClient,
+  reportSupplierOrderPaymentReceivedWithClient,
   markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
   rejectSupplierOrderWithClient,
@@ -102,7 +104,14 @@ const pendingOrder: SupplierOrderSafe = {
   dispatchReference: null,
   customerDispatchInstruction: null,
   deliveredAt: null,
-  deliveryConfirmationNote: null
+  deliveryConfirmationNote: null,
+  paymentReportedAt: null,
+  paymentReference: null,
+  supplierPaymentPrivateNote: null,
+  platformAmountDue: null,
+  resellerCommissionDue: null,
+  settlementStatusLabel: null,
+  commissionStatusLabel: null
 };
 
 describe("Supplier Order Handling S6 UI integration", () => {
@@ -193,6 +202,12 @@ describe("Supplier Order Handling S6 UI integration", () => {
       orderId: pendingOrder.orderId,
       idempotencyKey: `supplier-ready-for-delivery:${pendingOrder.orderId}`
     });
+    await reportSupplierOrderPaymentReceivedWithClient(client, {
+      orderId: pendingOrder.orderId,
+      paymentReference: "QA-PAYMENT-001",
+      supplierPrivateNote: "Development-only private payment note",
+      idempotencyKey: `supplier-payment-reported:${pendingOrder.orderId}`
+    });
 
     expect(calls).toEqual([
       {
@@ -224,6 +239,15 @@ describe("Supplier Order Handling S6 UI integration", () => {
           orderId: pendingOrder.orderId,
           idempotencyKey: `supplier-ready-for-delivery:${pendingOrder.orderId}`
         })
+      },
+      {
+        name: "supplier_report_order_payment_received",
+        args: buildReportSupplierOrderPaymentReceivedPayload({
+          orderId: pendingOrder.orderId,
+          paymentReference: "QA-PAYMENT-001",
+          supplierPrivateNote: "Development-only private payment note",
+          idempotencyKey: `supplier-payment-reported:${pendingOrder.orderId}`
+        })
       }
     ]);
 
@@ -233,6 +257,10 @@ describe("Supplier Order Handling S6 UI integration", () => {
       expect(call.args).not.toHaveProperty("p_price");
       expect(call.args).not.toHaveProperty("p_stock");
       expect(call.args).not.toHaveProperty("p_quantity");
+      expect(call.args).not.toHaveProperty("p_reported_amount");
+      expect(call.args).not.toHaveProperty("p_currency");
+      expect(call.args).not.toHaveProperty("p_commission");
+      expect(call.args).not.toHaveProperty("p_settlement_status");
     }
   });
 
@@ -358,6 +386,18 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(() => buildMarkSupplierOrderOutForDeliveryPayload({ orderId: pendingOrder.orderId, customerDispatchInstruction: "Live tracking: https://example.test" })).toThrow("Dispatch details cannot include live tracking or verified delivery claims");
   });
 
+  it("validates supplier payment-report inputs before calling the RPC", () => {
+    expect(buildReportSupplierOrderPaymentReceivedPayload({ orderId: pendingOrder.orderId })).toEqual({
+      p_order_id: pendingOrder.orderId,
+      p_payment_reference: null,
+      p_supplier_private_note: null,
+      p_idempotency_key: `supplier-payment-reported:${pendingOrder.orderId}`
+    });
+    expect(() => buildReportSupplierOrderPaymentReceivedPayload({ orderId: pendingOrder.orderId, paymentReference: "x".repeat(101) })).toThrow("Payment reference is too long");
+    expect(() => buildReportSupplierOrderPaymentReceivedPayload({ orderId: pendingOrder.orderId, supplierPrivateNote: "x".repeat(301) })).toThrow("Payment note is too long");
+    expect(() => buildReportSupplierOrderPaymentReceivedPayload({ orderId: pendingOrder.orderId, paymentReference: "OTP 123456" })).toThrow("Payment details cannot include secrets");
+  });
+
   it("requires valid rejection reasons and bounded notes", () => {
     expect(() => buildRejectSupplierOrderPayload({ orderId: pendingOrder.orderId, reasonCode: "" })).toThrow("Rejection reason is required");
     expect(() => buildRejectSupplierOrderPayload({ orderId: pendingOrder.orderId, reasonCode: "admin_override" })).toThrow("Choose a valid rejection reason");
@@ -378,7 +418,14 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(mapSupplierOrderRpcError({ message: "ALREADY_READY" })).toMatchObject({ code: "ALREADY_READY" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_ARRANGED" })).toMatchObject({ code: "ALREADY_ARRANGED" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_OUT_FOR_DELIVERY" })).toMatchObject({ code: "ALREADY_OUT_FOR_DELIVERY" });
+    expect(mapSupplierOrderRpcError({ message: "ALREADY_REPORTED" })).toMatchObject({ code: "ALREADY_REPORTED" });
     expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_ARRANGED" })).toMatchObject({ code: "ORDER_NOT_ARRANGED" });
+    expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_DELIVERED" })).toMatchObject({ code: "ORDER_NOT_DELIVERED" });
+    expect(mapSupplierOrderRpcError({ message: "PAYMENT_METHOD_NOT_SUPPORTED" })).toMatchObject({ code: "PAYMENT_METHOD_NOT_SUPPORTED" });
+    expect(mapSupplierOrderRpcError({ message: "PAYMENT_ALREADY_COLLECTED" })).toMatchObject({ code: "PAYMENT_ALREADY_COLLECTED" });
+    expect(mapSupplierOrderRpcError({ message: "STOCK_STATE_INCONSISTENT" })).toMatchObject({ code: "STOCK_STATE_INCONSISTENT" });
+    expect(mapSupplierOrderRpcError({ message: "FINANCIAL_SNAPSHOT_INVALID" })).toMatchObject({ code: "FINANCIAL_SNAPSHOT_INVALID" });
+    expect(mapSupplierOrderRpcError({ message: "INVALID_PAYMENT_FIELD" })).toMatchObject({ code: "INVALID_PAYMENT_FIELD" });
     expect(mapSupplierOrderRpcError({ message: "DELIVERY_ARRANGEMENT_NOT_FOUND" })).toMatchObject({ code: "DELIVERY_ARRANGEMENT_NOT_FOUND" });
     expect(mapSupplierOrderRpcError({ message: "INVALID_DISPATCH_FIELD" })).toMatchObject({ code: "INVALID_DISPATCH_FIELD" });
     expect(mapSupplierOrderRpcError({ message: "INVALID_DELIVERY_METHOD" })).toMatchObject({ code: "INVALID_DELIVERY_METHOD" });
@@ -520,7 +567,64 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(document.body.innerHTML).not.toMatch(/customer email|reseller margin|platform margin|commission|settlement|risk|raw stock/i);
   });
 
-  it("keeps supplier routes supplier-only and excludes payment, delivery, preparation, finance, service-role, and direct table mutation code", () => {
+  it("renders supplier payment report control only for delivered Pay on Delivery orders", () => {
+    const deliveredOrder: SupplierOrderSafe = {
+      ...pendingOrder,
+      orderStatus: "delivered",
+      orderStatusLabel: "Delivered",
+      isSupplierActionable: false,
+      deliveryStatusLabel: "Delivered - payment not confirmed",
+      outForDeliveryAt: "2026-07-30T13:00:00.000Z",
+      deliveredAt: "2026-07-30T14:00:00.000Z",
+      deliveryConfirmationNote: "Development-only delivered note"
+    };
+
+    const { rerender } = render(
+      <SupplierOrderDetailRpcScreen
+        actionState={{ code: "OK", message: "" }}
+        order={deliveredOrder}
+        reportPaymentReceivedAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Use this only after you have received the full Pay on Delivery amount from the customer.")).toBeInTheDocument();
+    expect(screen.getByText(/platform amount and reseller commission will remain pending/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Optional cash, Mobile Money, or internal receipt reference")).toBeInTheDocument();
+    expect(screen.getByLabelText("Private payment note")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Report payment received" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /received the full Pay on Delivery amount/i }));
+    expect(screen.getByRole("button", { name: "Report payment received" })).toBeEnabled();
+
+    rerender(
+      <SupplierOrderDetailRpcScreen
+        actionState={{ code: "OK", message: "Payment reported - settlement pending" }}
+        order={{
+          ...deliveredOrder,
+          orderStatus: "payment_reported",
+          orderStatusLabel: "Payment reported - settlement pending",
+          paymentStatusLabel: "Payment reported by supplier",
+          reservationStatusLabel: "Stock committed",
+          paymentReportedAt: "2026-07-30T15:00:00.000Z",
+          paymentReference: "QA-PAYMENT-001",
+          supplierPaymentPrivateNote: "Development-only private payment note",
+          platformAmountDue: 20,
+          resellerCommissionDue: 20,
+          settlementStatusLabel: "Pending settlement to Risellar",
+          commissionStatusLabel: "Locked until settlement is verified"
+        }}
+        reportPaymentReceivedAction={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByText("Payment reported - settlement pending").length).toBeGreaterThan(0);
+    expect(screen.getByText("Your payment report has been recorded. The platform amount and reseller commission are still pending settlement verification.")).toBeInTheDocument();
+    expect(screen.getByText("Pending settlement to Risellar")).toBeInTheDocument();
+    expect(screen.getByText("Locked until settlement is verified")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Report payment received" })).not.toBeInTheDocument();
+    expect(document.body.innerHTML).not.toMatch(/commission available|settlement complete|withdraw|payment verified by risellar|order completed/i);
+  });
+
+  it("keeps supplier routes supplier-only and excludes payment providers, withdrawals, service-role, and direct table mutation code", () => {
     expect(canAccessRoute("/supplier/orders", getVerifiedRouteAccessProfile({ primaryRole: "supplier_owner" }))).toBe(true);
     expect(canAccessRoute("/supplier/orders/11111111-1111-4111-8111-111111111111", getVerifiedRouteAccessProfile({ primaryRole: "supplier_owner" }))).toBe(true);
     expect(canAccessRoute("/supplier/orders", getVerifiedRouteAccessProfile({ primaryRole: "customer" }))).toBe(false);
@@ -545,13 +649,16 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(sources).toContain("supplier-out-for-delivery:");
     expect(sources).toContain("supplier_mark_order_delivered");
     expect(sources).toContain("supplier-delivered:");
+    expect(sources).toContain("supplier_report_order_payment_received");
+    expect(sources).toContain("supplier-payment-reported:");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("prepare_supplier_for_order");
-    expect(sources).not.toContain("collect_payment");
+    expect(sources).not.toContain("collect_payment_provider");
+    expect(sources).not.toContain("payment_verified");
     expect(sources).not.toContain("tracking_url");
-    expect(sources).not.toContain("commission");
-    expect(sources).not.toContain("settlement");
+    expect(sources).not.toContain("commission available");
+    expect(sources).not.toContain("settlement complete");
     expect(sources).not.toContain("withdrawal");
     expect(sources).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(sources).not.toContain("createSupabaseAdminClient");

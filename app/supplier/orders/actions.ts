@@ -13,6 +13,7 @@ import {
   listSupplierOrdersSafeWithClient,
   markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
+  reportSupplierOrderPaymentReceivedWithClient,
   rejectSupplierOrderWithClient,
   startPreparingSupplierOrderWithClient,
   type SupplierOrderListInput
@@ -251,6 +252,40 @@ export async function markSupplierOrderDeliveredFormAction(formData: FormData) {
     revalidatePath(`/supplier/orders/${orderId}`);
     nextPath = result.order
       ? `/supplier/orders/${orderId}?supplier_order_message=DELIVERED`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
+  } catch (error) {
+    const state = mapSupplierOrderRpcError(error);
+    nextPath = state.code === "AUTH_REQUIRED"
+      ? `/sign-in?redirect_url=${encodeURIComponent(`/supplier/orders/${orderId}`)}`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(state.code)}`;
+  }
+
+  redirect(nextPath);
+}
+
+export async function reportSupplierOrderPaymentReceivedFormAction(formData: FormData) {
+  const orderId = formData.get("order_id")?.toString() ?? "";
+  let nextPath = `/supplier/orders/${orderId}`;
+
+  try {
+    const acknowledgement = formData.get("payment_received_acknowledgement")?.toString();
+
+    if (acknowledgement !== "confirmed") {
+      throw new Error("VALIDATION_ERROR");
+    }
+
+    const supabase = await getSupplierOrderClient();
+    const result = await reportSupplierOrderPaymentReceivedWithClient(supabase, {
+      orderId,
+      paymentReference: formData.get("payment_reference")?.toString(),
+      supplierPrivateNote: formData.get("supplier_private_note")?.toString(),
+      idempotencyKey: formData.get("idempotency_key")?.toString()
+    });
+
+    revalidatePath("/supplier/orders");
+    revalidatePath(`/supplier/orders/${orderId}`);
+    nextPath = result.order
+      ? `/supplier/orders/${orderId}?supplier_order_message=PAYMENT_REPORTED`
       : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
   } catch (error) {
     const state = mapSupplierOrderRpcError(error);
