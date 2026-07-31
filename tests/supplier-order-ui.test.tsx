@@ -7,10 +7,12 @@ import {
   acceptSupplierOrderWithClient,
   buildAcceptSupplierOrderPayload,
   buildListSupplierOrdersSafePayload,
+  buildMarkReadyForDeliverySupplierOrderPayload,
   buildRejectSupplierOrderPayload,
   buildStartPreparingSupplierOrderPayload,
   buildSupplierOrderDetailPayload,
   listSupplierOrdersSafeWithClient,
+  markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
   rejectSupplierOrderWithClient,
   startPreparingSupplierOrderWithClient,
@@ -167,6 +169,10 @@ describe("Supplier Order Handling S6 UI integration", () => {
       orderId: pendingOrder.orderId,
       idempotencyKey: `supplier-start-preparing:${pendingOrder.orderId}`
     });
+    await markReadyForDeliverySupplierOrderWithClient(client, {
+      orderId: pendingOrder.orderId,
+      idempotencyKey: `supplier-ready-for-delivery:${pendingOrder.orderId}`
+    });
 
     expect(calls).toEqual([
       {
@@ -190,6 +196,13 @@ describe("Supplier Order Handling S6 UI integration", () => {
         args: buildStartPreparingSupplierOrderPayload({
           orderId: pendingOrder.orderId,
           idempotencyKey: `supplier-start-preparing:${pendingOrder.orderId}`
+        })
+      },
+      {
+        name: "supplier_mark_ready_for_delivery",
+        args: buildMarkReadyForDeliverySupplierOrderPayload({
+          orderId: pendingOrder.orderId,
+          idempotencyKey: `supplier-ready-for-delivery:${pendingOrder.orderId}`
         })
       }
     ]);
@@ -215,10 +228,13 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_OWNED" })).toMatchObject({ code: "ORDER_NOT_FOUND", message: "This order is unavailable." });
     expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_ACTIONABLE" })).toMatchObject({ code: "ORDER_NOT_ACTIONABLE" });
     expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_CONFIRMED" })).toMatchObject({ code: "ORDER_NOT_CONFIRMED" });
+    expect(mapSupplierOrderRpcError({ message: "ORDER_NOT_PREPARING" })).toMatchObject({ code: "ORDER_NOT_PREPARING" });
     expect(mapSupplierOrderRpcError({ message: "RESERVATION_EXPIRED" })).toMatchObject({ code: "RESERVATION_EXPIRED" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_CONFIRMED" })).toMatchObject({ code: "ALREADY_CONFIRMED" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_REJECTED" })).toMatchObject({ code: "ALREADY_REJECTED" });
     expect(mapSupplierOrderRpcError({ message: "ALREADY_PREPARING" })).toMatchObject({ code: "ALREADY_PREPARING" });
+    expect(mapSupplierOrderRpcError({ message: "ALREADY_READY" })).toMatchObject({ code: "ALREADY_READY" });
+    expect(mapSupplierOrderRpcError({ message: "PREPARATION_NOT_STARTED" })).toMatchObject({ code: "PREPARATION_NOT_STARTED" });
     expect(mapSupplierOrderRpcError({ message: "INVALID_REJECTION_REASON" })).toMatchObject({ code: "INVALID_REJECTION_REASON" });
     expect(mapSupplierOrderRpcError({ message: "REJECTION_NOTE_TOO_LONG" })).toMatchObject({ code: "REJECTION_NOTE_TOO_LONG" });
     expect(mapSupplierOrderRpcError({ message: "network failed" })).toMatchObject({ code: "UNKNOWN", message: /Refresh the order/ });
@@ -261,12 +277,27 @@ describe("Supplier Order Handling S6 UI integration", () => {
       <SupplierOrderDetailRpcScreen
         actionState={{ code: "OK", message: "Order preparation started" }}
         order={{ ...pendingOrder, orderStatus: "supplier_preparing", orderStatusLabel: "Preparing order", isSupplierActionable: false }}
+        markReadyForDeliveryAction={vi.fn()}
         startPreparingAction={vi.fn()}
       />
     );
     expect(screen.getByText("Order preparation started")).toBeInTheDocument();
-    expect(screen.getByText("You have started preparing this order. Delivery arrangement will be added in a later phase.")).toBeInTheDocument();
+    expect(screen.getByText("Mark this order ready only when preparation is complete. Delivery arrangements will be handled separately.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark ready for delivery" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /ready for delivery arrangement/i }));
+    expect(screen.getByRole("button", { name: "Mark ready for delivery" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Start preparing" })).not.toBeInTheDocument();
+
+    rerender(
+      <SupplierOrderDetailRpcScreen
+        actionState={{ code: "OK", message: "Order is ready for delivery" }}
+        order={{ ...pendingOrder, orderStatus: "ready_for_delivery", orderStatusLabel: "Ready for delivery", isSupplierActionable: false }}
+        markReadyForDeliveryAction={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Order is ready for delivery")).toBeInTheDocument();
+    expect(screen.getByText("This order is prepared and waiting for delivery arrangement. No rider or delivery fee has been confirmed yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark ready for delivery" })).not.toBeInTheDocument();
 
     expect(document.body.innerHTML).not.toMatch(/customer email|reseller margin|platform margin|commission|settlement|risk|raw stock/i);
   });
@@ -289,6 +320,7 @@ describe("Supplier Order Handling S6 UI integration", () => {
     expect(sources).toContain("supplier_accept_order");
     expect(sources).toContain("supplier_reject_order");
     expect(sources).toContain("supplier_start_preparing");
+    expect(sources).toContain("supplier_mark_ready_for_delivery");
     expect(sources).not.toContain("create_payment");
     expect(sources).not.toContain("delivery_quotes");
     expect(sources).not.toContain("prepare_supplier_for_order");

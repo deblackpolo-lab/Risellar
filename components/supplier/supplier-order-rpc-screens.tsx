@@ -87,6 +87,10 @@ function ActionMessage({ state }: { state: SupplierOrderState }) {
 }
 
 function statusGroup(status: string) {
+  if (status === "ready_for_delivery") {
+    return "Ready";
+  }
+
   if (status === "supplier_preparing") {
     return "Preparing";
   }
@@ -108,6 +112,7 @@ export function SupplierOrdersRpcScreen({ orders, error }: { orders: SupplierOrd
       ["New orders", []],
       ["Confirmed", []],
       ["Preparing", []],
+      ["Ready", []],
       ["Rejected", []]
     ]);
 
@@ -186,12 +191,14 @@ export function SupplierOrderNotFoundRpcScreen({ state = { code: "ORDER_NOT_FOUN
 export function SupplierOrderDetailRpcScreen({
   acceptAction,
   actionState = initialSupplierOrderState,
+  markReadyForDeliveryAction,
   order,
   rejectAction,
   startPreparingAction
 }: {
   acceptAction?: SupplierOrderAction;
   actionState?: SupplierOrderState;
+  markReadyForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
@@ -251,6 +258,7 @@ export function SupplierOrderDetailRpcScreen({
           <ActionMessage state={actionState} />
           <SupplierOrderDecisionActions
             acceptAction={acceptAction}
+            markReadyForDeliveryAction={markReadyForDeliveryAction}
             order={order}
             rejectAction={rejectAction}
             startPreparingAction={startPreparingAction}
@@ -263,22 +271,29 @@ export function SupplierOrderDetailRpcScreen({
 
 export function SupplierOrderDecisionActions({
   acceptAction,
+  markReadyForDeliveryAction,
   order,
   rejectAction,
   startPreparingAction
 }: {
   acceptAction?: SupplierOrderAction;
+  markReadyForDeliveryAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
   startPreparingAction?: SupplierOrderAction;
 }) {
   const [fulfilmentAcknowledged, setFulfilmentAcknowledged] = useState(false);
   const [preparationAcknowledged, setPreparationAcknowledged] = useState(false);
+  const [readyAcknowledged, setReadyAcknowledged] = useState(false);
   const [reasonCode, setReasonCode] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const canAct = order.isSupplierActionable && order.orderStatus === "placed_pending_confirmation";
   const canStartPreparing =
     order.orderStatus === "supplier_confirmed" &&
+    order.reservationStatusLabel.toLowerCase().includes("reserved") &&
+    !order.reservationStatusLabel.toLowerCase().includes("expired");
+  const canMarkReady =
+    order.orderStatus === "supplier_preparing" &&
     order.reservationStatusLabel.toLowerCase().includes("reserved") &&
     !order.reservationStatusLabel.toLowerCase().includes("expired");
 
@@ -307,6 +322,37 @@ export function SupplierOrderDecisionActions({
             icon={<PackageCheck className="h-4 w-4" aria-hidden="true" />}
             label="Start preparing"
             pendingLabel="Starting preparation..."
+          />
+        </form>
+      </Card>
+    );
+  }
+
+  if (canMarkReady && markReadyForDeliveryAction) {
+    return (
+      <Card title="Ready for delivery">
+        <form action={markReadyForDeliveryAction} className="grid gap-4">
+          <input name="order_id" type="hidden" value={order.orderId} />
+          <input name="idempotency_key" type="hidden" value={`supplier-ready-for-delivery:${order.orderId}`} />
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Mark this order ready only when preparation is complete. Delivery arrangements will be handled separately.
+          </p>
+          <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+            <input
+              checked={readyAcknowledged}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+              name="ready_for_delivery_acknowledgement"
+              onChange={(event) => setReadyAcknowledged(event.currentTarget.checked)}
+              type="checkbox"
+              value="confirmed"
+            />
+            Confirm that this order is fully prepared and ready for delivery arrangement.
+          </label>
+          <SupplierSubmitButton
+            disabled={!readyAcknowledged}
+            icon={<PackageCheck className="h-4 w-4" aria-hidden="true" />}
+            label="Mark ready for delivery"
+            pendingLabel="Marking order ready..."
           />
         </form>
       </Card>
@@ -407,7 +453,9 @@ function SupplierSubmitButton({
 
 function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
   const content =
-    order.orderStatus === "supplier_preparing"
+    order.orderStatus === "ready_for_delivery"
+      ? "This order is prepared and waiting for delivery arrangement. No rider or delivery fee has been confirmed yet."
+      : order.orderStatus === "supplier_preparing"
       ? "You have started preparing this order. Delivery arrangement will be added in a later phase."
       : order.orderStatus === "supplier_confirmed"
         ? "Order accepted. Preparation is available while active reserved stock remains."
@@ -416,7 +464,12 @@ function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
           : order.reservationStatusLabel.toLowerCase().includes("expired")
             ? "This order can no longer be accepted because the stock reservation expired."
             : "This order can no longer be accepted or rejected.";
-  const title = order.orderStatus === "supplier_preparing" ? "Preparing order" : "Decision";
+  const title =
+    order.orderStatus === "ready_for_delivery"
+      ? "Ready for delivery"
+      : order.orderStatus === "supplier_preparing"
+        ? "Preparing order"
+        : "Decision";
 
   return (
     <Card title={title}>
@@ -426,8 +479,9 @@ function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
 }
 
 function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
-  const isConfirmed = order.orderStatus === "supplier_confirmed" || order.orderStatus === "supplier_preparing";
-  const isPreparing = order.orderStatus === "supplier_preparing";
+  const isReady = order.orderStatus === "ready_for_delivery";
+  const isConfirmed = order.orderStatus === "supplier_confirmed" || order.orderStatus === "supplier_preparing" || isReady;
+  const isPreparing = order.orderStatus === "supplier_preparing" || isReady;
   const steps =
     order.orderStatus === "supplier_rejected"
       ? [
@@ -442,7 +496,8 @@ function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
             state: isConfirmed ? "Complete" : "Current",
             active: true
           },
-          { label: "Preparing order", state: isPreparing ? "Current" : "Inactive", active: isPreparing },
+          { label: "Preparing order", state: isReady ? "Complete" : isPreparing ? "Current" : "Inactive", active: isPreparing },
+          { label: "Ready for delivery", state: isReady ? "Current" : "Inactive", active: isReady },
           { label: "Delivery arrangement", state: "Inactive", active: false },
           { label: "Payment confirmation", state: "Inactive", active: false },
           { label: "Completed", state: "Inactive", active: false }

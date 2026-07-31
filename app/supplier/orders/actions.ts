@@ -8,6 +8,7 @@ import {
   acceptSupplierOrderWithClient,
   getSupplierOrderSafeWithClient,
   listSupplierOrdersSafeWithClient,
+  markReadyForDeliverySupplierOrderWithClient,
   mapSupplierOrderRpcError,
   rejectSupplierOrderWithClient,
   startPreparingSupplierOrderWithClient,
@@ -108,6 +109,38 @@ export async function startSupplierOrderPreparingFormAction(formData: FormData) 
     revalidatePath(`/supplier/orders/${orderId}`);
     nextPath = result.order
       ? `/supplier/orders/${orderId}?supplier_order_message=PREPARING`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
+  } catch (error) {
+    const state = mapSupplierOrderRpcError(error);
+    nextPath = state.code === "AUTH_REQUIRED"
+      ? `/sign-in?redirect_url=${encodeURIComponent(`/supplier/orders/${orderId}`)}`
+      : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(state.code)}`;
+  }
+
+  redirect(nextPath);
+}
+
+export async function markSupplierOrderReadyForDeliveryFormAction(formData: FormData) {
+  const orderId = formData.get("order_id")?.toString() ?? "";
+  let nextPath = `/supplier/orders/${orderId}`;
+
+  try {
+    const acknowledgement = formData.get("ready_for_delivery_acknowledgement")?.toString();
+
+    if (acknowledgement !== "confirmed") {
+      throw new Error("VALIDATION_ERROR");
+    }
+
+    const supabase = await getSupplierOrderClient();
+    const result = await markReadyForDeliverySupplierOrderWithClient(supabase, {
+      orderId,
+      idempotencyKey: formData.get("idempotency_key")?.toString()
+    });
+
+    revalidatePath("/supplier/orders");
+    revalidatePath(`/supplier/orders/${orderId}`);
+    nextPath = result.order
+      ? `/supplier/orders/${orderId}?supplier_order_message=READY_FOR_DELIVERY`
       : `/supplier/orders/${orderId}?supplier_order_error=${encodeURIComponent(result.state.code)}`;
   } catch (error) {
     const state = mapSupplierOrderRpcError(error);

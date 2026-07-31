@@ -72,7 +72,7 @@ function normalizeIdempotencyKey(value: string | null | undefined) {
 
 function normalizeStatus(value: string | null | undefined) {
   const text = cleanOptionalText(value);
-  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing"]);
+  const allowed = new Set(["placed_pending_confirmation", "supplier_confirmed", "supplier_rejected", "supplier_preparing", "ready_for_delivery"]);
 
   return text && allowed.has(text) ? text : null;
 }
@@ -115,6 +115,15 @@ export function buildStartPreparingSupplierOrderPayload(input: SupplierOrderDeci
   return {
     p_order_id: orderId,
     p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-start-preparing:${orderId}`
+  };
+}
+
+export function buildMarkReadyForDeliverySupplierOrderPayload(input: SupplierOrderDecisionInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+
+  return {
+    p_order_id: orderId,
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-ready-for-delivery:${orderId}`
   };
 }
 
@@ -166,11 +175,15 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
   }
 
   if (combined.includes("order_not_actionable")) {
-    return { code: "ORDER_NOT_ACTIONABLE", message: "This order cannot start preparation." };
+    return { code: "ORDER_NOT_ACTIONABLE", message: "This order cannot be updated right now." };
   }
 
   if (combined.includes("order_not_confirmed")) {
     return { code: "ORDER_NOT_CONFIRMED", message: "Accept this order before starting preparation." };
+  }
+
+  if (combined.includes("order_not_preparing")) {
+    return { code: "ORDER_NOT_PREPARING", message: "Start preparing this order before marking it ready." };
   }
 
   if (combined.includes("reservation_not_found")) {
@@ -195,6 +208,14 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
 
   if (combined.includes("already_preparing")) {
     return { code: "ALREADY_PREPARING", message: "Preparation has already started." };
+  }
+
+  if (combined.includes("already_ready")) {
+    return { code: "ALREADY_READY", message: "This order is already ready for delivery." };
+  }
+
+  if (combined.includes("preparation_not_started")) {
+    return { code: "PREPARATION_NOT_STARTED", message: "Preparation has not started for this order." };
   }
 
   if (combined.includes("invalid_rejection_reason") || combined.includes("choose a valid rejection reason")) {
@@ -275,6 +296,20 @@ export async function startPreparingSupplierOrderWithClient(client: SupplierOrde
     }
 
     return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order preparation started" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
+export async function markReadyForDeliverySupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderDecisionInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_mark_ready_for_delivery", buildMarkReadyForDeliverySupplierOrderPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order is ready for delivery" } };
   } catch (error) {
     return { order: null, state: mapSupplierOrderRpcError(error) };
   }

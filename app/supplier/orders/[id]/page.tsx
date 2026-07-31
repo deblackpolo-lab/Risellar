@@ -6,6 +6,7 @@ import { initialSupplierOrderState, type SupplierOrderState } from "@/lib/orders
 import {
   acceptSupplierOrderFormAction,
   getSupplierOrderForCurrentUser,
+  markSupplierOrderReadyForDeliveryFormAction,
   rejectSupplierOrderFormAction,
   startSupplierOrderPreparingFormAction
 } from "../actions";
@@ -23,6 +24,10 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     return { code: "OK", message: "Order preparation started" };
   }
 
+  if (searchParams?.supplier_order_message === "READY_FOR_DELIVERY") {
+    return { code: "OK", message: "Order is ready for delivery" };
+  }
+
   const errorCode = searchParams?.supplier_order_error;
 
   if (!errorCode) {
@@ -36,12 +41,15 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     ORDER_NOT_FOUND: "This order is unavailable.",
     ORDER_NOT_ACTIONABLE: "This order cannot start preparation.",
     ORDER_NOT_CONFIRMED: "Accept this order before starting preparation.",
+    ORDER_NOT_PREPARING: "Start preparing this order before marking it ready.",
     RESERVATION_NOT_FOUND: "The stock reservation is unavailable.",
     RESERVATION_EXPIRED: "The stock reservation has expired.",
     RESERVATION_NOT_ACTIVE: "This order no longer has an active stock reservation.",
     ALREADY_CONFIRMED: "This order has already been accepted.",
     ALREADY_REJECTED: "This order has already been rejected.",
     ALREADY_PREPARING: "Preparation has already started.",
+    ALREADY_READY: "This order is already ready for delivery.",
+    PREPARATION_NOT_STARTED: "Preparation has not started for this order.",
     INVALID_REJECTION_REASON: "Choose a valid rejection reason.",
     REJECTION_NOTE_TOO_LONG: "Keep the note within the allowed length.",
     STOCK_RELEASE_FAILED: "The reserved stock could not be released safely.",
@@ -71,6 +79,7 @@ export default async function SupplierOrderDetailPage({
     <SupplierOrderDetailRpcScreen
       acceptAction={acceptSupplierOrderFormAction}
       actionState={stateFromSearchParams(query)}
+      markReadyForDeliveryAction={markSupplierOrderReadyForDeliveryFormAction}
       order={order}
       rejectAction={rejectSupplierOrderFormAction}
       startPreparingAction={startSupplierOrderPreparingFormAction}
