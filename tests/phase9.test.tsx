@@ -25,10 +25,10 @@ describe("Phase 9 admin core dashboard", () => {
     render(<AdminDashboardScreen />);
 
     expect(screen.getByRole("heading", { name: "Admin Dashboard" })).toBeInTheDocument();
-    for (const item of ["Dashboard", "Products", "Settlements", "Suppliers", "Resellers", "Customers", "Support", "Settings"]) {
+    for (const item of ["Dashboard", "Products", "Settlements", "Withdrawals", "Suppliers", "Resellers", "Customers", "Support", "Settings"]) {
       expect(screen.getByRole("link", { name: item })).toBeInTheDocument();
     }
-    for (const hiddenItem of ["Orders", "Commissions", "Withdrawals"]) {
+    for (const hiddenItem of ["Orders", "Commissions"]) {
       expect(screen.queryByRole("link", { name: hiddenItem })).not.toBeInTheDocument();
     }
     for (const metric of ["Total orders", "Pending confirmations", "Settlement due", "Overdue settlements", "Pending reseller commissions", "Active suppliers", "Active resellers", "Products pending approval"]) {
@@ -39,7 +39,8 @@ describe("Phase 9 admin core dashboard", () => {
     }
     expect(screen.getByText("Revenue and platform margin")).toBeInTheDocument();
     expect(screen.getByText("Orders coming soon")).toBeInTheDocument();
-    expect(screen.getByText("Finance workflows coming soon")).toBeInTheDocument();
+    expect(screen.getByText("Finance workflow status")).toBeInTheDocument();
+    expect(screen.getByText("Settlements and reseller withdrawals now have audited finance queues. Commissions remain visible only after verified supplier settlement.")).toBeInTheDocument();
     expect(screen.getByText("Product approval summary")).toBeInTheDocument();
     expect(screen.getByText("Support and dispute summary")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Review products" })).toHaveAttribute("href", "/admin/products");
@@ -128,7 +129,8 @@ describe("Phase 9 admin core dashboard", () => {
 
     rerender(<AdminWithdrawalsScreen />);
     expect(screen.getByRole("heading", { name: "Withdrawals" })).toBeInTheDocument();
-    expect(screen.getByText("Withdrawal approval is not implemented in Phase 9.")).toBeInTheDocument();
+    expect(screen.getByText("Audited reseller withdrawal queue summary.")).toBeInTheDocument();
+    expect(screen.getByText("Withdrawal payout recording now uses the audited finance RPC.")).toBeInTheDocument();
 
     rerender(<AdminSupportScreen />);
     expect(screen.getByRole("heading", { name: "Support" })).toBeInTheDocument();

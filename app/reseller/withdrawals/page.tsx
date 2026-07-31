@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { ResellerWalletRpcScreen } from "@/components/reseller/reseller-withdrawal-rpc-screens";
+import { ResellerWithdrawalScreen } from "@/components/reseller/reseller-withdrawal-rpc-screens";
 import {
   getResellerWalletSafeWithClient,
   listResellerPayoutAccountsSafeWithClient,
@@ -8,7 +8,12 @@ import {
 } from "@/lib/reseller/withdrawals/reseller-withdrawal";
 import { createSupabaseUserServerClient } from "@/lib/supabase/server";
 
-export default async function ResellerWalletPage() {
+export default async function ResellerWithdrawalsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string; status?: string }>;
+}) {
+  const params = await searchParams;
   const { getToken, userId } = await auth();
 
   if (!userId) {
@@ -29,9 +34,11 @@ export default async function ResellerWalletPage() {
   ]);
 
   return (
-    <ResellerWalletRpcScreen
+    <ResellerWithdrawalScreen
+      errorCode={params?.error}
       payoutAccounts={payoutResult.payoutAccounts}
       state={walletResult.state.code === "OK" ? payoutResult.state : walletResult.state}
+      success={params?.status}
       wallet={walletResult.wallet}
       withdrawals={withdrawalResult.withdrawals}
     />

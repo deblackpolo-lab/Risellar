@@ -58,3 +58,30 @@ export async function getFinanceSettlementAdminAccess(input: {
     hasActiveAdminStaff: data === true
   };
 }
+
+export async function getFinanceWithdrawalAdminAccess(input: {
+  accessToken: string;
+  profile: RoleOnboardingProfile | null;
+}): Promise<RoleOnboardingAdminAccess> {
+  if (!input.profile) {
+    return {
+      profile: null,
+      hasActiveAdminStaff: false
+    };
+  }
+
+  const supabase = createSupabaseUserServerClient(input.accessToken);
+  const { data, error } = await supabase.rpc("admin_can_manage_reseller_withdrawals");
+
+  if (error) {
+    return {
+      profile: input.profile,
+      hasActiveAdminStaff: false
+    };
+  }
+
+  return {
+    profile: input.profile,
+    hasActiveAdminStaff: data === true
+  };
+}

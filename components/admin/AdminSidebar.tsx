@@ -43,6 +43,7 @@ const adminNavItems: AdminNavItem[] = [
   { label: "Onboarding Requests", href: "/admin/onboarding-requests", icon: UserCheck },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Settlements", href: "/admin/settlements", icon: WalletCards },
+  { label: "Withdrawals", href: "/admin/withdrawals", icon: WalletCards },
   { label: "Suppliers", href: "/admin/suppliers", icon: Store },
   { label: "Resellers", href: "/admin/resellers", icon: Users },
   { label: "Customers", href: "/admin/customers", icon: UserRound },

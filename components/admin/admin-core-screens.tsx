@@ -347,7 +347,7 @@ function FinanceSummaryScreen({ active, title, description, rows }: { active: st
       </AdminPageHeader>
       <Card title={description}>
         <p className="mb-4 text-sm font-semibold text-[var(--color-primary)]">
-          {active === "Settlements" ? "No payment verification workflow is connected." : active === "Withdrawals" ? "Withdrawal approval is not implemented in Phase 9." : "Commission release is displayed only after verified supplier settlement."}
+            {active === "Settlements" ? "No payment verification workflow is connected." : active === "Withdrawals" ? "Withdrawal payout recording now uses the audited finance RPC." : "Commission release is displayed only after verified supplier settlement."}
         </p>
         <DataTable
           columns={["Reference", "Party", "Order / Batch", "Amount", "Status", "Note"]}
@@ -385,7 +385,7 @@ export function AdminDashboardScreen() {
       </div>
       <div className="grid gap-5 xl:grid-cols-3">
         <ComingSoonAdminSummary title="Orders coming soon" body="Order operations remain hidden from admin navigation until order creation, delivery, payment, stock reservation, settlement, and commission backends are approved." />
-        <ComingSoonAdminSummary title="Finance workflows coming soon" body="Settlement, commission, and withdrawal pages are preserved as mock routes only and are not discoverable from the admin dashboard." />
+        <ComingSoonAdminSummary title="Finance workflow status" body="Settlements and reseller withdrawals now have audited finance queues. Commissions remain visible only after verified supplier settlement." />
         <ProductApprovalSummary />
       </div>
       <Card title="Support and dispute summary">
@@ -676,7 +676,7 @@ export function AdminCommissionsScreen() {
 }
 
 export function AdminWithdrawalsScreen() {
-  return <FinanceSummaryScreen active="Withdrawals" description="Mock withdrawal request summary." rows={adminWithdrawals} title="Withdrawals" />;
+  return <FinanceSummaryScreen active="Withdrawals" description="Audited reseller withdrawal queue summary." rows={adminWithdrawals} title="Withdrawals" />;
 }
 
 export function AdminSupportScreen() {
