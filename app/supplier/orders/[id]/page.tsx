@@ -6,7 +6,8 @@ import { initialSupplierOrderState, type SupplierOrderState } from "@/lib/orders
 import {
   acceptSupplierOrderFormAction,
   getSupplierOrderForCurrentUser,
-  rejectSupplierOrderFormAction
+  rejectSupplierOrderFormAction,
+  startSupplierOrderPreparingFormAction
 } from "../actions";
 
 function stateFromSearchParams(searchParams?: { supplier_order_message?: string; supplier_order_error?: string }): SupplierOrderState {
@@ -16,6 +17,10 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
 
   if (searchParams?.supplier_order_message === "REJECTED") {
     return { code: "OK", message: "Order rejected and reserved stock released" };
+  }
+
+  if (searchParams?.supplier_order_message === "PREPARING") {
+    return { code: "OK", message: "Order preparation started" };
   }
 
   const errorCode = searchParams?.supplier_order_error;
@@ -29,12 +34,14 @@ function stateFromSearchParams(searchParams?: { supplier_order_message?: string;
     SUPABASE_AUTH_TOKEN_MISSING: "We could not verify your supplier session. Please sign in again.",
     SUPPLIER_REQUIRED: "Use an approved supplier account.",
     ORDER_NOT_FOUND: "This order is unavailable.",
-    ORDER_NOT_ACTIONABLE: "This order can no longer be accepted or rejected.",
+    ORDER_NOT_ACTIONABLE: "This order cannot start preparation.",
+    ORDER_NOT_CONFIRMED: "Accept this order before starting preparation.",
     RESERVATION_NOT_FOUND: "The stock reservation is unavailable.",
     RESERVATION_EXPIRED: "The stock reservation has expired.",
     RESERVATION_NOT_ACTIVE: "This order no longer has an active stock reservation.",
     ALREADY_CONFIRMED: "This order has already been accepted.",
     ALREADY_REJECTED: "This order has already been rejected.",
+    ALREADY_PREPARING: "Preparation has already started.",
     INVALID_REJECTION_REASON: "Choose a valid rejection reason.",
     REJECTION_NOTE_TOO_LONG: "Keep the note within the allowed length.",
     STOCK_RELEASE_FAILED: "The reserved stock could not be released safely.",
@@ -66,6 +73,7 @@ export default async function SupplierOrderDetailPage({
       actionState={stateFromSearchParams(query)}
       order={order}
       rejectAction={rejectSupplierOrderFormAction}
+      startPreparingAction={startSupplierOrderPreparingFormAction}
     />
   );
 }

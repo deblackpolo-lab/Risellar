@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, CheckCircle2, RotateCw, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, PackageCheck, RotateCw, XCircle } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { Button, Card, Select, StatusBadge, Textarea } from "@/components/ui";
 import {
@@ -87,6 +87,10 @@ function ActionMessage({ state }: { state: SupplierOrderState }) {
 }
 
 function statusGroup(status: string) {
+  if (status === "supplier_preparing") {
+    return "Preparing";
+  }
+
   if (status === "supplier_confirmed") {
     return "Confirmed";
   }
@@ -103,6 +107,7 @@ export function SupplierOrdersRpcScreen({ orders, error }: { orders: SupplierOrd
     const groups = new Map<string, SupplierOrderSafe[]>([
       ["New orders", []],
       ["Confirmed", []],
+      ["Preparing", []],
       ["Rejected", []]
     ]);
 
@@ -182,12 +187,14 @@ export function SupplierOrderDetailRpcScreen({
   acceptAction,
   actionState = initialSupplierOrderState,
   order,
-  rejectAction
+  rejectAction,
+  startPreparingAction
 }: {
   acceptAction?: SupplierOrderAction;
   actionState?: SupplierOrderState;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
+  startPreparingAction?: SupplierOrderAction;
 }) {
   return (
     <SupplierOrdersShell eyebrow="Supplier order" title={order.orderNumber}>
@@ -242,7 +249,12 @@ export function SupplierOrderDetailRpcScreen({
 
         <aside className="grid content-start gap-4">
           <ActionMessage state={actionState} />
-          <SupplierOrderDecisionActions acceptAction={acceptAction} order={order} rejectAction={rejectAction} />
+          <SupplierOrderDecisionActions
+            acceptAction={acceptAction}
+            order={order}
+            rejectAction={rejectAction}
+            startPreparingAction={startPreparingAction}
+          />
         </aside>
       </div>
     </SupplierOrdersShell>
@@ -252,16 +264,54 @@ export function SupplierOrderDetailRpcScreen({
 export function SupplierOrderDecisionActions({
   acceptAction,
   order,
-  rejectAction
+  rejectAction,
+  startPreparingAction
 }: {
   acceptAction?: SupplierOrderAction;
   order: SupplierOrderSafe;
   rejectAction?: SupplierOrderAction;
+  startPreparingAction?: SupplierOrderAction;
 }) {
   const [fulfilmentAcknowledged, setFulfilmentAcknowledged] = useState(false);
+  const [preparationAcknowledged, setPreparationAcknowledged] = useState(false);
   const [reasonCode, setReasonCode] = useState("");
   const [reasonNote, setReasonNote] = useState("");
   const canAct = order.isSupplierActionable && order.orderStatus === "placed_pending_confirmation";
+  const canStartPreparing =
+    order.orderStatus === "supplier_confirmed" &&
+    order.reservationStatusLabel.toLowerCase().includes("reserved") &&
+    !order.reservationStatusLabel.toLowerCase().includes("expired");
+
+  if (canStartPreparing && startPreparingAction) {
+    return (
+      <Card title="Start preparation">
+        <form action={startPreparingAction} className="grid gap-4">
+          <input name="order_id" type="hidden" value={order.orderId} />
+          <input name="idempotency_key" type="hidden" value={`supplier-start-preparing:${order.orderId}`} />
+          <p className="text-sm leading-6 text-[var(--color-muted)]">
+            Start preparing this order only when you are ready to begin fulfilment. Delivery and payment are handled later.
+          </p>
+          <label className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-sm font-semibold leading-6 text-[var(--color-charcoal)]">
+            <input
+              checked={preparationAcknowledged}
+              className="mt-1 h-4 w-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+              name="preparation_acknowledgement"
+              onChange={(event) => setPreparationAcknowledged(event.currentTarget.checked)}
+              type="checkbox"
+              value="confirmed"
+            />
+            Confirm that you are starting preparation for this order.
+          </label>
+          <SupplierSubmitButton
+            disabled={!preparationAcknowledged}
+            icon={<PackageCheck className="h-4 w-4" aria-hidden="true" />}
+            label="Start preparing"
+            pendingLabel="Starting preparation..."
+          />
+        </form>
+      </Card>
+    );
+  }
 
   if (!canAct) {
     return <TerminalOrderState order={order} />;
@@ -357,22 +407,27 @@ function SupplierSubmitButton({
 
 function TerminalOrderState({ order }: { order: SupplierOrderSafe }) {
   const content =
-    order.orderStatus === "supplier_confirmed"
-      ? "Order accepted. Preparation will be added in a later phase."
-      : order.orderStatus === "supplier_rejected"
-        ? "Order rejected. The reserved stock has been released."
-        : order.reservationStatusLabel.toLowerCase().includes("expired")
-          ? "This order can no longer be accepted because the stock reservation expired."
-          : "This order can no longer be accepted or rejected.";
+    order.orderStatus === "supplier_preparing"
+      ? "You have started preparing this order. Delivery arrangement will be added in a later phase."
+      : order.orderStatus === "supplier_confirmed"
+        ? "Order accepted. Preparation is available while active reserved stock remains."
+        : order.orderStatus === "supplier_rejected"
+          ? "Order rejected. The reserved stock has been released."
+          : order.reservationStatusLabel.toLowerCase().includes("expired")
+            ? "This order can no longer be accepted because the stock reservation expired."
+            : "This order can no longer be accepted or rejected.";
+  const title = order.orderStatus === "supplier_preparing" ? "Preparing order" : "Decision";
 
   return (
-    <Card title="Decision">
+    <Card title={title}>
       <p className="text-sm leading-6 text-[var(--color-muted)]">{content}</p>
     </Card>
   );
 }
 
 function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
+  const isConfirmed = order.orderStatus === "supplier_confirmed" || order.orderStatus === "supplier_preparing";
+  const isPreparing = order.orderStatus === "supplier_preparing";
   const steps =
     order.orderStatus === "supplier_rejected"
       ? [
@@ -383,11 +438,11 @@ function SupplierOrderTimeline({ order }: { order: SupplierOrderSafe }) {
       : [
           { label: "Customer placed order", state: "Complete", active: true },
           {
-            label: order.orderStatus === "supplier_confirmed" ? "Supplier confirmed" : "Waiting for your decision",
-            state: order.orderStatus === "supplier_confirmed" ? "Complete" : "Current",
+            label: isConfirmed ? "Supplier confirmed" : "Waiting for your decision",
+            state: isConfirmed ? "Complete" : "Current",
             active: true
           },
-          { label: "Preparation", state: "Inactive", active: false },
+          { label: "Preparing order", state: isPreparing ? "Current" : "Inactive", active: isPreparing },
           { label: "Delivery arrangement", state: "Inactive", active: false },
           { label: "Payment confirmation", state: "Inactive", active: false },
           { label: "Completed", state: "Inactive", active: false }

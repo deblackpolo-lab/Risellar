@@ -109,6 +109,15 @@ export function buildAcceptSupplierOrderPayload(input: SupplierOrderDecisionInpu
   };
 }
 
+export function buildStartPreparingSupplierOrderPayload(input: SupplierOrderDecisionInput) {
+  const orderId = requireUuid(input.orderId, "Order id");
+
+  return {
+    p_order_id: orderId,
+    p_idempotency_key: normalizeIdempotencyKey(input.idempotencyKey) ?? `supplier-start-preparing:${orderId}`
+  };
+}
+
 export function buildRejectSupplierOrderPayload(input: SupplierOrderRejectInput) {
   const orderId = requireUuid(input.orderId, "Order id");
   const reasonCode = cleanOptionalText(input.reasonCode);
@@ -157,7 +166,11 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
   }
 
   if (combined.includes("order_not_actionable")) {
-    return { code: "ORDER_NOT_ACTIONABLE", message: "This order can no longer be accepted or rejected." };
+    return { code: "ORDER_NOT_ACTIONABLE", message: "This order cannot start preparation." };
+  }
+
+  if (combined.includes("order_not_confirmed")) {
+    return { code: "ORDER_NOT_CONFIRMED", message: "Accept this order before starting preparation." };
   }
 
   if (combined.includes("reservation_not_found")) {
@@ -178,6 +191,10 @@ export function mapSupplierOrderRpcError(error: unknown): SupplierOrderState {
 
   if (combined.includes("already_rejected")) {
     return { code: "ALREADY_REJECTED", message: "This order has already been rejected." };
+  }
+
+  if (combined.includes("already_preparing")) {
+    return { code: "ALREADY_PREPARING", message: "Preparation has already started." };
   }
 
   if (combined.includes("invalid_rejection_reason") || combined.includes("choose a valid rejection reason")) {
@@ -244,6 +261,20 @@ export async function acceptSupplierOrderWithClient(client: SupplierOrderRpcClie
     }
 
     return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order accepted" } };
+  } catch (error) {
+    return { order: null, state: mapSupplierOrderRpcError(error) };
+  }
+}
+
+export async function startPreparingSupplierOrderWithClient(client: SupplierOrderRpcClient, input: SupplierOrderDecisionInput) {
+  try {
+    const { data, error } = await client.rpc<unknown[]>("supplier_start_preparing", buildStartPreparingSupplierOrderPayload(input));
+
+    if (error) {
+      return { order: null, state: mapSupplierOrderRpcError(error) };
+    }
+
+    return { order: mapSupplierOrderRows(data)[0] ?? null, state: { code: "OK" as const, message: "Order preparation started" } };
   } catch (error) {
     return { order: null, state: mapSupplierOrderRpcError(error) };
   }
