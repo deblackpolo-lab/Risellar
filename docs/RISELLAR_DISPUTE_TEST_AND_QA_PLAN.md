@@ -168,3 +168,29 @@ SQL groups should also run dry-run first, development apply only after approval,
 ## D5-A Test Addendum
 
 D5-A adds `scripts/rpc/dispute-supplier-item-scoping-tests-dev-only.sql` for target shape, backend supplier derivation, target immutability, target-aware idempotency and uniqueness, multi-supplier supplier read isolation, customer ownership, reseller/admin privacy, direct grant posture, fixture cleanup, and no business side effects.
+
+## D5 Supplier Response Coverage
+
+`scripts/rpc/supplier-dispute-response-tests-dev-only.sql` covers the D5 supplier response mutation boundary with 67 passing DEVELOPMENT assertions:
+
+- anonymous, customer, reseller, support/admin, inactive supplier, unapproved supplier, and suspended supplier are blocked
+- supplier A can respond to supplier-A supplier-scoped and item-scoped disputes
+- supplier B cannot respond to supplier-A scoped disputes
+- owning another item on the same multi-supplier order does not grant access
+- multi-supplier order-wide disputes remain blocked for supplier response
+- single-supplier order-wide disputes follow the D5-A policy
+- author profile, author role, visibility, and message type are derived server-side
+- invalid body and idempotency keys are rejected
+- same key/body retries return the same message
+- same key/different body conflicts safely
+- retries do not duplicate messages, audit rows, or status-history rows
+- `awaiting_supplier` moves once to `under_review`
+- allowed non-terminal states accept responses without invented resolution
+- terminal states are blocked
+- supplier safe reads show own supplier-private response
+- customer, reseller, and other-supplier safe reads hide it
+- admin safe reads expose it through the admin contract
+- direct table writes remain denied
+- no order/payment/stock/reservation/settlement/commission/wallet/withdrawal/notification side effects occur
+
+A separate temporary two-session development runner verified same-key concurrency, different-key concurrency, terminal-state race blocking, cross-supplier race isolation, and cleanup.

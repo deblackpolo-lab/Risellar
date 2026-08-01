@@ -242,3 +242,20 @@ Next: "Start Disputes D5 supplier dispute view/respond backend. Do not implement
 ## D5-A Addendum
 
 D5-A updates the plan before supplier response. `customer_open_order_dispute` now uses the target-aware seven-argument contract with optional `p_order_item_id`. The old ambiguous browser-callable signature is revoked. Supplier response may resume after D5-A because the affected supplier/order-item target is now explicit and immutable.
+
+## D5 Supplier Response Addendum
+
+D5 supplier response backend is complete in the confirmed DEVELOPMENT Supabase project.
+
+- D5 migration applied to DEVELOPMENT: `20260801150000_supplier_dispute_response_rpc.sql`
+- D5 RPC: `supplier_add_dispute_response`
+- D5 SQL boundary assertions: 67 passed, 0 failed
+- D5 true-concurrency assertions: 9 passed, 0 failed
+- Supplier authorization uses D5-A `affected_supplier_id` and `affected_order_item_id`
+- Multi-supplier order-wide disputes remain blocked from broad supplier response
+- Supplier messages use `supplier_and_admin` visibility
+- Customer and reseller safe reads do not expose supplier-private response bodies
+- Fixture cleanup left zero matching D5 concurrency rows
+- No dispute UI, admin mutation, return, refund, finance hold, stock mutation, order mutation, payment mutation, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, evidence upload, or notification flow was activated
+
+D6 admin/support investigation and non-financial resolution may begin only after explicit approval.

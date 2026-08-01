@@ -99,3 +99,17 @@ D5-A resolved this blocker with a forward-only target scoping foundation:
 - repaired supplier safe reads
 
 Supplier response mutations remain unimplemented and should resume only against the D5-A target-aware model.
+
+## D5 Resolution Addendum
+
+D5 supplier response backend has now resumed and completed against the D5-A target-aware model.
+
+- Added `supplier_add_dispute_response`
+- Supplier authorization uses `affected_supplier_id` and `affected_order_item_id`
+- Multi-supplier order-wide disputes remain blocked from broad supplier response
+- Supplier response messages are `supplier_and_admin`
+- Customer/reseller safe reads do not expose supplier-private responses
+- 67 rollback-scoped SQL assertions passed
+- 9 true-concurrency assertions passed
+
+No UI, admin mutation, returns, refunds, finance holds, stock, order, payment, settlement, commission, wallet, withdrawal, evidence, or notification mutation was added.

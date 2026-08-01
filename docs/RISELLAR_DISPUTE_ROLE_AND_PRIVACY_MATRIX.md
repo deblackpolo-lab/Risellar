@@ -88,3 +88,7 @@ Direct table access remains revoked for browser roles.
 ## D5-A Scope Addendum
 
 Supplier "own case" access now means explicit target ownership through `affected_supplier_id`, or a single-supplier order-wide case. Owning an unrelated item on a multi-supplier order is not sufficient. Reseller visibility remains safe impact-only and does not expose complaint text or supplier private details.
+
+## D5 Supplier Response Addendum
+
+Supplier responses are backend-only and use `visibility = supplier_and_admin`. Customers do not automatically see supplier-private response bodies through customer safe reads. Resellers do not see dispute messages. Other suppliers remain blocked unless the dispute is explicitly scoped to their supplier identity or is a safe single-supplier order-wide case. Admin/support safe reads may see supplier responses through the approved admin contract.

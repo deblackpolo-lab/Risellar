@@ -77,13 +77,28 @@ Verification:
 
 Stop conditions preserved: refund action, payment mutation, stock mutation, order mutation beyond allowed dispute creation, supplier mutation, admin mutation, evidence, notifications, finance holds.
 
-## D5 - Supplier View/Respond Backend/UI
+## D5 - Supplier Response Backend
 
-Scope: supplier sees/responds to own supplier disputes.
+Status: completed in DEVELOPMENT after D5-A.
 
-UI: supplier dispute queue/detail.
+Scope: supplier can add backend-only responses to own scoped disputes through audited RPCs.
 
-Stop conditions: supplier final resolution, supplier finance verification, cross-supplier visibility.
+Applied migration:
+
+- `20260801150000_supplier_dispute_response_rpc.sql`
+
+RPC:
+
+- `supplier_add_dispute_response`
+
+Verification:
+
+- `scripts/rpc/supplier-dispute-response-tests-dev-only.sql` passed 67 rollback-scoped assertions.
+- Separate temporary two-session concurrency runner passed 9 assertions.
+- No UI was activated.
+- No supplier final resolution, admin mutation, return, refund, finance, order, payment, stock, reservation, settlement, commission, wallet, withdrawal, evidence, or notification flow was added.
+
+Stop conditions preserved: supplier final resolution, supplier finance verification, cross-supplier visibility, UI activation.
 
 ## D6 - Admin Investigation and Non-Financial Resolution UI
 
