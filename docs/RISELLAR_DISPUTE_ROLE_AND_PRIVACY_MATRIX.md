@@ -84,3 +84,7 @@ D2 maps this matrix into narrow read RPCs:
 - Admin/support/finance: `list_admin_disputes_safe`, `get_admin_dispute_safe`
 
 Direct table access remains revoked for browser roles.
+
+## D5-A Scope Addendum
+
+Supplier "own case" access now means explicit target ownership through `affected_supplier_id`, or a single-supplier order-wide case. Owning an unrelated item on a multi-supplier order is not sufficient. Reseller visibility remains safe impact-only and does not expose complaint text or supplier private details.

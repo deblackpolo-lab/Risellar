@@ -140,3 +140,7 @@ Stop conditions: `.env.local`, `.next`, `.local-recovery`, `supabase/.temp`, dev
 ## Sequencing Rule
 
 Do not combine D8, D9, and D10 until refund responsibility, commission reversal, paid withdrawal recovery, and finance hold business rules are approved.
+
+## D5-A Inserted Group
+
+D5-A was inserted between D4 customer mutation and D5 supplier response. Scope: add supplier/item targets to `order_disputes`, update customer dispute creation to derive targets from `order_items.supplier_id`, repair supplier safe reads, and preserve all order/payment/finance/stock/notification boundaries. Supplier response remains a later group.

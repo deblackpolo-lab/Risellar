@@ -153,3 +153,7 @@ It does not allow mutation and does not expose full payout account information.
 ## Why No Mutation RPCs In D2
 
 D2 intentionally excludes `customer_open_order_dispute` and all response/status mutation RPCs. The schema is idempotency-ready, but live mutation belongs to a later group so ownership/privacy tests can be reviewed first.
+
+## D5-A Supplier Scope Addendum
+
+D5-A repairs supplier safe reads to use explicit dispute targeting. Supplier reads are allowed only for matching `affected_supplier_id` on supplier/item cases, plus the narrow single-supplier order-wide case. A supplier no longer gains access merely by owning another item on the same multi-supplier order.

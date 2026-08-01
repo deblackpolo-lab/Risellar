@@ -238,3 +238,7 @@ The next implementation group may begin only after explicit request.
 ## AS. Exact Recommended Next Prompt
 
 Next: "Start Disputes D5 supplier dispute view/respond backend. Do not implement admin resolution, returns, refunds, finance holds, stock changes, or notifications."
+
+## D5-A Addendum
+
+D5-A updates the plan before supplier response. `customer_open_order_dispute` now uses the target-aware seven-argument contract with optional `p_order_item_id`. The old ambiguous browser-callable signature is revoked. Supplier response may resume after D5-A because the affected supplier/order-item target is now explicit and immutable.

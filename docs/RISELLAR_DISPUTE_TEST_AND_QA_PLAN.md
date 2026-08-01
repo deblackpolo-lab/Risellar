@@ -164,3 +164,7 @@ Each implementation group should run:
 - `npx tsc --noEmit`
 
 SQL groups should also run dry-run first, development apply only after approval, and development-only RPC boundary tests after apply.
+
+## D5-A Test Addendum
+
+D5-A adds `scripts/rpc/dispute-supplier-item-scoping-tests-dev-only.sql` for target shape, backend supplier derivation, target immutability, target-aware idempotency and uniqueness, multi-supplier supplier read isolation, customer ownership, reseller/admin privacy, direct grant posture, fixture cleanup, and no business side effects.

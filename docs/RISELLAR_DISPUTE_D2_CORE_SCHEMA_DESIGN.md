@@ -189,3 +189,13 @@ D3 should stop before apply if:
 - admin_staff role semantics change
 - direct table access cannot remain denied
 - old placeholder tables conflict with `order_disputes`
+
+## D5-A Targeting Addendum
+
+D5-A adds immutable target fields to `order_disputes` so multi-supplier orders can be handled safely:
+
+- `scope_type`
+- `affected_supplier_id`
+- `affected_order_item_id`
+
+The trusted supplier path is `order_items.supplier_id`, which is the order snapshot attribution used by the order workflow. The MVP supports one order, supplier, or order-item target per dispute; grouped multi-target disputes remain deferred.
