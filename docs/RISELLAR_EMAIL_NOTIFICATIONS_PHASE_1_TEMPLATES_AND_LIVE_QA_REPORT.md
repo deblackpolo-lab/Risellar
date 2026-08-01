@@ -321,6 +321,14 @@ Real provider payload compatibility update:
 - `EMAIL_DEV_RECIPIENT` was corrected in Vercel so redirect-mode sends go to the approved development inbox value only
 - final real provider replay and fresh provider-originated webhook proof still must pass after deployment of the fix
 
+Fresh provider webhook proof after the compatibility fix:
+
+- one fresh redirect-mode QA notification was processed successfully
+- real provider-originated `email.sent` and `email.delivered` webhooks reached the deployed endpoint
+- both real provider events were stored once for the fresh provider message
+- the outbox status became `delivered`
+- a follow-up ordering guard was added because Resend may deliver `email.sent` after `email.delivered`; the handler now records `email.sent` without downgrading outbox status
+
 ## I. Secret/Safety Status
 
 - `.env.local` ignored and not staged

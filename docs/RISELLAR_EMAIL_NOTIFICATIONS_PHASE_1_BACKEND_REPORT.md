@@ -523,3 +523,11 @@ Regression tests added:
 - replay returns duplicate without updating notification status again
 - unmatched email IDs do not crash
 - unsupported signed events do not store provider events
+
+Follow-up ordering guard:
+
+- fresh provider-originated QA proved real `email.sent` and `email.delivered` webhooks reached the deployed endpoint and were stored
+- Resend delivered the two events close together, and a later `email.sent` can otherwise overwrite the outbox provider status after `email.delivered`
+- the webhook handler now records `email.sent` provider events but skips outbox status mutation for `sent`
+- the processor already marks the outbox sent immediately after the Resend send call
+- delivered, bounced, complained, failed, and delivery-delayed webhooks remain status-updating events

@@ -42,7 +42,26 @@ describe("Resend webhook handling", () => {
       ...realResendPayload,
       providerEventId: "msg_real_svix_id"
     });
-    expect(updateProviderStatus).toHaveBeenCalledWith("email-fake-provider-id", "sent");
+    expect(updateProviderStatus).not.toHaveBeenCalled();
+  });
+
+  it("updates provider status for delivered and bounced events", async () => {
+    const updateProviderStatus = vi.fn().mockResolvedValue(undefined);
+    const deps: ResendWebhookDependencies = {
+      webhookSecret: "webhook-secret",
+      verify: vi.fn().mockResolvedValue({ ...realResendPayload, type: "email.delivered" }),
+      recordProviderEvent: vi.fn().mockResolvedValue(true),
+      updateProviderStatus
+    };
+
+    const deliveredResult = await handleResendWebhook({
+      rawBody: JSON.stringify({ ...realResendPayload, type: "email.delivered" }),
+      headers: new Headers({ "svix-id": "msg_delivered_svix_id" }),
+      deps
+    });
+
+    expect(deliveredResult).toEqual({ ok: true, duplicate: false, providerStatus: "delivered" });
+    expect(updateProviderStatus).toHaveBeenCalledWith("email-fake-provider-id", "delivered");
   });
 
   it("dedupes real Resend replays by svix-id", async () => {

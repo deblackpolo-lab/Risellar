@@ -64,6 +64,9 @@ export async function handleResendWebhook(input: {
     return { ok: true, duplicate: true, providerStatus };
   }
 
-  await input.deps.updateProviderStatus(providerMessageId, providerStatus);
+  if (providerStatus !== "sent") {
+    await input.deps.updateProviderStatus(providerMessageId, providerStatus);
+  }
+
   return { ok: true, duplicate: false, providerStatus };
 }
