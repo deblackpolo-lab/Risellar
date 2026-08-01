@@ -91,7 +91,7 @@ Passed with scoped findings.
 - No app, component, lib, or test source was intentionally modified for D2.
 - No service-role usage was found in `app/`, `components/`, or the D2 migration/test script.
 - Existing `lib/supabase/admin.ts` still contains the server-only service-role helper from previous work; D2 did not modify or consume it.
-- No bearer tokens, API secrets, passwords, provider secrets, connection strings, production data, private emails, profile IDs, supplier IDs, customer IDs, reseller IDs, order IDs, or JWT-like values were found in D2 files/docs.
+- No bearer tokens, provider credentials, passwords, database connection values, production data, private emails, profile IDs, supplier IDs, customer IDs, reseller IDs, order IDs, or JWT-like values were found in D2 files/docs.
 - No checkout, order creation, stock reservation, payment, delivery, settlement, commission, withdrawal, refund, return, evidence, provider, or notification mutation was added.
 
 ## L. Files Changed
@@ -109,9 +109,15 @@ D1 docs remain untracked and uncommitted.
 
 ## M. Migration Apply Status
 
-Not applied. No real `supabase db push` was run.
+At D2 completion, this migration had not been applied and no real `supabase db push` had been run.
 
-No Supabase write command or linked SQL execution command was run for D2. The SQL boundary test file was created for a future development-only apply/test phase and was not executed.
+During D3, the approved D2 migration was applied to the confirmed DEVELOPMENT Supabase project. D3 found one schema omission after application: `dispute_status_history` needed the planned `idempotency_key`. That was fixed with a forward-only migration:
+
+- `20260801123000_fix_dispute_status_history_idempotency.sql`
+
+The D2 migration was not edited after application.
+
+The SQL boundary test file was upgraded during D3 from a scaffolded assertion plan into an active rollback-scoped boundary suite. It passed 51 assertions in DEVELOPMENT.
 
 ## N. D3 Prerequisites
 

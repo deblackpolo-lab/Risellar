@@ -33,9 +33,23 @@ Stop conditions: finance, refund, stock, settlement, commission, or withdrawal m
 
 ## D3 - Apply Core Schema and Ownership Tests
 
+Status: completed in DEVELOPMENT after approval.
+
 Scope: apply D2 to development only after approval and run ownership/privacy boundary tests.
 
 Dependencies: D2 dry-run.
+
+Applied migrations:
+
+- `20260801120000_dispute_core_schema_and_safe_reads.sql`
+- `20260801123000_fix_dispute_status_history_idempotency.sql`
+
+Verification:
+
+- `scripts/rpc/dispute-core-schema-safe-reads-tests-dev-only.sql` now contains active rollback-scoped assertions.
+- 51 SQL assertions passed in DEVELOPMENT.
+- Fixtures rolled back and left zero permanent dispute rows.
+- No dispute mutation RPCs or UI were activated.
 
 Stop conditions: production link, broad grants, failed ownership test, service role exposure.
 

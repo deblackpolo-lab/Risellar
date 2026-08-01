@@ -209,12 +209,21 @@ Docs only:
 
 Planning is complete for Phase 1.
 
-## AP. Whether Implementation May Begin
+## AP. D2/D3 Follow-Up Status
+
+After this planning pack, D2 and D3 were completed in the confirmed DEVELOPMENT Supabase project.
+
+- D1/D2 local checkpoint commit: `738384757bcdf7e32c787fa875d4861daefcc791`
+- D2 migration applied to DEVELOPMENT: `20260801120000_dispute_core_schema_and_safe_reads.sql`
+- D3 forward fix applied to DEVELOPMENT: `20260801123000_fix_dispute_status_history_idempotency.sql`
+- D3 SQL safe-read boundary assertions: 51 passed, 0 failed.
+- Fixture cleanup left zero permanent rows in `order_disputes`, `dispute_messages`, and `dispute_status_history`.
+- No dispute mutation RPC, customer dispute UI, supplier dispute UI, admin resolution action, return, refund, finance hold, stock, order, payment, settlement, commission, wallet, withdrawal, evidence, notification, or provider flow was activated.
+
+## AQ. Whether Implementation May Begin
 
 Implementation may begin only after business decisions are approved and the next implementation group is explicitly requested.
 
-## AQ. Exact Recommended Next Prompt
+## AR. Exact Recommended Next Prompt
 
-If only D1 is ready to commit: "Commit the Disputes, Returns, and Refunds Phase 1 planning documents."
-
-If continuing the staged implementation plan: "Review and approve D3 applying the dispute core schema to the confirmed development Supabase project and running the development-only safe-read RPC boundary tests."
+Next: "Start Disputes D4 customer open/view/respond RPC design. Do not activate UI until mutation RPCs are applied and tested."
