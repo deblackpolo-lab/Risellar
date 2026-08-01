@@ -51,7 +51,7 @@ export async function processEmailNotificationBatch(
     }
 
     try {
-      const template = buildEmailTemplate(notification.eventType, notification.payload);
+      const template = buildEmailTemplate(notification.eventType, notification.payload, { appUrl: deps.config.appUrl });
       const request = createResendEmailRequest({
         config: deps.config,
         eventKey: notification.eventKey,

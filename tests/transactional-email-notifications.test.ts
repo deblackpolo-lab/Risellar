@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   EMAIL_NOTIFICATION_EVENT_MATRIX,
   buildEmailTemplate,
+  createNotificationCtaUrl,
   createResendEmailRequest,
   getEmailNotificationConfig,
+  normalizeNotificationAppUrl,
   sanitizeNotificationPayload,
   shouldRetryResendError
 } from "@/lib/notifications/email";
@@ -72,12 +74,16 @@ describe("transactional email notifications", () => {
       EMAIL_DEV_RECIPIENT: "qa-inbox@example.invalid",
       NEXT_PUBLIC_APP_URL: "http://localhost:400"
     });
-    const template = buildEmailTemplate("order_placed_customer", {
-      orderNumber: "RSR-DEV-001",
-      productName: "QA Phone",
-      amount: "GHS 100.00",
-      ctaPath: "/customer/orders/order-id"
-    });
+    const template = buildEmailTemplate(
+      "order_placed_customer",
+      {
+        orderNumber: "RSR-DEV-001",
+        productName: "QA Phone",
+        amount: "GHS 100.00",
+        ctaPath: "/customer/orders/order-id"
+      },
+      { appUrl: config.appUrl }
+    );
 
     const request = createResendEmailRequest({
       config,
@@ -90,6 +96,58 @@ describe("transactional email notifications", () => {
     expect(request.subject).toBe("[DEV] Order placed successfully");
     expect(request.headers["Idempotency-Key"]).toBe("order_placed_customer/order-id/customer-id");
     expect(request.html).not.toContain("customer@example.invalid");
+  });
+
+  it("renders absolute app CTAs for customer, supplier, reseller, and finance-admin templates", () => {
+    const appUrl = "https://risellar.vercel.app/";
+    const examples = [
+      ["order_placed_customer", "/customer/orders/example-id"],
+      ["order_placed_supplier", "/supplier/orders/example-id"],
+      ["reseller_commission_available", "/reseller/wallet"],
+      ["withdrawal_requested_finance", "/admin/withdrawals/example-id"]
+    ] as const;
+
+    for (const [eventType, ctaPath] of examples) {
+      const template = buildEmailTemplate(eventType, { ctaPath }, { appUrl });
+      const expected = `https://risellar.vercel.app${ctaPath}`;
+
+      expect(template.html).toContain(`href="${expected}"`);
+      expect(template.text).toContain(expected);
+      expect(template.html).not.toContain("localhost");
+      expect(template.html).not.toContain("https://risellar.vercel.app//");
+    }
+  });
+
+  it("normalizes relative CTA paths and preserves query strings without double slashes", () => {
+    expect(createNotificationCtaUrl("https://risellar.vercel.app/", "customer/orders/example-id?source=email")).toBe(
+      "https://risellar.vercel.app/customer/orders/example-id?source=email"
+    );
+  });
+
+  it("rejects absolute, protocol-relative, javascript, and data CTA payload URLs", () => {
+    const appUrl = "https://risellar.vercel.app";
+
+    expect(createNotificationCtaUrl(appUrl, "https://evil.example/customer/orders/example-id")).toBe("https://risellar.vercel.app/");
+    expect(createNotificationCtaUrl(appUrl, "//evil.example/customer/orders/example-id")).toBe("https://risellar.vercel.app/");
+    expect(createNotificationCtaUrl(appUrl, "javascript:alert(1)")).toBe("https://risellar.vercel.app/");
+    expect(createNotificationCtaUrl(appUrl, "data:text/html,hello")).toBe("https://risellar.vercel.app/");
+  });
+
+  it("fails safely for invalid production app URLs and never silently falls back to localhost", () => {
+    const invalid = getEmailNotificationConfig({
+      NODE_ENV: "production",
+      EMAIL_SEND_MODE: "redirect",
+      RESEND_API_KEY: "test-key",
+      EMAIL_FROM: "Risellar <dev@example.invalid>",
+      EMAIL_DEV_RECIPIENT: "qa-inbox@example.invalid",
+      NEXT_PUBLIC_APP_URL: "http://localhost:400"
+    });
+
+    expect(invalid.mode).toBe("disabled");
+    expect(invalid.canSend).toBe(false);
+    expect(invalid.missing).toContain("NEXT_PUBLIC_APP_URL");
+    expect(normalizeNotificationAppUrl(undefined, { NODE_ENV: "production" })).toBeNull();
+    expect(normalizeNotificationAppUrl(undefined, { NODE_ENV: "development" })).toBe("http://localhost:400");
   });
 
   it("defines every required transactional event and recipient mapping", () => {

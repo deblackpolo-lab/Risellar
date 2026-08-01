@@ -102,6 +102,10 @@ function normalizeMode(value?: string): EmailSendMode {
   return "disabled";
 }
 
+function isProductionEnv(env: Record<string, string | undefined>) {
+  return env.NODE_ENV === "production" || env.VERCEL_ENV === "production";
+}
+
 function isValidSender(value?: string) {
   if (!value) {
     return false;
@@ -114,16 +118,46 @@ function isValidSender(value?: string) {
   return bareEmail.test(trimmed) || namedEmail.test(trimmed);
 }
 
+export function normalizeNotificationAppUrl(value: string | undefined, env: Record<string, string | undefined> = process.env) {
+  const fallback = isProductionEnv(env) ? undefined : "http://localhost:400";
+  const candidate = (value || fallback || "").trim();
+
+  if (!candidate) {
+    return null;
+  }
+
+  try {
+    const url = new URL(candidate);
+    const isLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const allowedProtocol = url.protocol === "https:" || (!isProductionEnv(env) && isLocalhost && url.protocol === "http:");
+
+    if (!allowedProtocol) {
+      return null;
+    }
+
+    url.pathname = url.pathname.replace(/\/+$/, "");
+    url.search = "";
+    url.hash = "";
+
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return null;
+  }
+}
+
 export function getEmailNotificationConfig(env: Record<string, string | undefined> = process.env): EmailNotificationConfig {
   const requestedMode = normalizeMode(env.EMAIL_SEND_MODE);
   const missing: string[] = [];
-  const appUrl = env.NEXT_PUBLIC_APP_URL || "http://localhost:400";
+  const appUrl = normalizeNotificationAppUrl(env.NEXT_PUBLIC_APP_URL, env);
 
   if (!env.RESEND_API_KEY) {
     missing.push("RESEND_API_KEY");
   }
   if (!env.EMAIL_FROM) {
     missing.push("EMAIL_FROM");
+  }
+  if (!appUrl) {
+    missing.push("NEXT_PUBLIC_APP_URL");
   }
   if (requestedMode === "redirect" && !env.EMAIL_DEV_RECIPIENT) {
     missing.push("EMAIL_DEV_RECIPIENT");
@@ -133,7 +167,7 @@ export function getEmailNotificationConfig(env: Record<string, string | undefine
     return {
       mode: "disabled",
       canSend: false,
-      appUrl,
+      appUrl: appUrl ?? "",
       missing,
       safeErrorCode: "LIVE_MODE_BLOCKED_IN_DEVELOPMENT"
     };
@@ -143,7 +177,7 @@ export function getEmailNotificationConfig(env: Record<string, string | undefine
     return {
       mode: "disabled",
       canSend: false,
-      appUrl,
+      appUrl: appUrl ?? "",
       missing,
       safeErrorCode: "EMAIL_FROM_INVALID"
     };
@@ -153,7 +187,7 @@ export function getEmailNotificationConfig(env: Record<string, string | undefine
     return {
       mode: "disabled",
       canSend: false,
-      appUrl,
+      appUrl: appUrl ?? "",
       missing,
       safeErrorCode: missing.length > 0 ? "EMAIL_CONFIG_MISSING" : undefined
     };
@@ -166,7 +200,7 @@ export function getEmailNotificationConfig(env: Record<string, string | undefine
     from: env.EMAIL_FROM,
     replyTo: env.EMAIL_REPLY_TO,
     devRecipient: env.EMAIL_DEV_RECIPIENT,
-    appUrl,
+    appUrl: appUrl!,
     missing
   };
 }
@@ -206,13 +240,49 @@ function matrixFor(eventType: EmailNotificationEventType) {
   return entry;
 }
 
-export function buildEmailTemplate(eventType: EmailNotificationEventType | string, payload: Record<string, unknown> = {}): EmailTemplate {
+function normalizeNotificationCtaPath(value: unknown) {
+  if (typeof value !== "string") {
+    return "/";
+  }
+
+  const trimmed = value.trim();
+  if (
+    !trimmed ||
+    Array.from(trimmed).some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127;
+    })
+  ) {
+    return "/";
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) || trimmed.startsWith("//")) {
+    return "/";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+export function createNotificationCtaUrl(appUrl: string, ctaPath: unknown) {
+  const base = normalizeNotificationAppUrl(appUrl);
+  if (!base) {
+    throw new Error("EMAIL_APP_URL_INVALID");
+  }
+
+  return new URL(normalizeNotificationCtaPath(ctaPath), `${base}/`).toString();
+}
+
+export function buildEmailTemplate(
+  eventType: EmailNotificationEventType | string,
+  payload: Record<string, unknown> = {},
+  options: { appUrl?: string } = {}
+): EmailTemplate {
   const entry = matrixFor(eventType as EmailNotificationEventType);
   const safe = sanitizeNotificationPayload(payload);
   const orderNumber = safe.orderNumber ? `Order ${escapeHtml(safe.orderNumber)}` : "Risellar update";
   const productName = safe.productName ? `<p>Product: ${escapeHtml(safe.productName)}</p>` : "";
   const amount = safe.amount ? `<p>Amount: ${escapeHtml(safe.amount)}</p>` : "";
-  const ctaPath = typeof safe.ctaPath === "string" && safe.ctaPath.startsWith("/") ? safe.ctaPath : "/";
+  const ctaUrl = createNotificationCtaUrl(options.appUrl ?? normalizeNotificationAppUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "", safe.ctaPath);
   const bodyNote = safe.safeReasonLabel ? `<p>Reason: ${escapeHtml(safe.safeReasonLabel)}</p>` : "";
 
   const html = [
@@ -223,12 +293,20 @@ export function buildEmailTemplate(eventType: EmailNotificationEventType | strin
     productName,
     amount,
     bodyNote,
-    `<p><a href="${escapeHtml(ctaPath)}">Open in Risellar</a></p>`,
+    `<p><a href="${escapeHtml(ctaUrl)}">Open in Risellar</a></p>`,
     "<p>This transactional update was generated by Risellar.</p>",
     "</body></html>"
   ].join("");
 
-  const text = [entry.subject, orderNumber, safe.productName ? `Product: ${safe.productName}` : "", safe.amount ? `Amount: ${safe.amount}` : "", "Open in Risellar"].filter(Boolean).join("\n");
+  const text = [
+    entry.subject,
+    orderNumber,
+    safe.productName ? `Product: ${safe.productName}` : "",
+    safe.amount ? `Amount: ${safe.amount}` : "",
+    `Open in Risellar: ${ctaUrl}`
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return {
     subject: entry.subject,
