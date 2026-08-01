@@ -92,3 +92,15 @@ Supplier "own case" access now means explicit target ownership through `affected
 ## D5 Supplier Response Addendum
 
 Supplier responses are backend-only and use `visibility = supplier_and_admin`. Customers do not automatically see supplier-private response bodies through customer safe reads. Resellers do not see dispute messages. Other suppliers remain blocked unless the dispute is explicitly scoped to their supplier identity or is a safe single-supplier order-wide case. Admin/support safe reads may see supplier responses through the approved admin contract.
+
+## D6 Admin/Support Investigation Addendum
+
+D6 support mutations require an active `admin_staff` row with `support_staff`, `admin`, or `super_admin`. Finance-only staff are intentionally excluded from D6 support mutation RPCs.
+
+Admin public information requests are targeted:
+
+- customer requests use `customer_and_admin`
+- supplier requests use `supplier_and_admin`
+- internal notes use `admin_only`
+
+Non-financial resolution records public decision text for safe reads, but it does not execute refunds, returns, finance holds, settlement changes, commission changes, wallet changes, withdrawal changes, stock changes, notifications, or order/payment changes.

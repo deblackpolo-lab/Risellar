@@ -258,4 +258,8 @@ D5 supplier response backend is complete in the confirmed DEVELOPMENT Supabase p
 - Fixture cleanup left zero matching D5 concurrency rows
 - No dispute UI, admin mutation, return, refund, finance hold, stock mutation, order mutation, payment mutation, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, evidence upload, or notification flow was activated
 
-D6 admin/support investigation and non-financial resolution may begin only after explicit approval.
+D6 admin/support investigation and non-financial resolution has been implemented as a backend-only foundation on DEVELOPMENT. It adds controlled support/admin RPCs and a narrow idempotency action table, with no UI activation and no return/refund/finance/stock/order/payment/notification side effects.
+
+D6 also passed the final external two-session concurrency hardening pass: 12 race scenarios and 61 invariant checks passed, fixture cleanup completed, and no business side effects were detected.
+
+D7 may plan the next backend slice after reviewing the completed D6 reports.

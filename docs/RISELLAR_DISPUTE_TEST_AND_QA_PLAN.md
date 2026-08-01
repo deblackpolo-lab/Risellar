@@ -194,3 +194,34 @@ D5-A adds `scripts/rpc/dispute-supplier-item-scoping-tests-dev-only.sql` for tar
 - no order/payment/stock/reservation/settlement/commission/wallet/withdrawal/notification side effects occur
 
 A separate temporary two-session development runner verified same-key concurrency, different-key concurrency, terminal-state race blocking, cross-supplier race isolation, and cleanup.
+
+## D6 Admin/Support Investigation Coverage
+
+`scripts/rpc/admin-dispute-investigation-resolution-tests-dev-only.sql` covers the D6 backend-only admin/support investigation boundary with 103 passing DEVELOPMENT assertions:
+
+- anonymous, customer, supplier, reseller, inactive admin, suspended admin, finance_staff-only, and profile-without-admin_staff callers are blocked
+- active `support_staff`, `admin`, and `super_admin` callers are authorized through `admin_staff`
+- assignment, information-request, status-transition, resolution, and closure RPCs are explicit and idempotent
+- supplier information requests require an explicit affected supplier and are blocked for ambiguous multi-supplier order-wide cases
+- internal admin notes stay `admin_only`
+- customer and supplier safe reads expose only targeted public messages and public resolution text
+- reseller safe read remains impact-only
+- direct dispute/action table writes remain blocked
+- no order/payment/stock/reservation/settlement/commission/wallet/withdrawal/return/notification side effects occur
+
+A dedicated external two-session D6 concurrency runner now covers 12 race scenarios with 61 passing invariant checks:
+
+- same-key assignment retry
+- competing assignee assignment
+- customer information request racing customer response
+- supplier information request racing supplier response
+- competing status transitions
+- competing non-financial resolutions
+- resolution racing closure
+- closure racing customer response
+- closure racing supplier response
+- same-key information request retry
+- different-key information requests
+- same-key resolution retry
+
+The runner verifies two independent database backend sessions, overlapping call windows, exact row-count invariants, fixture cleanup, and no business side effects.

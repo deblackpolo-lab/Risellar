@@ -100,11 +100,33 @@ Verification:
 
 Stop conditions preserved: supplier final resolution, supplier finance verification, cross-supplier visibility, UI activation.
 
-## D6 - Admin Investigation and Non-Financial Resolution UI
+## D6 - Admin Investigation and Non-Financial Resolution Backend
 
-Scope: admin/support triage, request info, non-finance resolution proposal, close no-action cases.
+Status: completed in DEVELOPMENT as backend-only controlled RPCs.
 
-Stop conditions: arbitrary set-any-status panel, money movement, stock restoration.
+Scope: admin/support assignment, request info, approved investigation transitions, non-financial resolution recording, and closure of eligible resolved/rejected/cancelled cases.
+
+Applied migrations:
+
+- `20260801160000_admin_dispute_investigation_and_resolution_rpcs.sql`
+- `20260801161000_fix_admin_dispute_rowtype_reads.sql`
+
+RPCs:
+
+- `admin_assign_dispute`
+- `admin_request_dispute_information`
+- `admin_change_dispute_status`
+- `admin_record_non_financial_resolution`
+- `admin_close_dispute`
+
+Verification:
+
+- `scripts/rpc/admin-dispute-investigation-resolution-tests-dev-only.sql` passed 103 rollback-scoped assertions.
+- `scripts/rpc/admin-dispute-d6-concurrency-dev-only.mjs` passed 12 true two-session race scenarios with 61 invariant checks.
+- No UI was activated.
+- No return, refund, finance, order, payment, stock, reservation, settlement, commission, wallet, withdrawal, evidence, or notification flow was added.
+
+Stop conditions preserved: arbitrary set-any-status panel, money movement, stock restoration, return/refund execution, finance holds, and dispute UI activation.
 
 ## D7 - Return Workflow and Returned-Stock Inspection
 

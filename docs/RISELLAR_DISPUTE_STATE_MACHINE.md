@@ -8,10 +8,10 @@ Disputes should use their own state machine. The order's fulfilment state remain
 
 | State | Meaning | Allowed next states |
 | --- | --- | --- |
-| `open` | Case created and awaiting triage. | `awaiting_customer`, `awaiting_supplier`, `under_review`, `cancelled` |
-| `awaiting_customer` | Admin or supplier needs customer input. | `under_review`, `cancelled`, `closed` |
-| `awaiting_supplier` | Admin or customer needs supplier input. | `under_review`, `return_required`, `rejected` |
-| `under_review` | Admin/support is investigating. | `awaiting_customer`, `awaiting_supplier`, `return_required`, `refund_pending`, `resolved_customer`, `resolved_supplier`, `partially_resolved`, `rejected` |
+| `open` | Case created and awaiting triage. | `awaiting_customer`, `awaiting_supplier`, `under_review`, `rejected`, `cancelled` |
+| `awaiting_customer` | Admin/support needs customer input. | `under_review`, `awaiting_supplier`, `rejected`, `cancelled` |
+| `awaiting_supplier` | Admin/support needs supplier input. | `under_review`, `awaiting_customer`, `rejected`, `cancelled` |
+| `under_review` | Admin/support is investigating. | `awaiting_customer`, `awaiting_supplier`, `return_review`, `refund_review`, `resolved_customer`, `resolved_supplier`, `partially_resolved`, `rejected`, `cancelled` |
 | `return_required` | Customer must return item before final refund/stock action. | `return_in_transit`, `cancelled`, `rejected` |
 | `return_in_transit` | Return is moving outside Risellar provider automation. | `returned`, `awaiting_customer`, `under_review` |
 | `returned` | Supplier/admin has received returned item. | `refund_pending`, `resolved_customer`, `resolved_supplier`, `partially_resolved`, `rejected` |
