@@ -531,3 +531,17 @@ Follow-up ordering guard:
 - the webhook handler now records `email.sent` provider events but skips outbox status mutation for `sent`
 - the processor already marks the outbox sent immediately after the Resend send call
 - delivered, bounced, complained, failed, and delivery-delayed webhooks remain status-updating events
+
+Final deployed webhook verification:
+
+- the ordering guard was committed, pushed, and deployed to Vercel Production
+- one fresh notification-only QA row was enqueued and processed through the protected production processor
+- processor result: `claimed=1`, `sent=1`, `retried=0`, `failed=0`, `skipped=0`
+- provider message ID was stored for the outbox row
+- real provider-originated `email.sent` and `email.delivered` webhooks reached `https://risellar.vercel.app/api/resend/webhook`
+- both provider events were stored once using distinct verified `svix-id` identities
+- `data.email_id` matched the outbox provider message ID
+- final outbox status and provider status were both `delivered`
+- a follow-up count check stayed at two provider-event rows, so no duplicate provider rows appeared from retries
+- Vercel logs showed production POSTs for the processor and webhook route with no observed HTTP `500`
+- dashboard replay of the original failed provider event was not available from Codex; final proof used a fresh real provider-originated send/delivery event after the fix

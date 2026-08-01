@@ -329,6 +329,19 @@ Fresh provider webhook proof after the compatibility fix:
 - the outbox status became `delivered`
 - a follow-up ordering guard was added because Resend may deliver `email.sent` after `email.delivered`; the handler now records `email.sent` without downgrading outbox status
 
+Final production HTTPS provider-originated QA:
+
+- the ordering guard was deployed to Vercel Production
+- a fresh notification-only QA email was processed in redirect mode
+- the processor claimed and sent exactly one row with no retries, failures, or skips
+- the provider message ID was stored
+- real provider-originated `email.sent` and `email.delivered` webhooks reached the deployed endpoint
+- both events were stored exactly once using verified `svix-id` identities
+- the outbox remained `delivered` / provider status `delivered`
+- a delayed duplicate check still showed two provider-event rows and two distinct event identities
+- no HTTP `500` appeared in the observed Vercel webhook logs after the deployed fix
+- original failed-event dashboard replay was not available to Codex, so the final passing proof is the fresh real provider-originated event pair
+
 ## I. Secret/Safety Status
 
 - `.env.local` ignored and not staged
@@ -353,5 +366,6 @@ Email Notifications Phase 1 is partially complete:
 - Vercel HTTPS processor send path passed for customer, supplier, reseller, and finance-admin templates
 - duplicate-send prevention passed on Vercel HTTPS
 - CTA-link fix was committed, pushed, deployed, and verified with fresh sent messages
-- final live QA is blocked by missing/unobserved real Resend webhook delivery despite signed-route verification passing
-- final completion commit/push is deferred until live webhook signature, provider event, replay, and failure/bounce QA pass
+- final live provider-originated send/delivery QA passed on Vercel HTTPS after the real payload compatibility and ordering fixes
+- signed-route replay and bounce/failure QA passed earlier
+- dashboard replay of the original failed Resend delivery remains a manual dashboard-only check from Codex, but fresh real provider-originated webhook delivery is now proven
