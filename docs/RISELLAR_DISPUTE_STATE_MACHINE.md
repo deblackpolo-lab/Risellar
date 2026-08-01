@@ -131,3 +131,23 @@ Minimum events:
 - `appeal_resolved`
 
 Audit payloads must not contain raw evidence files, private notes, secrets, cookies, tokens, or unmasked payout data.
+
+## D7 Return Workflow Addendum
+
+D7 adds a separate return-item state machine in `public.order_item_returns`:
+
+- `requested`
+- `under_review`
+- `approved`
+- `rejected`
+- `in_transit`
+- `received`
+- `inspected`
+- `accepted`
+- `declined`
+- `completed`
+- `cancelled`
+
+Return request creation may move the parent dispute to `return_review` only when the existing D6 transition matrix allows it. Otherwise D7 records `return_review_required = true` without forcing an invalid dispute transition.
+
+D7 return completion does not close the dispute, issue a refund, mutate stock, mutate settlement/commission/wallet/withdrawal records, book delivery, or notify users.

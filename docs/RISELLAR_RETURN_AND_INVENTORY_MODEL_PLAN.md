@@ -110,3 +110,11 @@ Audit events should reference entity IDs internally but avoid exposing raw priva
 - Automated stock recovery from return delivery events.
 - Barcode/warehouse receiving.
 - Supplier liability settlement automation.
+
+## D7 Implemented Boundary
+
+D7 implements return workflow tracking through `public.order_item_returns`, not the legacy `public.returns` table.
+
+D7 records requested, approved/rejected, in-transit, received, inspected, accepted/declined, and completed return states. Supplier inspection can recommend an `inventory_outcome`, but this is only a marker. No product variant stock counters, stock reservations, or inventory movements are changed by D7.
+
+Future inventory work must consume D7 return state through a separate audited inventory RPC. It must not treat `accepted` or `completed` as automatic sellable-stock restoration.

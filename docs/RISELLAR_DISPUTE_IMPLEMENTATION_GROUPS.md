@@ -130,11 +130,35 @@ Stop conditions preserved: arbitrary set-any-status panel, money movement, stock
 
 ## D7 - Return Workflow and Returned-Stock Inspection
 
-Scope: return approval/rejection, return receipt, condition classification, inventory outcome planning.
+Status: completed in DEVELOPMENT as backend-only controlled RPCs.
 
-RPCs: return approval, supplier/admin inspection, inventory adjustment after inspection.
+Scope: return request, approval/rejection, customer in-transit marker, supplier receipt, supplier condition classification, admin accept/decline/complete, and inventory outcome planning.
 
-Stop conditions: auto-restock before inspection, delivery-provider booking.
+Applied migrations:
+
+- `20260801170000_return_workflow_backend_foundation.sql`
+- `20260801171000_fix_return_workflow_status_history_reason.sql`
+- `20260801172000_fix_return_workflow_idempotency_column_ambiguity.sql`
+
+RPCs:
+
+- `customer_request_item_return`
+- `admin_approve_return`
+- `admin_reject_return`
+- `customer_mark_return_in_transit`
+- `supplier_confirm_return_received`
+- `supplier_report_return_condition`
+- `admin_accept_return`
+- `admin_decline_return`
+- `admin_complete_return`
+
+Verification:
+
+- `scripts/rpc/return-workflow-backend-tests-dev-only.sql` passed with more than 77 rollback-scoped assertions.
+- `scripts/rpc/return-workflow-d7-concurrency-dev-only.mjs` passed 11 true two-session race scenarios plus side-effect and cleanup checks.
+- D6/D5/D4 relevant regression suites passed after D7. The D4 dev-only harness was refreshed to the existing D5-A open-dispute signature.
+
+Stop conditions preserved: auto-restock, stock mutation, delivery-provider booking, refunds, finance holds, settlement changes, commission changes, wallet changes, withdrawal changes, evidence uploads, notification outbox events, and UI activation.
 
 ## D8 - Refund Obligation and Manual Refund Recording
 

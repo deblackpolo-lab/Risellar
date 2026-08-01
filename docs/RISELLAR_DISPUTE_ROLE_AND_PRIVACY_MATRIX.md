@@ -104,3 +104,16 @@ Admin public information requests are targeted:
 - internal notes use `admin_only`
 
 Non-financial resolution records public decision text for safe reads, but it does not execute refunds, returns, finance holds, settlement changes, commission changes, wallet changes, withdrawal changes, stock changes, notifications, or order/payment changes.
+
+## D7 Return Workflow Addendum
+
+D7 safe reads are role-shaped:
+
+- customer reads expose own return state, method, quantity, public admin note, and safe product/order labels
+- supplier reads expose only returns for the supplier resolved from the signed-in supplier owner
+- admin/support reads expose operational return fields needed for review
+- reseller reads expose only a safe return-impact label
+
+Supplier inventory managers cannot act as supplier owners for D7 return receipt or inspection. Finance-only admin staff cannot approve/reject/accept/decline/complete returns.
+
+Audit metadata excludes customer, supplier, and internal admin note bodies.

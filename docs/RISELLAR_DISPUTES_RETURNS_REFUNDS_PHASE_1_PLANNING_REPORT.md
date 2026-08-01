@@ -262,4 +262,14 @@ D6 admin/support investigation and non-financial resolution has been implemented
 
 D6 also passed the final external two-session concurrency hardening pass: 12 race scenarios and 61 invariant checks passed, fixture cleanup completed, and no business side effects were detected.
 
-D7 may plan the next backend slice after reviewing the completed D6 reports.
+D7 return workflow backend is complete in the confirmed DEVELOPMENT Supabase project.
+
+- D7 migrations applied to DEVELOPMENT: `20260801170000_return_workflow_backend_foundation.sql`, `20260801171000_fix_return_workflow_status_history_reason.sql`, `20260801172000_fix_return_workflow_idempotency_column_ambiguity.sql`
+- D7 SQL boundary test passed with more than 77 assertions
+- D7 external concurrency harness passed 11 true two-session races
+- Legacy `public.returns` remains dormant
+- `public.order_item_returns` records return workflow only
+- Inspection inventory outcome is a recommendation marker only
+- No refund, payment, finance hold, settlement, commission, wallet, withdrawal, stock, reservation, delivery, evidence, notification, or UI side effect was activated
+
+D8 refund-obligation planning may proceed as a separate backend slice.

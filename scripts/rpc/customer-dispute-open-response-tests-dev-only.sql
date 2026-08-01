@@ -266,12 +266,12 @@ begin
 
   perform pg_temp.customer_dispute_capture_business_counts();
 
-  insert into public.order_disputes(id, order_id, opened_by_profile_id, opened_by_role, dispute_category, reason_code, description, requested_outcome, status, priority, customer_action_required, supplier_action_required, idempotency_key)
+  insert into public.order_disputes(id, order_id, opened_by_profile_id, opened_by_role, scope_type, dispute_category, reason_code, description, requested_outcome, status, priority, customer_action_required, supplier_action_required, idempotency_key)
   values
-    (v_awaiting_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'delivery', 'delivery_delay', 'Awaiting customer D4 fixture', 'information_only', 'awaiting_customer', 'normal', true, false, 'd4-awaiting-' || left(v_suffix, 16)),
-    (v_closed_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'delivery', 'unsafe_delivery_issue', 'Closed D4 fixture', 'information_only', 'closed', 'normal', false, false, 'd4-closed-' || left(v_suffix, 16)),
-    (v_rejected_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'payment', 'wrong_amount_collected', 'Rejected D4 fixture', 'information_only', 'rejected', 'normal', false, false, 'd4-rejected-' || left(v_suffix, 16)),
-    (v_cancelled_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'post_completion', 'product_quality_issue', 'Cancelled D4 fixture', 'information_only', 'cancelled', 'normal', false, false, 'd4-cancelled-' || left(v_suffix, 16));
+    (v_awaiting_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'order', 'delivery', 'delivery_delay', 'Awaiting customer D4 fixture', 'information_only', 'awaiting_customer', 'normal', true, false, 'd4-awaiting-' || left(v_suffix, 16)),
+    (v_closed_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'order', 'delivery', 'unsafe_delivery_issue', 'Closed D4 fixture', 'information_only', 'closed', 'normal', false, false, 'd4-closed-' || left(v_suffix, 16)),
+    (v_rejected_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'order', 'payment', 'wrong_amount_collected', 'Rejected D4 fixture', 'information_only', 'rejected', 'normal', false, false, 'd4-rejected-' || left(v_suffix, 16)),
+    (v_cancelled_dispute_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'order', 'other', 'other', 'Cancelled D4 fixture', 'other', 'cancelled', 'normal', false, false, 'd4-cancelled-' || left(v_suffix, 16));
 
   insert into public.dispute_status_history(dispute_id, previous_status, new_status, changed_by_profile_id, changed_by_role, reason_code, public_note, idempotency_key)
   values
@@ -282,8 +282,8 @@ begin
 
   perform pg_temp.customer_dispute_set_anon_context();
   perform pg_temp.customer_dispute_expect_blocked('anonymous cannot open dispute', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 anonymous attempt', 'd4-anon-open-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 anonymous attempt', 'd4-anon-open-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('anonymous cannot respond', format(
     'select count(*) from public.customer_add_dispute_response(%L, %L, %L)',
@@ -292,62 +292,63 @@ begin
 
   perform pg_temp.customer_dispute_set_context('dev_dispute_d4_suspended_' || v_suffix);
   perform pg_temp.customer_dispute_expect_blocked('suspended customer blocked from opening', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 suspended attempt', 'd4-suspended-open-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 suspended attempt', 'd4-suspended-open-' || left(v_suffix, 12)
   ));
 
   perform pg_temp.customer_dispute_set_context('dev_dispute_d4_inactive_customer_' || v_suffix);
   perform pg_temp.customer_dispute_expect_blocked('inactive customer blocked from opening', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 inactive attempt', 'd4-inactive-open-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 inactive attempt', 'd4-inactive-open-' || left(v_suffix, 12)
   ));
 
   perform pg_temp.customer_dispute_set_context('dev_dispute_d4_customer_a_' || v_suffix);
   perform pg_temp.customer_dispute_expect_blocked('customer cannot dispute another customer order', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_b_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 cross-order attempt', 'd4-cross-open-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_b_id, v_order_item_b_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 cross-order attempt', 'd4-cross-open-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('direct table write remains blocked', format(
-    'insert into public.order_disputes(order_id, opened_by_profile_id, opened_by_role, dispute_category, reason_code) values (%L, %L, %L, %L, %L)',
-    v_order_a_id, v_customer_a_profile_id, 'customer', 'delivery', 'other'
+    'insert into public.order_disputes(order_id, opened_by_profile_id, opened_by_role, scope_type, dispute_category, reason_code) values (%L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_customer_a_profile_id, 'customer', 'order', 'delivery', 'other'
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid category rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'bad_category', 'wrong_item_received', 'replacement', 'Valid D4 bad category', 'd4-bad-cat-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'bad_category', 'wrong_item_received', 'replacement', 'Valid D4 bad category', 'd4-bad-cat-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid reason rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'bad_reason', 'replacement', 'Valid D4 bad reason', 'd4-bad-reason-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'bad_reason', 'replacement', 'Valid D4 bad reason', 'd4-bad-reason-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid outcome rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'bad_outcome', 'Valid D4 bad outcome', 'd4-bad-outcome-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'bad_outcome', 'Valid D4 bad outcome', 'd4-bad-outcome-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid reason/category combination rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'pre_delivery', 'wrong_item_received', 'replacement', 'Valid D4 bad combo', 'd4-bad-combo-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'pre_delivery', 'wrong_item_received', 'replacement', 'Valid D4 bad combo', 'd4-bad-combo-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid reason/order-state combination rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_ineligible_order_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 bad state', 'd4-bad-state-' || left(v_suffix, 12)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_ineligible_order_id, v_order_item_ineligible_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 bad state', 'd4-bad-state-' || left(v_suffix, 12)
   ));
   perform pg_temp.customer_dispute_expect_blocked('empty description rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', '', 'd4-empty-description-' || left(v_suffix, 8)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', '', 'd4-empty-description-' || left(v_suffix, 8)
   ));
   perform pg_temp.customer_dispute_expect_blocked('oversized description rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', repeat('x', 1201), 'd4-long-description-' || left(v_suffix, 8)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', repeat('x', 1201), 'd4-long-description-' || left(v_suffix, 8)
   ));
   perform pg_temp.customer_dispute_expect_blocked('invalid idempotency key rejected', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 invalid key', 'short'
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Valid D4 invalid key', 'short'
   ));
 
   select *
   into v_open_result
   from public.customer_open_order_dispute(
     v_order_a_id,
+    v_order_item_a_id,
     'delivery',
     'wrong_item_received',
     'replacement',
@@ -371,6 +372,7 @@ begin
   into v_retry_result
   from public.customer_open_order_dispute(
     v_order_a_id,
+    v_order_item_a_id,
     'delivery',
     'wrong_item_received',
     'replacement',
@@ -386,14 +388,15 @@ begin
 
   perform pg_temp.customer_dispute_set_context('dev_dispute_d4_customer_a_' || v_suffix);
   perform pg_temp.customer_dispute_expect_blocked('same key with different payload conflicts', format(
-    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L)',
-    v_order_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Different D4 payload should conflict', 'd4-open-main-' || left(v_suffix, 16)
+    'select count(*) from public.customer_open_order_dispute(%L, %L, %L, %L, %L, %L, %L)',
+    v_order_a_id, v_order_item_a_id, 'delivery', 'wrong_item_received', 'replacement', 'Different D4 payload should conflict', 'd4-open-main-' || left(v_suffix, 16)
   ));
 
   select *
   into v_retry_result
   from public.customer_open_order_dispute(
     v_order_a_id,
+    v_order_item_a_id,
     'delivery',
     'wrong_item_received',
     'replacement',

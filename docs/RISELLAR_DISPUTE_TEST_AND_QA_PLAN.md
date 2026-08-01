@@ -225,3 +225,23 @@ A dedicated external two-session D6 concurrency runner now covers 12 race scenar
 - same-key resolution retry
 
 The runner verifies two independent database backend sessions, overlapping call windows, exact row-count invariants, fixture cleanup, and no business side effects.
+
+## D7 Return Workflow Coverage
+
+`scripts/rpc/return-workflow-backend-tests-dev-only.sql` covers the D7 return workflow boundary with more than 77 passing DEVELOPMENT assertions:
+
+- anonymous and wrong-role callers are blocked
+- customer ownership and item-scoped dispute eligibility are enforced
+- invalid method, quantity, note, and idempotency inputs are rejected
+- duplicate active returns are not duplicated
+- admin/support approval, rejection, acceptance, decline, and completion are controlled and idempotent
+- supplier receipt and inspection are supplier-scoped
+- supplier inventory manager cannot act as supplier owner
+- customer, supplier, admin, and reseller safe-read shapes remain scoped
+- direct table writes remain blocked
+- return audit rows are created without note bodies
+- orders, order items, stock, reservations, delivery, supplier payment reports, settlements, commissions, withdrawals, legacy returns, notifications, and provider events are unchanged
+
+`scripts/rpc/return-workflow-d7-concurrency-dev-only.mjs` covers 11 true two-session return races and passed with side-effect and cleanup checks.
+
+The D4 customer dispute regression harness was refreshed to the current D5-A target-aware seven-argument `customer_open_order_dispute` signature. No D4 RPC or policy was changed.
