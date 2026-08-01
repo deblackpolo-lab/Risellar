@@ -125,7 +125,7 @@ export async function processResendWebhookStatus(input: { rawBody: string; heade
         const status = event.type.replace(/^email\./, "");
         const providerMessageId = event.data?.email_id ?? event.data?.emailId ?? null;
         const { data, error } = await client.rpc("record_email_provider_event", {
-          p_provider_event_id: event.id,
+          p_provider_event_id: event.providerEventId,
           p_provider_message_id: providerMessageId,
           p_provider_event_type: event.type,
           p_provider_status: status,

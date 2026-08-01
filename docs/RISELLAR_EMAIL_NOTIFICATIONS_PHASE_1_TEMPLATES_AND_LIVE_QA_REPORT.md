@@ -64,7 +64,7 @@ Configured modes:
 
 Current DEVELOPMENT live email QA status:
 
-- blocked
+- partially passed on Vercel HTTPS, with blockers remaining
 
 Presence-only env result:
 
@@ -76,6 +76,13 @@ Presence-only env result:
 - `NEXT_PUBLIC_APP_URL`: present
 
 No values were printed. `.env.local` was not edited or staged.
+
+Vercel Production for DEVELOPMENT QA:
+
+- `https://risellar.vercel.app` loaded successfully
+- required notification processor/redirect env names are present by name in Vercel Production
+- no environment values were printed
+- `RESEND_WEBHOOK_SECRET` is absent, so valid signed live webhook QA is blocked
 
 ## D. Live DEVELOPMENT Email QA
 
@@ -118,6 +125,17 @@ Live duplicate-send check:
 
 Full provider duplicate-send QA remains blocked until sender configuration is corrected.
 
+Vercel HTTPS duplicate-send result:
+
+- four representative notification-only rows were sent successfully through the production HTTPS processor
+- a second protected processor invocation returned `claimed=0`, `sent=0`, `retried=0`, `failed=0`, `skipped=0`
+- no duplicate provider send was attempted for the QA rows
+
+Post-CTA-fix duplicate-send result:
+
+- after deploying `02c951ce2012b8102fb4e5ba1ec9cd8391a8e91c`, a second processor invocation for the fresh CTA rows returned `claimed=0`, `sent=0`, `retried=0`, `failed=0`, `skipped=0`
+- the already-sent outbox rows were unchanged
+
 ## F. Retry QA
 
 Automated retry verification passed:
@@ -133,6 +151,11 @@ Controlled retry/permanent failure tests:
 - invalid sender configuration is now caught safely as disabled config by `EMAIL_FROM_INVALID`
 - full live retry simulation remains blocked until sender configuration is corrected
 
+Vercel HTTPS retry status:
+
+- full controlled live retry/permanent-failure testing was not completed because the phase is blocked by missing signed webhook configuration and the CTA-link defect
+- existing automated retry/permanent classification remains passing
+
 ## G. Webhook QA
 
 Automated webhook verification passed:
@@ -147,7 +170,94 @@ HTTP route check:
 
 - missing local webhook secret currently returns safe `RESEND_WEBHOOK_SECRET_MISSING`
 
-Live webhook delivery is explicitly deferred until a Vercel Preview or production HTTPS URL exists. No tunnel, Resend CLI, ngrok, or Cloudflare Tunnel is required for this phase.
+Vercel HTTPS webhook route check:
+
+- unsigned webhook POST returned safe `RESEND_WEBHOOK_SECRET_MISSING`
+- valid signature acceptance could not be tested because `RESEND_WEBHOOK_SECRET` is not configured in Vercel Production
+- invalid signature rejection beyond the missing-secret guard could not be tested for the same reason
+- provider event storage, duplicate webhook idempotency, and provider status update remain automated-test verified but not live-webhook verified on Vercel
+
+Live webhook delivery is deferred until the Vercel Production deployment has `RESEND_WEBHOOK_SECRET` configured and Resend is pointed at the HTTPS webhook URL. No tunnel, Resend CLI, ngrok, or Cloudflare Tunnel is required for this phase.
+
+## G2. Vercel HTTPS Email QA
+
+Production alias:
+
+- `https://risellar.vercel.app`
+
+Fresh notification-only outbox rows:
+
+- customer order template
+- supplier order template
+- reseller commission template
+- finance-admin withdrawal template
+
+Processor result:
+
+- first protected invocation: `claimed=4`, `sent=4`, `retried=0`, `failed=0`, `skipped=0`
+- outbox rows became `sent`
+- provider message ids were stored
+- Resend sent-message metadata was retrievable for all four messages
+- all subjects began with `[DEV]`
+- HTML body and plain-text fallback were present
+- sensitive/private fields were not present in the outbox payload or Resend metadata scan
+- all four sent messages used one recipient, consistent with redirect-mode behavior
+
+CTA fix verification after deployment:
+
+- commit `02c951ce2012b8102fb4e5ba1ec9cd8391a8e91c` added absolute CTA URL rendering from the configured app base URL
+- customer CTA began with `https://risellar.vercel.app/`
+- supplier CTA began with `https://risellar.vercel.app/`
+- reseller CTA began with `https://risellar.vercel.app/`
+- finance-admin CTA began with `https://risellar.vercel.app/`
+- no relative-only `href` remained
+- no localhost URL appeared
+- no malformed double slash appeared
+- query strings were preserved
+- unsafe full/protocol-relative/script/data URL payloads are rejected by tests
+
+Remaining blocker:
+
+- valid signed webhook QA is blocked because the Vercel env-name listing still does not show `RESEND_WEBHOOK_SECRET`
+- unsigned and fake invalid-signature webhook POSTs returned safe `RESEND_WEBHOOK_SECRET_MISSING`
+- provider event count did not change for unsigned/invalid webhook checks
+- Email Notifications Phase 1 is therefore not fully complete yet
+
+Webhook redeploy update:
+
+- after redeploy, the webhook route no longer returned `RESEND_WEBHOOK_SECRET_MISSING`
+- `GET /api/resend/webhook` returned safe `405`
+- unsigned webhook `POST` returned safe `401` / `INVALID_SIGNATURE`
+- invalid signed webhook `POST` returned safe `401` / `INVALID_SIGNATURE`
+- invalid webhook requests created no provider-event rows
+- a correctly signed Standard Webhooks payload was accepted
+- replaying the same signed payload was idempotent and did not create a duplicate provider-event row
+- a signed `email.bounced` payload safely updated notification provider status only
+- no business-state counts changed during signed webhook/replay/bounce checks
+- Resend API metadata shows a webhook configured for the Risellar Vercel endpoint and subscribed to relevant email events
+
+Live Resend delivery blocker:
+
+- a fresh redirect-mode email was sent successfully after redeploy, but no real Resend-originated provider event arrived after polling
+- a second fresh delivery probe was sent after confirming Resend webhook configuration, but no real provider event arrived after polling
+- signed-route verification is passing, but live provider delivery is not yet verified
+- final completion commit remains blocked until Resend-originated webhook delivery creates/stores at least one real provider event and updates notification status
+
+Provider-originated webhook follow-up:
+
+- Resend API showed exactly one webhook in the same workspace as the send API key
+- endpoint matched `https://risellar.vercel.app/api/resend/webhook`
+- webhook was enabled
+- subscriptions included `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.failed`, `email.bounced`, and `email.complained`
+- a new deterministic notification-only QA email was sent through Risellar
+- processor returned `claimed=1`, `sent=1`, `retried=0`, `failed=0`, `skipped=0`
+- Resend email metadata was retrievable and reported `last_event=delivered`
+- no provider-originated webhook row was stored after polling
+
+Current blocker:
+
+- the remaining missing proof is a real Resend-originated webhook delivery or dashboard replay that stores a non-synthetic provider event row
+- do not commit the final verification report until that proof exists
 
 ## H. Commands Run
 
@@ -178,15 +288,38 @@ Results so far:
 - dry-run passed
 - development migration apply passed
 - SQL boundary test passed
-- full `npm test` passed: 48 files / 279 tests
+- full `npm test` passed: 48 files / 284 tests
 - `npm run lint` passed
 - `npm run build` passed
 - `npm run typecheck` passed
 - `npx tsc --noEmit` passed
 - focused post-hardening notification tests passed: 2 files / 11 tests
-- live redirect-mode email send did not pass due invalid `EMAIL_FROM`
+- local live redirect-mode email send did not pass due invalid `EMAIL_FROM`
+- Vercel HTTPS redirect-mode processor sent four representative role-template emails
+- Vercel HTTPS duplicate processor invocation sent no duplicates
+- Vercel HTTPS email CTA verification failed because CTA links are relative paths
+- Vercel HTTPS signed-route webhook QA passed after `RESEND_WEBHOOK_SECRET` was added and redeployed
+- real provider-originated webhook QA remains blocked because no real Resend-originated provider event row was stored after a fresh delivered message
 - runtime sweep passed for public/auth routes and notification endpoint method blocking after ignored `.next` cache was cleared
 - protected role routes returned blocked states for signed-out access
+
+Final provider-originated webhook follow-up verification:
+
+- `https://risellar.vercel.app` returned HTTP `200`
+- Resend API showed one enabled webhook for `https://risellar.vercel.app/api/resend/webhook` with the required subscriptions
+- unsigned and invalid-signed webhook requests were rejected and created no provider-event rows
+- one fresh redirect-mode QA email was sent and Resend metadata reported it delivered
+- no real Resend-originated provider event was stored after polling
+- final commit remains intentionally deferred until provider-originated webhook delivery or dashboard replay stores a real event
+
+Real provider payload compatibility update:
+
+- a real Resend `email.sent` webhook reached the deployed endpoint but returned HTTP `500`
+- the safe payload shape did not include a top-level event `id`
+- the webhook code incorrectly assumed synthetic-style `event.id` was available for provider-event deduplication
+- the fix uses the verified `svix-id` header as the provider event identity and `data.email_id` as the Resend email/outbox match key
+- `EMAIL_DEV_RECIPIENT` was corrected in Vercel so redirect-mode sends go to the approved development inbox value only
+- final real provider replay and fresh provider-originated webhook proof still must pass after deployment of the fix
 
 ## I. Secret/Safety Status
 
@@ -209,5 +342,8 @@ Email Notifications Phase 1 is partially complete:
 - backend/outbox/server routes/templates/tests are implemented
 - development migration and SQL boundary test passed
 - automated verification passed
-- live Resend QA is blocked by invalid `EMAIL_FROM` sender format and unresolved verified recipient emails for selected role profiles
-- commit/push is deferred until live email QA passes
+- Vercel HTTPS processor send path passed for customer, supplier, reseller, and finance-admin templates
+- duplicate-send prevention passed on Vercel HTTPS
+- CTA-link fix was committed, pushed, deployed, and verified with fresh sent messages
+- final live QA is blocked by missing/unobserved real Resend webhook delivery despite signed-route verification passing
+- final completion commit/push is deferred until live webhook signature, provider event, replay, and failure/bounce QA pass

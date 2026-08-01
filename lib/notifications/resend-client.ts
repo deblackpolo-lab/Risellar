@@ -46,7 +46,7 @@ export function createResendWebhookVerifier(config: { apiKey?: string }) {
           signature: headers.get("svix-signature") ?? ""
         },
         webhookSecret
-      }) as unknown as { id: string; type: string; data?: { email_id?: string; emailId?: string } }
+      }) as unknown as { id?: string; created_at?: string; type: string; data?: { email_id?: string; emailId?: string } }
     );
   };
 }

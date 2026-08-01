@@ -1,7 +1,9 @@
 import "server-only";
 
 export type ResendWebhookEvent = {
-  id: string;
+  id?: string;
+  providerEventId?: string;
+  created_at?: string;
   type: string;
   data?: {
     email_id?: string;
@@ -21,10 +23,9 @@ const PROVIDER_STATUS_BY_EVENT: Record<string, string> = {
   "email.sent": "sent",
   "email.delivered": "delivered",
   "email.delivery_delayed": "delivery_delayed",
+  "email.failed": "failed",
   "email.bounced": "bounced",
-  "email.complained": "complained",
-  "email.opened": "opened",
-  "email.clicked": "clicked"
+  "email.complained": "complained"
 };
 
 export async function handleResendWebhook(input: {
@@ -33,7 +34,7 @@ export async function handleResendWebhook(input: {
   deps: ResendWebhookDependencies;
 }): Promise<
   | { ok: true; duplicate: boolean; providerStatus: string }
-  | { ok: false; status: number; safeErrorCode: "INVALID_SIGNATURE" | "UNSUPPORTED_EVENT" | "MISSING_PROVIDER_MESSAGE_ID" }
+  | { ok: false; status: number; safeErrorCode: "INVALID_SIGNATURE" | "MISSING_PROVIDER_EVENT_ID" | "MISSING_PROVIDER_MESSAGE_ID" }
 > {
   let event: ResendWebhookEvent;
 
@@ -43,9 +44,14 @@ export async function handleResendWebhook(input: {
     return { ok: false, status: 401, safeErrorCode: "INVALID_SIGNATURE" };
   }
 
+  const providerEventId = input.headers.get("svix-id")?.trim();
+  if (!providerEventId) {
+    return { ok: false, status: 400, safeErrorCode: "MISSING_PROVIDER_EVENT_ID" };
+  }
+
   const providerStatus = PROVIDER_STATUS_BY_EVENT[event.type];
   if (!providerStatus) {
-    return { ok: false, status: 202, safeErrorCode: "UNSUPPORTED_EVENT" };
+    return { ok: true, duplicate: false, providerStatus: "ignored" };
   }
 
   const providerMessageId = event.data?.email_id ?? event.data?.emailId;
@@ -53,7 +59,7 @@ export async function handleResendWebhook(input: {
     return { ok: false, status: 400, safeErrorCode: "MISSING_PROVIDER_MESSAGE_ID" };
   }
 
-  const firstSeen = await input.deps.recordProviderEvent(event);
+  const firstSeen = await input.deps.recordProviderEvent({ ...event, providerEventId });
   if (!firstSeen) {
     return { ok: true, duplicate: true, providerStatus };
   }
