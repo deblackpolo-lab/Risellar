@@ -53,15 +53,31 @@ Verification:
 
 Stop conditions: production link, broad grants, failed ownership test, service role exposure.
 
-## D4 - Customer Open/View/Respond UI
+## D4 - Customer Open/View/Respond Backend
 
-Scope: customer can open/view/respond to own disputes using proven customer RPCs.
+Status: completed in DEVELOPMENT after approval.
 
-UI: customer order detail entry point and dispute detail.
+Scope: customer can open and respond to own order disputes using audited backend RPCs only. Customer viewing continues through the D3 safe-read RPCs.
 
-Stop conditions: refund action, payment mutation, stock mutation, order mutation beyond allowed dispute creation.
+Applied migration:
 
-## D5 - Supplier View/Respond UI
+- `20260801130000_customer_dispute_open_and_response_rpcs.sql`
+
+RPCs:
+
+- `customer_open_order_dispute`
+- `customer_add_dispute_response`
+
+Verification:
+
+- `scripts/rpc/customer-dispute-open-response-tests-dev-only.sql` passed 51 rollback-scoped assertions.
+- True-concurrency probes verified same-key open, active-fingerprint open, and same-key response behavior.
+- Fixture cleanup left zero matching concurrency fixture profiles, orders, and disputes.
+- No UI was activated.
+
+Stop conditions preserved: refund action, payment mutation, stock mutation, order mutation beyond allowed dispute creation, supplier mutation, admin mutation, evidence, notifications, finance holds.
+
+## D5 - Supplier View/Respond Backend/UI
 
 Scope: supplier sees/responds to own supplier disputes.
 

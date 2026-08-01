@@ -220,10 +220,21 @@ After this planning pack, D2 and D3 were completed in the confirmed DEVELOPMENT 
 - Fixture cleanup left zero permanent rows in `order_disputes`, `dispute_messages`, and `dispute_status_history`.
 - No dispute mutation RPC, customer dispute UI, supplier dispute UI, admin resolution action, return, refund, finance hold, stock, order, payment, settlement, commission, wallet, withdrawal, evidence, notification, or provider flow was activated.
 
-## AQ. Whether Implementation May Begin
+## AQ. D4 Customer Backend Follow-Up Status
 
-Implementation may begin only after business decisions are approved and the next implementation group is explicitly requested.
+D4 customer open/respond backend is complete in the confirmed DEVELOPMENT Supabase project.
 
-## AR. Exact Recommended Next Prompt
+- D4 migration applied to DEVELOPMENT: `20260801130000_customer_dispute_open_and_response_rpcs.sql`
+- D4 RPCs: `customer_open_order_dispute`, `customer_add_dispute_response`
+- D4 SQL boundary assertions: 51 passed, 0 failed.
+- D4 true-concurrency probes passed for same-key open, active-fingerprint open, and same-key response.
+- Fixture cleanup left zero matching D4 concurrency fixture profiles, orders, and disputes.
+- No dispute UI, supplier mutation, admin mutation, return, refund, finance hold, stock mutation, order mutation, payment mutation, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, evidence upload, or notification flow was activated.
 
-Next: "Start Disputes D4 customer open/view/respond RPC design. Do not activate UI until mutation RPCs are applied and tested."
+## AR. Whether Implementation May Begin
+
+The next implementation group may begin only after explicit request.
+
+## AS. Exact Recommended Next Prompt
+
+Next: "Start Disputes D5 supplier dispute view/respond backend. Do not implement admin resolution, returns, refunds, finance holds, stock changes, or notifications."

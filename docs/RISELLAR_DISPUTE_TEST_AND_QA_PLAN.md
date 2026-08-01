@@ -34,6 +34,23 @@ Future development-only SQL tests must cover:
 28. Notification outbox dedupes dispute events.
 29. Fixtures roll back or clean completely.
 
+### D4 Customer Open/Response Coverage
+
+`scripts/rpc/customer-dispute-open-response-tests-dev-only.sql` now covers the D4 customer mutation boundary with 51 passing DEVELOPMENT assertions:
+
+- anonymous, inactive, and suspended callers are blocked
+- customer ownership is enforced for open/list/detail/respond
+- direct table writes remain denied
+- invalid category/reason/outcome/reason-state/text/idempotency inputs are rejected
+- valid open creates one dispute, one initial message, one initial history row, and one audit row
+- valid response creates one message and one audit row
+- `awaiting_customer` response moves the case to `under_review` once
+- closed, rejected, and cancelled responses are blocked
+- retries are idempotent and do not duplicate message/history/audit rows
+- duplicate active disputes are not duplicated under the live D2 active-reason uniqueness rule
+- order/payment/business/notification side effects are absent
+- fixtures roll back
+
 ## Concurrency Tests
 
 Required true-concurrency cases:
@@ -48,6 +65,14 @@ Required true-concurrency cases:
 - appeal open versus final close
 
 Each concurrency test should assert row locks, idempotency keys, and no negative balances or stock counters.
+
+D4 completed true parallel probes for:
+
+- duplicate customer open with the same idempotency key
+- duplicate customer open with different keys but the same active-dispute fingerprint
+- duplicate customer response with the same idempotency key
+
+Response versus case closure remains deferred until an admin closure RPC exists.
 
 ## Browser QA Plan
 
