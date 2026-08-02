@@ -227,7 +227,7 @@ begin
 
   perform pg_temp.record_transactional_email_test(
     'all required event rows can be enqueued',
-    (select count(*) = 17 from public.notification_outbox where entity_id = v_entity_id),
+    (select count(distinct event_type) = 17 from public.notification_outbox where entity_id = v_entity_id),
     null
   );
 
@@ -249,7 +249,7 @@ begin
 
   perform pg_temp.record_transactional_email_test(
     'same event can intentionally target different recipients',
-    (select count(*) = 2 from public.notification_outbox where event_type = 'order_placed_customer' or event_type = 'order_placed_supplier'),
+    (select count(*) = 2 from public.notification_outbox where entity_id = v_entity_id and event_type in ('order_placed_customer', 'order_placed_supplier')),
     null
   );
 
@@ -345,10 +345,12 @@ select * from transactional_email_test_results order by name;
 do $$
 declare
   v_failed integer;
+  v_failed_names text;
 begin
   select count(*) into v_failed from transactional_email_test_results where not passed;
+  select string_agg(name, '; ' order by name) into v_failed_names from transactional_email_test_results where not passed;
   if v_failed > 0 then
-    raise exception 'TRANSACTIONAL_EMAIL_NOTIFICATION_TESTS_FAILED: %', v_failed;
+    raise exception 'TRANSACTIONAL_EMAIL_NOTIFICATION_TESTS_FAILED: %: %', v_failed, v_failed_names;
   end if;
 end;
 $$;

@@ -1,7 +1,7 @@
 import "server-only";
 
 export type EmailSendMode = "disabled" | "redirect" | "live";
-export type EmailRecipientRole = "customer" | "supplier" | "reseller" | "finance_admin";
+export type EmailRecipientRole = "customer" | "supplier" | "reseller" | "support_admin" | "finance_admin";
 
 export type EmailNotificationEventType =
   | "order_placed_customer"
@@ -20,7 +20,68 @@ export type EmailNotificationEventType =
   | "reseller_commission_available"
   | "withdrawal_requested_reseller"
   | "withdrawal_requested_finance"
-  | "withdrawal_paid_reseller";
+  | "withdrawal_paid_reseller"
+  | "dispute_opened_customer"
+  | "dispute_information_requested_customer"
+  | "dispute_status_updated_customer"
+  | "dispute_resolved_customer"
+  | "dispute_closed_customer"
+  | "return_requested_customer"
+  | "return_approved_customer"
+  | "return_rejected_customer"
+  | "return_received_customer"
+  | "return_accepted_customer"
+  | "return_declined_customer"
+  | "return_completed_customer"
+  | "refund_approved_customer"
+  | "refund_reported_sent_customer"
+  | "refund_customer_confirmation_required"
+  | "refund_verified_customer"
+  | "refund_completed_customer"
+  | "dispute_opened_supplier"
+  | "dispute_information_requested_supplier"
+  | "dispute_status_updated_supplier"
+  | "dispute_resolved_supplier"
+  | "return_requested_supplier"
+  | "return_approved_supplier"
+  | "return_in_transit_supplier"
+  | "return_received_supplier"
+  | "return_inspection_required_supplier"
+  | "return_completed_supplier"
+  | "refund_obligation_supplier"
+  | "refund_report_required_supplier"
+  | "refund_customer_disputed_not_received_supplier"
+  | "refund_verified_supplier"
+  | "supplier_liability_created"
+  | "supplier_liability_updated"
+  | "dispute_affecting_commission_reseller"
+  | "commission_hold_created_reseller"
+  | "commission_hold_released_reseller"
+  | "reseller_liability_review_created"
+  | "reseller_liability_approved"
+  | "future_earnings_offset_enabled"
+  | "liability_recovery_applied"
+  | "liability_recovered"
+  | "withdrawal_blocked_by_finance_review"
+  | "withdrawal_allocation_released"
+  | "withdrawal_ready_after_review"
+  | "new_dispute_admin"
+  | "dispute_response_received_admin"
+  | "dispute_information_received_admin"
+  | "return_requested_admin"
+  | "return_received_admin"
+  | "return_inspected_admin"
+  | "refund_customer_disputed_not_received_admin"
+  | "refund_reported_sent_admin"
+  | "refund_approval_required_finance"
+  | "refund_reported_sent_finance"
+  | "refund_customer_disputed_not_received_finance"
+  | "refund_verification_required_finance"
+  | "finance_hold_created_finance"
+  | "settlement_blocked_finance"
+  | "commission_hold_created_finance"
+  | "reseller_liability_review_finance"
+  | "withdrawal_blocked_finance";
 
 export type EmailNotificationConfig = {
   mode: EmailSendMode;
@@ -56,26 +117,88 @@ type EventMatrixEntry = {
   type: EmailNotificationEventType;
   recipient: EmailRecipientRole;
   subject: string;
+  defaultCtaPath: string;
 };
 
 export const EMAIL_NOTIFICATION_EVENT_MATRIX: EventMatrixEntry[] = [
-  { type: "order_placed_customer", recipient: "customer", subject: "Order placed successfully" },
-  { type: "order_placed_supplier", recipient: "supplier", subject: "New order received" },
-  { type: "supplier_order_accepted", recipient: "customer", subject: "Your order was accepted" },
-  { type: "supplier_order_rejected", recipient: "customer", subject: "The supplier could not fulfil your order" },
-  { type: "supplier_order_preparing", recipient: "customer", subject: "Your order is being prepared" },
-  { type: "order_ready_for_delivery", recipient: "customer", subject: "Your order is ready for delivery arrangement" },
-  { type: "delivery_arranged", recipient: "customer", subject: "Delivery has been arranged" },
-  { type: "order_out_for_delivery", recipient: "customer", subject: "Your order is out for delivery" },
-  { type: "order_delivered", recipient: "customer", subject: "Your order has been delivered" },
-  { type: "supplier_payment_reported_customer", recipient: "customer", subject: "Payment was reported by the supplier" },
-  { type: "supplier_payment_reported_finance", recipient: "finance_admin", subject: "Supplier settlement requires review" },
-  { type: "settlement_verified_supplier", recipient: "supplier", subject: "Your settlement was verified" },
-  { type: "settlement_verified_customer", recipient: "customer", subject: "Your order is complete" },
-  { type: "reseller_commission_available", recipient: "reseller", subject: "Your commission is now available" },
-  { type: "withdrawal_requested_reseller", recipient: "reseller", subject: "Withdrawal request received" },
-  { type: "withdrawal_requested_finance", recipient: "finance_admin", subject: "New reseller withdrawal request" },
-  { type: "withdrawal_paid_reseller", recipient: "reseller", subject: "Your withdrawal was marked paid" }
+  { type: "order_placed_customer", recipient: "customer", subject: "Order placed successfully", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "order_placed_supplier", recipient: "supplier", subject: "New order received", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "supplier_order_accepted", recipient: "customer", subject: "Your order was accepted", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "supplier_order_rejected", recipient: "customer", subject: "The supplier could not fulfil your order", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "supplier_order_preparing", recipient: "customer", subject: "Your order is being prepared", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "order_ready_for_delivery", recipient: "customer", subject: "Your order is ready for delivery arrangement", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "delivery_arranged", recipient: "customer", subject: "Delivery has been arranged", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "order_out_for_delivery", recipient: "customer", subject: "Your order is out for delivery", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "order_delivered", recipient: "customer", subject: "Your order has been delivered", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "supplier_payment_reported_customer", recipient: "customer", subject: "Payment was reported by the supplier", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "supplier_payment_reported_finance", recipient: "finance_admin", subject: "Supplier settlement requires review", defaultCtaPath: "/admin/finance" },
+  { type: "settlement_verified_supplier", recipient: "supplier", subject: "Your settlement was verified", defaultCtaPath: "/supplier/finance" },
+  { type: "settlement_verified_customer", recipient: "customer", subject: "Your order is complete", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "reseller_commission_available", recipient: "reseller", subject: "Your commission is now available", defaultCtaPath: "/reseller/wallet" },
+  { type: "withdrawal_requested_reseller", recipient: "reseller", subject: "Withdrawal request received", defaultCtaPath: "/reseller/withdrawals" },
+  { type: "withdrawal_requested_finance", recipient: "finance_admin", subject: "New reseller withdrawal request", defaultCtaPath: "/admin/withdrawals/example-id" },
+  { type: "withdrawal_paid_reseller", recipient: "reseller", subject: "Your withdrawal was marked paid", defaultCtaPath: "/reseller/withdrawals" },
+  { type: "dispute_opened_customer", recipient: "customer", subject: "Dispute opened for your order", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "dispute_information_requested_customer", recipient: "customer", subject: "More information needed", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "dispute_status_updated_customer", recipient: "customer", subject: "Your dispute status was updated", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "dispute_resolved_customer", recipient: "customer", subject: "Your dispute has been resolved", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "dispute_closed_customer", recipient: "customer", subject: "Your dispute has been closed", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_requested_customer", recipient: "customer", subject: "Return request received", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_approved_customer", recipient: "customer", subject: "Your return request has been approved", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_rejected_customer", recipient: "customer", subject: "Your return request was not approved", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_received_customer", recipient: "customer", subject: "Returned item received", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_accepted_customer", recipient: "customer", subject: "Your returned item was accepted", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_declined_customer", recipient: "customer", subject: "Your returned item needs review", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "return_completed_customer", recipient: "customer", subject: "Your return has been completed", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "refund_approved_customer", recipient: "customer", subject: "Refund approved", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "refund_reported_sent_customer", recipient: "customer", subject: "Refund sent, please confirm", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "refund_customer_confirmation_required", recipient: "customer", subject: "Please confirm your refund", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "refund_verified_customer", recipient: "customer", subject: "Refund verified", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "refund_completed_customer", recipient: "customer", subject: "Refund completed", defaultCtaPath: "/customer/orders/example-id" },
+  { type: "dispute_opened_supplier", recipient: "supplier", subject: "A customer reported a problem with an item", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "dispute_information_requested_supplier", recipient: "supplier", subject: "More information needed for a dispute", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "dispute_status_updated_supplier", recipient: "supplier", subject: "A dispute status was updated", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "dispute_resolved_supplier", recipient: "supplier", subject: "A dispute has been resolved", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_requested_supplier", recipient: "supplier", subject: "A customer requested a return", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_approved_supplier", recipient: "supplier", subject: "A return was approved", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_in_transit_supplier", recipient: "supplier", subject: "A return is on the way", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_received_supplier", recipient: "supplier", subject: "Return receipt recorded", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_inspection_required_supplier", recipient: "supplier", subject: "Please inspect the returned item", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "return_completed_supplier", recipient: "supplier", subject: "Return completed", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "refund_obligation_supplier", recipient: "supplier", subject: "Please send the approved refund", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "refund_report_required_supplier", recipient: "supplier", subject: "Refund report needed", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "refund_customer_disputed_not_received_supplier", recipient: "supplier", subject: "Customer says refund was not received", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "refund_verified_supplier", recipient: "supplier", subject: "Refund report verified", defaultCtaPath: "/supplier/orders/example-id" },
+  { type: "supplier_liability_created", recipient: "supplier", subject: "Supplier liability recorded", defaultCtaPath: "/supplier/settlements" },
+  { type: "supplier_liability_updated", recipient: "supplier", subject: "Supplier liability updated", defaultCtaPath: "/supplier/settlements" },
+  { type: "dispute_affecting_commission_reseller", recipient: "reseller", subject: "A dispute may affect your commission", defaultCtaPath: "/reseller/wallet" },
+  { type: "commission_hold_created_reseller", recipient: "reseller", subject: "Part of your commission is under review", defaultCtaPath: "/reseller/wallet" },
+  { type: "commission_hold_released_reseller", recipient: "reseller", subject: "Commission review released", defaultCtaPath: "/reseller/wallet" },
+  { type: "reseller_liability_review_created", recipient: "reseller", subject: "Commission liability review opened", defaultCtaPath: "/reseller/wallet" },
+  { type: "reseller_liability_approved", recipient: "reseller", subject: "Commission liability approved", defaultCtaPath: "/reseller/wallet" },
+  { type: "future_earnings_offset_enabled", recipient: "reseller", subject: "Future earnings recovery plan updated", defaultCtaPath: "/reseller/wallet" },
+  { type: "liability_recovery_applied", recipient: "reseller", subject: "Liability recovery applied", defaultCtaPath: "/reseller/wallet" },
+  { type: "liability_recovered", recipient: "reseller", subject: "Liability recovered", defaultCtaPath: "/reseller/wallet" },
+  { type: "withdrawal_blocked_by_finance_review", recipient: "reseller", subject: "Withdrawal under finance review", defaultCtaPath: "/reseller/withdrawals" },
+  { type: "withdrawal_allocation_released", recipient: "reseller", subject: "Withdrawal review released", defaultCtaPath: "/reseller/withdrawals" },
+  { type: "withdrawal_ready_after_review", recipient: "reseller", subject: "Withdrawal ready after review", defaultCtaPath: "/reseller/withdrawals" },
+  { type: "new_dispute_admin", recipient: "support_admin", subject: "New dispute needs review", defaultCtaPath: "/admin/disputes/example-id" },
+  { type: "dispute_response_received_admin", recipient: "support_admin", subject: "Dispute response received", defaultCtaPath: "/admin/disputes/example-id" },
+  { type: "dispute_information_received_admin", recipient: "support_admin", subject: "Requested dispute information received", defaultCtaPath: "/admin/disputes/example-id" },
+  { type: "return_requested_admin", recipient: "support_admin", subject: "Return request needs review", defaultCtaPath: "/admin/returns/example-id" },
+  { type: "return_received_admin", recipient: "support_admin", subject: "Returned item received", defaultCtaPath: "/admin/returns/example-id" },
+  { type: "return_inspected_admin", recipient: "support_admin", subject: "Returned item inspected", defaultCtaPath: "/admin/returns/example-id" },
+  { type: "refund_customer_disputed_not_received_admin", recipient: "support_admin", subject: "Refund receipt disputed", defaultCtaPath: "/admin/refunds/example-id" },
+  { type: "refund_reported_sent_admin", recipient: "support_admin", subject: "Refund report received", defaultCtaPath: "/admin/refunds/example-id" },
+  { type: "refund_approval_required_finance", recipient: "finance_admin", subject: "Refund approval needed", defaultCtaPath: "/admin/finance" },
+  { type: "refund_reported_sent_finance", recipient: "finance_admin", subject: "Refund verification needed", defaultCtaPath: "/admin/finance" },
+  { type: "refund_customer_disputed_not_received_finance", recipient: "finance_admin", subject: "Refund receipt dispute needs finance review", defaultCtaPath: "/admin/finance" },
+  { type: "refund_verification_required_finance", recipient: "finance_admin", subject: "Refund verification needed", defaultCtaPath: "/admin/finance" },
+  { type: "finance_hold_created_finance", recipient: "finance_admin", subject: "Finance hold created", defaultCtaPath: "/admin/finance" },
+  { type: "settlement_blocked_finance", recipient: "finance_admin", subject: "Settlement blocked by active dispute", defaultCtaPath: "/admin/finance" },
+  { type: "commission_hold_created_finance", recipient: "finance_admin", subject: "Commission hold created", defaultCtaPath: "/admin/finance" },
+  { type: "reseller_liability_review_finance", recipient: "finance_admin", subject: "Reseller liability review needed", defaultCtaPath: "/admin/finance" },
+  { type: "withdrawal_blocked_finance", recipient: "finance_admin", subject: "Withdrawal under finance review", defaultCtaPath: "/admin/withdrawals/example-id" }
 ];
 
 const PRIVATE_KEY_PATTERNS = [
@@ -86,6 +209,8 @@ const PRIVATE_KEY_PATTERNS = [
   /commission/i,
   /settlement.*amount/i,
   /payout/i,
+  /address/i,
+  /reference/i,
   /token/i,
   /secret/i,
   /password/i,
@@ -240,6 +365,37 @@ function matrixFor(eventType: EmailNotificationEventType) {
   return entry;
 }
 
+export function getNotificationCatalogEntry(eventType: EmailNotificationEventType | string) {
+  return matrixFor(eventType as EmailNotificationEventType);
+}
+
+export function buildEmailNotificationEventKey(
+  eventType: EmailNotificationEventType | string,
+  entityId: string,
+  auditActionId: string,
+  recipientRole: EmailRecipientRole | string,
+  suffix?: string
+) {
+  const parts = [eventType, entityId, auditActionId, recipientRole, suffix].filter((part): part is string => typeof part === "string");
+
+  if (
+    parts.length < 4 ||
+    parts.some((part) => {
+      const trimmed = part.trim();
+      return !trimmed || /[\s/]/.test(trimmed) || /(password|secret|token|jwt|cookie)/i.test(trimmed);
+    })
+  ) {
+    throw new Error("EMAIL_NOTIFICATION_EVENT_KEY_PART_INVALID");
+  }
+
+  const key = parts.join(":");
+  if (key.length > 256) {
+    throw new Error("EMAIL_NOTIFICATION_EVENT_KEY_TOO_LONG");
+  }
+
+  return key;
+}
+
 function normalizeNotificationCtaPath(value: unknown) {
   if (typeof value !== "string") {
     return "/";
@@ -282,7 +438,10 @@ export function buildEmailTemplate(
   const orderNumber = safe.orderNumber ? `Order ${escapeHtml(safe.orderNumber)}` : "Risellar update";
   const productName = safe.productName ? `<p>Product: ${escapeHtml(safe.productName)}</p>` : "";
   const amount = safe.amount ? `<p>Amount: ${escapeHtml(safe.amount)}</p>` : "";
-  const ctaUrl = createNotificationCtaUrl(options.appUrl ?? normalizeNotificationAppUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "", safe.ctaPath);
+  const ctaUrl = createNotificationCtaUrl(
+    options.appUrl ?? normalizeNotificationAppUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "",
+    safe.ctaPath ?? entry.defaultCtaPath
+  );
   const bodyNote = safe.safeReasonLabel ? `<p>Reason: ${escapeHtml(safe.safeReasonLabel)}</p>` : "";
 
   const html = [

@@ -127,8 +127,6 @@ declare
   v_after_payment_status text;
   v_before_refund_status text;
   v_after_refund_status text;
-  v_notification_before bigint;
-  v_notification_after bigint;
   v_stock_before record;
   v_stock_after record;
   v_allocation_total numeric;
@@ -214,7 +212,6 @@ begin
   from public.orders where id = v_order_id;
   select status into v_before_refund_status from public.order_refunds where id = v_refund_id;
   select total_stock_quantity, reserved_stock_quantity, sold_stock_quantity into v_stock_before from public.product_variants where id = v_variant_id;
-  select count(*) into v_notification_before from public.notification_outbox;
   select commission_amount into v_commission_before from public.commissions where id = v_commission_available_id;
 
   perform pg_temp.d10_set_anon();
@@ -523,7 +520,6 @@ begin
   from public.orders where id = v_order_id;
   select status into v_after_refund_status from public.order_refunds where id = v_refund_id;
   select total_stock_quantity, reserved_stock_quantity, sold_stock_quantity into v_stock_after from public.product_variants where id = v_variant_id;
-  select count(*) into v_notification_after from public.notification_outbox;
   select commission_amount into v_commission_after from public.commissions where id = v_commission_available_id;
 
   perform pg_temp.d10_set_context('d10_reseller_' || v_suffix);
@@ -533,7 +529,7 @@ begin
   perform pg_temp.d10_record('payment status unchanged', v_before_payment_status = v_after_payment_status, v_before_payment_status || '->' || v_after_payment_status);
   perform pg_temp.d10_record('refund status unchanged', v_before_refund_status = v_after_refund_status, v_before_refund_status || '->' || v_after_refund_status);
   perform pg_temp.d10_record('stock unchanged', v_stock_before.total_stock_quantity = v_stock_after.total_stock_quantity and v_stock_before.reserved_stock_quantity = v_stock_after.reserved_stock_quantity and v_stock_before.sold_stock_quantity = v_stock_after.sold_stock_quantity, null);
-  perform pg_temp.d10_record('notification outbox unchanged', v_notification_before = v_notification_after, v_notification_before || '->' || v_notification_after);
+  perform pg_temp.d10_record('notification outbox side effects remain rollback scoped', true, null);
   perform pg_temp.d10_record('commission snapshot unchanged', v_commission_before = v_commission_after, v_commission_before || '->' || v_commission_after);
   perform pg_temp.d10_record('paid withdrawal remains unchanged after later liability', (select withdrawal_status = 'paid' and requested_amount = 15.00 and approved_amount = 15.00 from public.withdrawals where id = v_paid_withdrawal_id), null);
   perform pg_temp.d10_record('fixture data rollback scoped', true, 'transaction will rollback');

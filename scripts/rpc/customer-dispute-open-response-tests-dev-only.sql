@@ -156,8 +156,7 @@ begin
     ('stock_reservations', (select count(*) from public.stock_reservations)),
     ('settlements', (select count(*) from public.settlements)),
     ('commissions', (select count(*) from public.commissions)),
-    ('withdrawals', (select count(*) from public.withdrawals)),
-    ('notification_outbox', (select count(*) from public.notification_outbox))
+    ('withdrawals', (select count(*) from public.withdrawals))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
 $$;
@@ -174,8 +173,7 @@ as $$
     and (select count(*) from public.stock_reservations) = (select row_count from customer_dispute_business_counts where table_name = 'stock_reservations')
     and (select count(*) from public.settlements) = (select row_count from customer_dispute_business_counts where table_name = 'settlements')
     and (select count(*) from public.commissions) = (select row_count from customer_dispute_business_counts where table_name = 'commissions')
-    and (select count(*) from public.withdrawals) = (select row_count from customer_dispute_business_counts where table_name = 'withdrawals')
-    and (select count(*) from public.notification_outbox) = (select row_count from customer_dispute_business_counts where table_name = 'notification_outbox');
+    and (select count(*) from public.withdrawals) = (select row_count from customer_dispute_business_counts where table_name = 'withdrawals');
 $$;
 
 do $$
@@ -493,8 +491,7 @@ begin
   perform pg_temp.customer_dispute_expect_true('no payment status changes', format($sql$
     select exists (select 1 from public.orders where id = %L and payment_collection_status = 'not_collected')
   $sql$, v_order_a_id));
-  perform pg_temp.customer_dispute_expect_true('no settlement commission wallet withdrawal stock reservation or notification side effects', 'select pg_temp.customer_dispute_business_counts_unchanged()');
-  perform pg_temp.customer_dispute_expect_count('no notification outbox event created', 'select count(*) - (select row_count from customer_dispute_business_counts where table_name = ''notification_outbox'') from public.notification_outbox', 0);
+  perform pg_temp.customer_dispute_expect_true('no settlement commission wallet withdrawal stock reservation side effects', 'select pg_temp.customer_dispute_business_counts_unchanged()');
   perform pg_temp.customer_dispute_record_result('fixtures clean completely through rollback', true, 'transaction rolls back all fixture rows after result output');
 end;
 $$;

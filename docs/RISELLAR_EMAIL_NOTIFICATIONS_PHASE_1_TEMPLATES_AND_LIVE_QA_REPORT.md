@@ -369,3 +369,17 @@ Email Notifications Phase 1 is partially complete:
 - final live provider-originated send/delivery QA passed on Vercel HTTPS after the real payload compatibility and ordering fixes
 - signed-route replay and bounce/failure QA passed earlier
 - dashboard replay of the original failed Resend delivery remains a manual dashboard-only check from Codex, but fresh real provider-originated webhook delivery is now proven
+
+## D11 Template Addendum
+
+D11 adds role-specific template catalog entries for dispute, return, refund, finance-hold, reseller-liability, and withdrawal-review notification types.
+
+Automated template verification confirms:
+
+- every D11 event renders HTML and plain text
+- redirect-mode sends use `[DEV]` subjects
+- CTA links use safe relative paths before absolute URL construction
+- unsafe payload fields are removed before rendering
+- customer, supplier, reseller, support/admin, and finance-admin templates avoid private notes, recipient emails, addresses, payout data, raw references, provider payloads, tokens, and secrets
+
+D11 live redirect-mode email QA is deferred until D11 is deployed. No D11-specific live emails were sent to real intended recipients during local implementation.

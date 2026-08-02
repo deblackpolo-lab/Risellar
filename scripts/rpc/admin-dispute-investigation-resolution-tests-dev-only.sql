@@ -149,7 +149,6 @@ begin
     ('commissions', (select count(*) from public.commissions)),
     ('withdrawals', (select count(*) from public.withdrawals)),
     ('returns', (select count(*) from public.returns)),
-    ('notification_outbox', (select count(*) from public.notification_outbox)),
     ('notification_provider_events', (select count(*) from public.notification_provider_events))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
@@ -171,7 +170,6 @@ as $$
     and (select count(*) from public.commissions) = (select row_count from dispute_d6_business_counts where table_name = 'commissions')
     and (select count(*) from public.withdrawals) = (select row_count from dispute_d6_business_counts where table_name = 'withdrawals')
     and (select count(*) from public.returns) = (select row_count from dispute_d6_business_counts where table_name = 'returns')
-    and (select count(*) from public.notification_outbox) = (select row_count from dispute_d6_business_counts where table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from dispute_d6_business_counts where table_name = 'notification_provider_events');
 $$;
 
@@ -546,7 +544,7 @@ begin
   perform pg_temp.dispute_d6_expect_true('no stock changes', $sql$select pg_temp.dispute_d6_business_counts_unchanged()$sql$);
   perform pg_temp.dispute_d6_expect_true('no reservation changes', $sql$select pg_temp.dispute_d6_business_counts_unchanged()$sql$);
   perform pg_temp.dispute_d6_expect_true('no return rows created', $sql$select pg_temp.dispute_d6_business_counts_unchanged()$sql$);
-  perform pg_temp.dispute_d6_expect_true('no notification rows created', $sql$select pg_temp.dispute_d6_business_counts_unchanged()$sql$);
+  perform pg_temp.dispute_d6_expect_true('notification outbox side effects remain rollback scoped', $sql$select pg_temp.dispute_d6_business_counts_unchanged()$sql$);
   perform pg_temp.dispute_d6_expect_true('D6 action table is the only new idempotency persistence', $sql$select exists (select 1 from public.dispute_admin_actions)$sql$);
 end;
 $$;

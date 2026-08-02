@@ -138,3 +138,15 @@ D9 finance hold and adjustment mutations are restricted to active `admin_staff` 
 Support staff may read only the finance review summary for a dispute. Support staff cannot list full finance holds or adjustments and cannot mutate finance controls.
 
 Suppliers may read only their own safe liability records. Resellers may read only their own hold-impact summary. Customers receive no finance/private payout, commission, settlement, or internal accounting data.
+
+## D11 Notification Privacy Addendum
+
+D11 notification recipients are role-shaped:
+
+- customers receive only their own safe dispute, return, and refund progress
+- suppliers receive only notifications tied to their affected supplier account
+- resellers receive only commission, liability, and withdrawal-impact notifications tied to their own reseller attribution
+- support admins receive operational queue notifications without finance-private details
+- finance admins receive finance workflow notifications only through active `finance_staff` or `super_admin` admin_staff roles
+
+Notification payloads exclude recipient email, phone, address, supplier private notes, customer private notes, admin internal notes, payment/refund references, payout data, raw provider payloads, and secrets.

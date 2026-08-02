@@ -299,3 +299,16 @@ Regression coverage includes D6 admin dispute, D7 return workflow, D8 refund wor
 `scripts/rpc/reseller-liability-withdrawal-recovery-d10-concurrency-dev-only.mjs` covers true external multi-session races for same-key liability creation, same-scope different-key liability creation, duplicate future offsets, duplicate withdrawal allocation, and allocation dispute versus payout-style withdrawal behavior.
 
 The full required D10 regression batch passed after harness/fixture stabilization: D6 SQL, D6 external concurrency, D7 SQL, D7 external concurrency, D8 SQL, D8 external concurrency, D9 SQL, D9 external concurrency, D10 SQL, D10 external concurrency, settlement SQL/concurrency, reseller withdrawal SQL/concurrency, and finance-history safe reads.
+
+## D11 Notification QA Coverage
+
+D11 adds:
+
+- `scripts/rpc/dispute-notifications-d11-tests-dev-only.sql`
+- `scripts/rpc/dispute-notifications-d11-concurrency-dev-only.mjs`
+
+The SQL suite covers dispute, return, refund, finance-hold, reseller-liability, and withdrawal-review notification mapping with 50 passing assertions.
+
+The concurrency harness covers duplicate mapper execution, business retry dedupe, separate valid events, refund verification retry, finance hold retry, withdrawal review retry, concurrent processor claims, webhook replay, rollback safety, and recipient isolation.
+
+Older D4-D10 regression harnesses were updated where they incorrectly treated D11 outbox enqueue rows as forbidden business mutations. They continue to assert no unauthorized business-table side effects.

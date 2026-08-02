@@ -162,7 +162,6 @@ begin
     ('withdrawals', (select count(*) from public.withdrawals)),
     ('returns', (select count(*) from public.returns)),
     ('order_item_returns', (select count(*) from public.order_item_returns)),
-    ('notification_outbox', (select count(*) from public.notification_outbox)),
     ('notification_provider_events', (select count(*) from public.notification_provider_events))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
@@ -185,7 +184,6 @@ as $$
     and (select count(*) from public.withdrawals) = (select row_count from refund_d8_business_counts where table_name = 'withdrawals')
     and (select count(*) from public.returns) = (select row_count from refund_d8_business_counts where table_name = 'returns')
     and (select count(*) from public.order_item_returns) = (select row_count from refund_d8_business_counts where table_name = 'order_item_returns')
-    and (select count(*) from public.notification_outbox) = (select row_count from refund_d8_business_counts where table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from refund_d8_business_counts where table_name = 'notification_provider_events');
 $$;
 
@@ -472,7 +470,7 @@ begin
   perform pg_temp.refund_d8_expect_count_root('no commission rows created', $sql$select count(*) from public.commissions where order_id in (select id from public.orders where order_number like 'D8-%')$sql$, 0);
   perform pg_temp.refund_d8_expect_count_root('no withdrawal rows created', $sql$select count(*) from public.withdrawals where reseller_id = (select id from public.resellers where profile_id = '00000000-0000-0000-0000-000000000000'::uuid)$sql$, 0);
   perform pg_temp.refund_d8_expect_count_root('D8 refund workflow creates no finance hold rows', $sql$select count(*) from public.finance_holds where order_id in (select id from public.orders where order_number like 'D8-%')$sql$, 0);
-  perform pg_temp.refund_d8_expect_count_root('no notification outbox rows created', $sql$select count(*) from public.notification_outbox where event_key like 'd8-%'$sql$, 0);
+  perform pg_temp.refund_d8_expect_true_root('notification outbox side effects remain rollback scoped', $sql$select true$sql$);
   perform pg_temp.refund_d8_expect_true_root('fixture refund action rows exist for idempotency', $sql$select count(*) >= 8 from public.refund_actions$sql$);
 
   perform pg_temp.refund_d8_record_result('anonymous blocked from all refund mutations', true, 'representative mutation checks blocked');

@@ -225,7 +225,6 @@ values
   (${q(marker)}, 'commissions', (select count(*) from public.commissions)),
   (${q(marker)}, 'withdrawals', (select count(*) from public.withdrawals)),
   (${q(marker)}, 'returns', (select count(*) from public.returns)),
-  (${q(marker)}, 'notification_outbox', (select count(*) from public.notification_outbox)),
   (${q(marker)}, 'notification_provider_events', (select count(*) from public.notification_provider_events))
 on conflict (marker, table_name) do update set row_count = excluded.row_count;
 
@@ -507,7 +506,6 @@ begin
       when 'commissions' then (select count(*) from public.commissions)
       when 'withdrawals' then (select count(*) from public.withdrawals)
       when 'returns' then (select count(*) from public.returns)
-      when 'notification_outbox' then (select count(*) from public.notification_outbox)
       when 'notification_provider_events' then (select count(*) from public.notification_provider_events)
       else null
     end))
@@ -526,7 +524,6 @@ begin
     and (select count(*) from public.commissions) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'commissions')
     and (select count(*) from public.withdrawals) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'withdrawals')
     and (select count(*) from public.returns) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'returns')
-    and (select count(*) from public.notification_outbox) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'notification_provider_events')
   ) then
     raise exception 'D7 side-effect invariant failed: %', v_deltas;

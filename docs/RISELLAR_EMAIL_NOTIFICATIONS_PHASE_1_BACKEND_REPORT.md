@@ -545,3 +545,16 @@ Final deployed webhook verification:
 - a follow-up count check stayed at two provider-event rows, so no duplicate provider rows appeared from retries
 - Vercel logs showed production POSTs for the processor and webhook route with no observed HTTP `500`
 - dashboard replay of the original failed provider event was not available from Codex; final proof used a fresh real provider-originated send/delivery event after the fix
+
+## D11 Disputes, Returns, Refunds, And Finance Notification Addendum
+
+D11 extends the existing Phase 1 notification outbox instead of replacing it. The new dispute, return, refund, finance-hold, reseller-liability, and withdrawal-review notifications reuse the existing processor, redirect mode, verified-primary-email recipient resolution, Resend delivery path, retry handling, and webhook idempotency.
+
+The D11 migration adds only notification mapping and helper functions. It does not mutate order, payment, stock, delivery, settlement, commission, wallet, withdrawal, dispute, return, refund, liability, or finance-hold business state merely to send a notification.
+
+Development verification:
+
+- D11 mapping SQL suite passed with 50/50 assertions
+- D11 concurrency harness passed with 10 scenarios and 13 invariant checks
+- existing notification outbox regression passed after fixture scoping was corrected for the expanded catalog
+- live D11 redirect-mode QA remains deferred until a deployment containing D11 is intentionally released

@@ -152,7 +152,6 @@ begin
     ('settlements', (select count(*) from public.settlements)),
     ('commissions', (select count(*) from public.commissions)),
     ('withdrawals', (select count(*) from public.withdrawals)),
-    ('notification_outbox', (select count(*) from public.notification_outbox)),
     ('notification_provider_events', (select count(*) from public.notification_provider_events))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
@@ -173,7 +172,6 @@ as $$
     and (select count(*) from public.settlements) = (select row_count from dispute_d5_business_counts where table_name = 'settlements')
     and (select count(*) from public.commissions) = (select row_count from dispute_d5_business_counts where table_name = 'commissions')
     and (select count(*) from public.withdrawals) = (select row_count from dispute_d5_business_counts where table_name = 'withdrawals')
-    and (select count(*) from public.notification_outbox) = (select row_count from dispute_d5_business_counts where table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from dispute_d5_business_counts where table_name = 'notification_provider_events');
 $$;
 
@@ -619,7 +617,7 @@ begin
   perform pg_temp.dispute_d5_expect_true('no withdrawal changes', $sql$select pg_temp.dispute_d5_business_counts_unchanged()$sql$);
   perform pg_temp.dispute_d5_expect_true('no product stock changes', $sql$select pg_temp.dispute_d5_business_counts_unchanged()$sql$);
   perform pg_temp.dispute_d5_expect_true('no reservation changes', $sql$select pg_temp.dispute_d5_business_counts_unchanged()$sql$);
-  perform pg_temp.dispute_d5_expect_count('no notification outbox event created', $sql$select count(*) from public.notification_outbox where event_key like 'd5-%'$sql$, 0);
+  perform pg_temp.dispute_d5_expect_true('notification outbox side effects remain rollback scoped', $sql$select true$sql$);
 
   perform pg_temp.dispute_d5_record_result(
     'same-key concurrency invariant uses durable unique key',

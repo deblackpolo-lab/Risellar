@@ -3,10 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   EMAIL_NOTIFICATION_EVENT_MATRIX,
+  buildEmailNotificationEventKey,
   buildEmailTemplate,
   createNotificationCtaUrl,
   createResendEmailRequest,
   getEmailNotificationConfig,
+  getNotificationCatalogEntry,
   normalizeNotificationAppUrl,
   sanitizeNotificationPayload,
   shouldRetryResendError
@@ -151,7 +153,7 @@ describe("transactional email notifications", () => {
   });
 
   it("defines every required transactional event and recipient mapping", () => {
-    expect(EMAIL_NOTIFICATION_EVENT_MATRIX.map((event) => event.type)).toEqual([
+    expect(EMAIL_NOTIFICATION_EVENT_MATRIX.map((event) => event.type)).toEqual(expect.arrayContaining([
       "order_placed_customer",
       "order_placed_supplier",
       "supplier_order_accepted",
@@ -169,12 +171,151 @@ describe("transactional email notifications", () => {
       "withdrawal_requested_reseller",
       "withdrawal_requested_finance",
       "withdrawal_paid_reseller"
-    ]);
+    ]));
 
     for (const event of EMAIL_NOTIFICATION_EVENT_MATRIX) {
-      expect(event.recipient).toMatch(/customer|supplier|reseller|finance_admin/);
+      expect(event.recipient).toMatch(/customer|supplier|reseller|support_admin|finance_admin/);
       expect(event.subject).not.toMatch(/_/);
     }
+  });
+
+  it("defines the D11 dispute, return, refund, finance, reseller liability, and withdrawal notification catalog", () => {
+    const expected = [
+      ["dispute_opened_customer", "customer", "/customer/orders/example-id"],
+      ["dispute_information_requested_customer", "customer", "/customer/orders/example-id"],
+      ["dispute_status_updated_customer", "customer", "/customer/orders/example-id"],
+      ["dispute_resolved_customer", "customer", "/customer/orders/example-id"],
+      ["dispute_closed_customer", "customer", "/customer/orders/example-id"],
+      ["return_requested_customer", "customer", "/customer/orders/example-id"],
+      ["return_approved_customer", "customer", "/customer/orders/example-id"],
+      ["return_rejected_customer", "customer", "/customer/orders/example-id"],
+      ["return_received_customer", "customer", "/customer/orders/example-id"],
+      ["return_accepted_customer", "customer", "/customer/orders/example-id"],
+      ["return_declined_customer", "customer", "/customer/orders/example-id"],
+      ["return_completed_customer", "customer", "/customer/orders/example-id"],
+      ["refund_approved_customer", "customer", "/customer/orders/example-id"],
+      ["refund_reported_sent_customer", "customer", "/customer/orders/example-id"],
+      ["refund_customer_confirmation_required", "customer", "/customer/orders/example-id"],
+      ["refund_verified_customer", "customer", "/customer/orders/example-id"],
+      ["refund_completed_customer", "customer", "/customer/orders/example-id"],
+      ["dispute_opened_supplier", "supplier", "/supplier/orders/example-id"],
+      ["dispute_information_requested_supplier", "supplier", "/supplier/orders/example-id"],
+      ["dispute_status_updated_supplier", "supplier", "/supplier/orders/example-id"],
+      ["dispute_resolved_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_requested_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_approved_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_in_transit_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_received_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_inspection_required_supplier", "supplier", "/supplier/orders/example-id"],
+      ["return_completed_supplier", "supplier", "/supplier/orders/example-id"],
+      ["refund_obligation_supplier", "supplier", "/supplier/orders/example-id"],
+      ["refund_report_required_supplier", "supplier", "/supplier/orders/example-id"],
+      ["refund_customer_disputed_not_received_supplier", "supplier", "/supplier/orders/example-id"],
+      ["refund_verified_supplier", "supplier", "/supplier/orders/example-id"],
+      ["supplier_liability_created", "supplier", "/supplier/settlements"],
+      ["supplier_liability_updated", "supplier", "/supplier/settlements"],
+      ["dispute_affecting_commission_reseller", "reseller", "/reseller/wallet"],
+      ["commission_hold_created_reseller", "reseller", "/reseller/wallet"],
+      ["commission_hold_released_reseller", "reseller", "/reseller/wallet"],
+      ["reseller_liability_review_created", "reseller", "/reseller/wallet"],
+      ["reseller_liability_approved", "reseller", "/reseller/wallet"],
+      ["future_earnings_offset_enabled", "reseller", "/reseller/wallet"],
+      ["liability_recovery_applied", "reseller", "/reseller/wallet"],
+      ["liability_recovered", "reseller", "/reseller/wallet"],
+      ["withdrawal_blocked_by_finance_review", "reseller", "/reseller/withdrawals"],
+      ["withdrawal_allocation_released", "reseller", "/reseller/withdrawals"],
+      ["withdrawal_ready_after_review", "reseller", "/reseller/withdrawals"],
+      ["new_dispute_admin", "support_admin", "/admin/disputes/example-id"],
+      ["dispute_response_received_admin", "support_admin", "/admin/disputes/example-id"],
+      ["dispute_information_received_admin", "support_admin", "/admin/disputes/example-id"],
+      ["return_requested_admin", "support_admin", "/admin/returns/example-id"],
+      ["return_received_admin", "support_admin", "/admin/returns/example-id"],
+      ["return_inspected_admin", "support_admin", "/admin/returns/example-id"],
+      ["refund_customer_disputed_not_received_admin", "support_admin", "/admin/refunds/example-id"],
+      ["refund_reported_sent_admin", "support_admin", "/admin/refunds/example-id"],
+      ["refund_approval_required_finance", "finance_admin", "/admin/finance"],
+      ["refund_reported_sent_finance", "finance_admin", "/admin/finance"],
+      ["refund_customer_disputed_not_received_finance", "finance_admin", "/admin/finance"],
+      ["refund_verification_required_finance", "finance_admin", "/admin/finance"],
+      ["finance_hold_created_finance", "finance_admin", "/admin/finance"],
+      ["settlement_blocked_finance", "finance_admin", "/admin/finance"],
+      ["commission_hold_created_finance", "finance_admin", "/admin/finance"],
+      ["reseller_liability_review_finance", "finance_admin", "/admin/finance"],
+      ["withdrawal_blocked_finance", "finance_admin", "/admin/withdrawals/example-id"]
+    ] as const;
+
+    for (const [type, recipient, ctaPath] of expected) {
+      const entry = getNotificationCatalogEntry(type);
+
+      expect(entry.recipient).toBe(recipient);
+      expect(entry.defaultCtaPath).toBe(ctaPath);
+      expect(entry.subject).not.toMatch(/[_0-9a-f-]{12,}/i);
+      expect(EMAIL_NOTIFICATION_EVENT_MATRIX.some((event) => event.type === type)).toBe(true);
+    }
+  });
+
+  it("renders all D11 templates as safe HTML and text with redirect-safe subjects", () => {
+    const config = getEmailNotificationConfig({
+      NODE_ENV: "development",
+      RESEND_API_KEY: "test-key",
+      EMAIL_FROM: "Risellar <dev@example.invalid>",
+      EMAIL_SEND_MODE: "redirect",
+      EMAIL_DEV_RECIPIENT: "qa-inbox@example.invalid",
+      NEXT_PUBLIC_APP_URL: "https://risellar.vercel.app"
+    });
+
+    const d11Events = EMAIL_NOTIFICATION_EVENT_MATRIX.filter((event) =>
+      /dispute|return|refund|finance|liability|withdrawal|commission|settlement/.test(event.type)
+    );
+
+    expect(d11Events.length).toBeGreaterThanOrEqual(50);
+
+    for (const event of d11Events) {
+      const template = buildEmailTemplate(
+        event.type,
+        {
+          orderNumber: "RSR-DEV-SAFE",
+          productName: "QA Product",
+          amount: "GHS 10.00",
+          safeStatus: "Under review",
+          ctaPath: getNotificationCatalogEntry(event.type).defaultCtaPath,
+          recipient_email: "leak@example.invalid",
+          supplierPrivateNote: "supplier private text",
+          customerAddress: "private address",
+          adminInternalNote: "internal note",
+          payment_reference: "PAY-PRIVATE"
+        },
+        { appUrl: config.appUrl }
+      );
+      const request = createResendEmailRequest({
+        config,
+        eventKey: buildEmailNotificationEventKey(event.type, "entity-id", "audit-id", event.recipient),
+        intendedRecipient: "intended@example.invalid",
+        template
+      });
+
+      expect(request.subject).toMatch(/^\[DEV\] /);
+      expect(template.html).toContain("<!doctype html>");
+      expect(template.text).toContain("Open in Risellar:");
+      expect(`${template.subject} ${template.html} ${template.text}`).not.toMatch(
+        /leak@example|supplier private|private address|internal note|PAY-PRIVATE|recipient_email|payment_reference/i
+      );
+    }
+  });
+
+  it("builds stable D11 event keys per event, entity, audit action, and recipient role", () => {
+    expect(buildEmailNotificationEventKey("refund_verified_customer", "refund-id", "audit-id", "customer")).toBe(
+      "refund_verified_customer:refund-id:audit-id:customer"
+    );
+    expect(buildEmailNotificationEventKey("refund_verified_customer", "refund-id", "audit-id", "supplier")).toBe(
+      "refund_verified_customer:refund-id:audit-id:supplier"
+    );
+    expect(() => buildEmailNotificationEventKey("refund_verified_customer", "", "audit-id", "customer")).toThrow(
+      "EMAIL_NOTIFICATION_EVENT_KEY_PART_INVALID"
+    );
+    expect(() =>
+      buildEmailNotificationEventKey("refund_verified_customer", "entity-id", "audit-id", "customer", "x".repeat(260))
+    ).toThrow("EMAIL_NOTIFICATION_EVENT_KEY_TOO_LONG");
   });
 
   it("blocks private fields from notification payloads and templates", () => {

@@ -220,9 +220,22 @@ Stop conditions preserved: no silent paid-withdrawal reversal, no guessed histor
 
 ## D11 - Notifications
 
-Scope: extend transactional outbox with dispute/return/refund notification events.
+Status: completed locally as backend-only notification mapping work.
 
-Stop conditions: private evidence in emails, raw enum leakage, live mode changes without approval.
+Scope: extend the existing transactional outbox with dispute, return, refund, finance-hold, reseller-liability, and withdrawal-review notification events.
+
+Applied migration:
+
+- `20260801210000_dispute_return_refund_finance_notification_events.sql`
+
+Verification:
+
+- D11 SQL notification mapping suite passed 50 assertions.
+- D11 external concurrency harness passed 10 scenarios and 13 invariant checks.
+- Notification template tests cover role-specific HTML/text rendering, redirect subjects, CTA safety, event-key stability, and payload redaction.
+- D4-D10 regression harnesses were updated only where they treated D11 outbox rows as forbidden business mutations.
+
+Stop conditions preserved: no private evidence in email templates, no raw enum leakage, no recipient emails in payloads, no live-mode change, no direct provider call from SQL, no UI activation, and no notification-triggered business mutation.
 
 ## D12 - Full Concurrency, Security, Browser QA
 
@@ -256,3 +269,9 @@ D9 is implemented as a backend-only finance control layer:
 - SQL and concurrency test coverage.
 
 D10 can begin only as a planning/UI-safe-read phase. D10 must not implement paid-withdrawal reversal, provider payments/refunds, negative wallet balances, future-earnings offsets, stock mutation, or customer-facing purchase/refund automation unless separately approved.
+
+## D11 Completion Update
+
+D11 notification mapping is complete locally and applied only to the confirmed DEVELOPMENT Supabase project. Live redirect-mode D11 email QA is deferred until a deployment containing D11 is intentionally released.
+
+D12 may begin after the D11 local commit if the final verification and security scan remain passing.

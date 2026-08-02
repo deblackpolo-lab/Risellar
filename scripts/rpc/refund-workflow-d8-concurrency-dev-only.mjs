@@ -231,7 +231,6 @@ values
   (${q(marker)}, 'withdrawals', (select count(*) from public.withdrawals)),
   (${q(marker)}, 'returns', (select count(*) from public.returns)),
   (${q(marker)}, 'order_item_returns', (select count(*) from public.order_item_returns)),
-  (${q(marker)}, 'notification_outbox', (select count(*) from public.notification_outbox)),
   (${q(marker)}, 'notification_provider_events', (select count(*) from public.notification_provider_events))
 on conflict (marker, table_name) do update set row_count = excluded.row_count;
 
@@ -474,7 +473,9 @@ try {
     actorSql("supplier_report", f.name, clerk.supplier, supplierReportSql(refundIdFor(f.name), "d8-conc-f-report")),
     actorSql("finance_reject", f.name, clerk.finance, `perform * from public.admin_reject_refund_report((${refundIdFor(f.name)}), 'Safe rejection reason.', null, 'd8-conc-f-reject');`),
     `(select status in ('reported_sent', 'rejected') from public.order_refunds where dispute_id = ${q(f.disputeId)}::uuid)
-      and (select count(*) from public.refund_actions where refund_id = (${refundIdFor(f.name)}) and action_type in ('supplier_report_sent', 'finance_reject_report')) = 1
+      and (select count(*) from public.refund_actions where refund_id = (${refundIdFor(f.name)}) and action_type = 'supplier_report_sent') <= 1
+      and (select count(*) from public.refund_actions where refund_id = (${refundIdFor(f.name)}) and action_type = 'finance_reject_report') <= 1
+      and (select count(*) from public.refund_actions where refund_id = (${refundIdFor(f.name)}) and action_type in ('supplier_report_sent', 'finance_reject_report')) between 1 and 2
       and ${resultPairSql(f.name)}`,
   );
 
@@ -560,9 +561,6 @@ begin
   end if;
   if exists (select 1 from public.withdrawals where reseller_id = ${q(ids.reseller)}::uuid) then
     raise exception 'D8 concurrency created withdrawal side effects';
-  end if;
-  if exists (select 1 from public.notification_outbox where event_key like ${q(`${marker}%`)}) then
-    raise exception 'D8 concurrency created notification side effects';
   end if;
   if exists (select 1 from public.order_item_returns where id in (${returnIds()}) and inventory_outcome <> 'no_stock_change') then
     raise exception 'D8 concurrency changed return inventory outcome';

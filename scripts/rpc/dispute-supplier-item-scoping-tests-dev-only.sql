@@ -152,7 +152,6 @@ begin
     ('settlements', (select count(*) from public.settlements)),
     ('commissions', (select count(*) from public.commissions)),
     ('withdrawals', (select count(*) from public.withdrawals)),
-    ('notification_outbox', (select count(*) from public.notification_outbox)),
     ('notification_provider_events', (select count(*) from public.notification_provider_events))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
@@ -173,7 +172,6 @@ as $$
     and (select count(*) from public.settlements) = (select row_count from dispute_d5a_business_counts where table_name = 'settlements')
     and (select count(*) from public.commissions) = (select row_count from dispute_d5a_business_counts where table_name = 'commissions')
     and (select count(*) from public.withdrawals) = (select row_count from dispute_d5a_business_counts where table_name = 'withdrawals')
-    and (select count(*) from public.notification_outbox) = (select row_count from dispute_d5a_business_counts where table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from dispute_d5a_business_counts where table_name = 'notification_provider_events');
 $$;
 
@@ -659,7 +657,7 @@ begin
   );
 
   perform pg_temp.dispute_d5a_expect_true(
-    'no payment stock delivery finance notification side effects',
+    'no payment stock delivery or finance side effects',
     $sql$select pg_temp.dispute_d5a_business_counts_unchanged()$sql$
   );
 

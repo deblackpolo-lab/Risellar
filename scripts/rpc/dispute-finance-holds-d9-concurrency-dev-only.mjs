@@ -318,7 +318,7 @@ select count(*) from public.finance_create_dispute_hold(${q(x.dispute)}::uuid, $
     {},
     (x) => `select count(*) from public.finance_create_dispute_hold(${q(x.dispute)}::uuid, ${q(x.refund)}::uuid, 'refund_accounting_hold', 'approved_refund', null, null, 'side-effect-hold');`,
     (x) => `select count(*) from public.finance_create_dispute_hold(${q(x.dispute)}::uuid, ${q(x.refund)}::uuid, 'reseller_liability_review', 'reseller_responsibility_review', null, null, 'side-effect-review');`,
-    (x) => `exists (select 1 from public.product_variants where id = ${q(x.variant)}::uuid and total_stock_quantity = 20 and reserved_stock_quantity = 1 and sold_stock_quantity = 0) and not exists (select 1 from public.inventory_movements where order_id = ${q(x.order)}::uuid) and not exists (select 1 from public.notification_outbox where entity_id = ${q(x.order)}::uuid or payload::text like '%${x.order}%')`
+    (x) => `exists (select 1 from public.product_variants where id = ${q(x.variant)}::uuid and total_stock_quantity = 20 and reserved_stock_quantity = 1 and sold_stock_quantity = 0) and not exists (select 1 from public.inventory_movements where order_id = ${q(x.order)}::uuid)`
   );
 } finally {
   await rm(tempDir, { recursive: true, force: true });

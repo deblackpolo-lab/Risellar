@@ -307,3 +307,17 @@ D9 finance holds, settlement interaction, and commission hold backend controls w
 Forward fixes were required for audit role casting, reseller hold projection, and withdrawal review race guarding. The final D9 SQL and concurrency checks passed.
 
 No UI was activated, and no production data or production Supabase connection was used.
+
+## D11 Notification Status
+
+D11 adds transactional notification coverage for dispute, return, refund, finance-hold, reseller-liability, and withdrawal-review workflows.
+
+The implementation uses the existing notification outbox, processor, redirect-mode sender, and Resend webhook handling. SQL only enqueues notification outbox rows from trusted audit logs; it does not send provider emails directly and does not mutate business state.
+
+Development verification passed:
+
+- D11 SQL mapping assertions: 50 passed, 0 failed
+- D11 concurrency harness: 10 scenarios, 13 invariant checks passed
+- existing notification outbox regression passed after fixture scoping was corrected for the expanded event catalog
+
+Live D11 redirect-mode QA is deferred until D11 is deployed. No D11 UI was activated.

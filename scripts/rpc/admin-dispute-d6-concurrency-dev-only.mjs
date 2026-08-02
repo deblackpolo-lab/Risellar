@@ -235,7 +235,6 @@ values
   (${q(marker)}, 'commissions', (select count(*) from public.commissions)),
   (${q(marker)}, 'withdrawals', (select count(*) from public.withdrawals)),
   (${q(marker)}, 'returns', (select count(*) from public.returns)),
-  (${q(marker)}, 'notification_outbox', (select count(*) from public.notification_outbox)),
   (${q(marker)}, 'notification_provider_events', (select count(*) from public.notification_provider_events))
 on conflict (marker, table_name) do update set row_count = excluded.row_count;
 
@@ -478,7 +477,6 @@ begin
         or (c.table_name = 'commissions' and c.row_count <> (select count(*) from public.commissions))
         or (c.table_name = 'withdrawals' and c.row_count <> (select count(*) from public.withdrawals))
         or (c.table_name = 'returns' and c.row_count <> (select count(*) from public.returns))
-        or (c.table_name = 'notification_outbox' and c.row_count <> (select count(*) from public.notification_outbox))
         or (c.table_name = 'notification_provider_events' and c.row_count <> (select count(*) from public.notification_provider_events))
       )
   ) then

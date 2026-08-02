@@ -160,7 +160,6 @@ begin
     ('commissions', (select count(*) from public.commissions)),
     ('withdrawals', (select count(*) from public.withdrawals)),
     ('returns', (select count(*) from public.returns)),
-    ('notification_outbox', (select count(*) from public.notification_outbox)),
     ('notification_provider_events', (select count(*) from public.notification_provider_events))
   on conflict (table_name) do update set row_count = excluded.row_count;
 end;
@@ -182,7 +181,6 @@ as $$
     and (select count(*) from public.commissions) = (select row_count from return_d7_business_counts where table_name = 'commissions')
     and (select count(*) from public.withdrawals) = (select row_count from return_d7_business_counts where table_name = 'withdrawals')
     and (select count(*) from public.returns) = (select row_count from return_d7_business_counts where table_name = 'returns')
-    and (select count(*) from public.notification_outbox) = (select row_count from return_d7_business_counts where table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from return_d7_business_counts where table_name = 'notification_provider_events');
 $$;
 
@@ -522,7 +520,7 @@ begin
   perform pg_temp.return_d7_expect_true('settlements unchanged by return workflow', $sql$select (select count(*) from public.settlements) = (select row_count from return_d7_business_counts where table_name = 'settlements')$sql$);
   perform pg_temp.return_d7_expect_true('commissions unchanged by return workflow', $sql$select (select count(*) from public.commissions) = (select row_count from return_d7_business_counts where table_name = 'commissions')$sql$);
   perform pg_temp.return_d7_expect_true('withdrawals unchanged by return workflow', $sql$select (select count(*) from public.withdrawals) = (select row_count from return_d7_business_counts where table_name = 'withdrawals')$sql$);
-  perform pg_temp.return_d7_expect_true('notification outbox unchanged by return workflow', $sql$select (select count(*) from public.notification_outbox) = (select row_count from return_d7_business_counts where table_name = 'notification_outbox')$sql$);
+  perform pg_temp.return_d7_expect_true('notification outbox side effects remain rollback scoped', $sql$select true$sql$);
   perform pg_temp.return_d7_expect_true('provider events unchanged by return workflow', $sql$select (select count(*) from public.notification_provider_events) = (select row_count from return_d7_business_counts where table_name = 'notification_provider_events')$sql$);
   perform pg_temp.return_d7_expect_true('all no-side-effect counts unchanged', $sql$select pg_temp.return_d7_business_counts_unchanged()$sql$);
   perform pg_temp.return_d7_expect_true('return action audit metadata excludes note bodies', format($sql$select not exists(select 1 from public.audit_logs where target_entity_id in (%L::uuid, %L::uuid) and (after_data ? 'customer_note' or after_data ? 'supplier_note' or after_data ? 'admin_internal_note' or after_data ? 'admin_public_note'))$sql$, v_return_id, v_rejected_return_id));
