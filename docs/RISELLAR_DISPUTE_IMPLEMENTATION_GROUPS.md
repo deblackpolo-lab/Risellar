@@ -1,5 +1,19 @@
 # Risellar Dispute Implementation Groups
 
+## D13-A - Frontend Route Architecture And QA Access Planning
+
+Status: completed as planning/access architecture.
+
+Scope: audit development QA role buckets, document support/super-admin browser QA blockers, inventory current route tree, identify mock-only dispute/return/refund/support surfaces, define final route architecture, define role guard matrix, define shared frontend components, define data-access boundaries, define navigation plan, and prepare D13-B through D13-J implementation groups.
+
+Migrations: none.
+
+RPCs: none.
+
+UI: no workflow UI activated.
+
+Stop conditions preserved: no service-role frontend use, no mock route activation as live, no business logic mutation, no RLS weakening, no production data, no emails, no checkout/payment/stock/settlement/commission/withdrawal mutation changes.
+
 ## D1 - Planning Documents
 
 Scope: create the dispute/return/refund plan, state machine, security model, accounting model, test plan, risk register, and decision list.

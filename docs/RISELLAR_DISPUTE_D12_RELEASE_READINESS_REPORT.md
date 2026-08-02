@@ -43,3 +43,9 @@ Classification: **B. Backend and partial UI complete, more UI required.**
 ## Recommended Next Step
 
 Start a D13 UI activation phase that replaces the mock-only dispute/return/refund/support routes with live RPC-backed screens and creates real DEVELOPMENT support/super-admin QA identities before repeating D12 browser QA.
+
+## D13-A Status
+
+D13-A has now prepared the frontend activation architecture without changing workflow business logic. The project remains not release-ready for dispute/return/refund browser workflows because support_staff and super_admin browser QA identities are still not verified and several route groups remain missing or mock-only.
+
+The next executable build phase should follow the D13-A group plan, beginning with customer disputes only or with support account bootstrap first if the user provides verified development support/super-admin account details.

@@ -98,6 +98,18 @@ Supplier sees own disputes, responds, confirms returns, reports condition, and r
 
 Reseller gets commission-impact visibility only: safe order reference, hold/adjustment status, and final commission effect.
 
+## X. D13-A Frontend Activation Planning Update
+
+D13-A converted the D12 UI gap into a staged frontend activation plan. The plan keeps the backend-verified workflow model intact and requires each route to use role-specific safe-read and mutation RPCs through server-only helpers.
+
+Key D13-A conclusions:
+
+- Support/dispute-admin and super-admin browser QA remain blocked until verified Clerk-backed development accounts are provided or explicitly bootstrapped.
+- Existing mock support/dispute/return/refund screens are useful visual references but must stay quarantined until their data/actions are replaced.
+- Customer, supplier, reseller, support/admin, and finance route groups need separate DTOs and role guards.
+- Finance routes stay under /admin, not a new /finance root.
+- D13 implementation should proceed in narrow groups from customer disputes through final navigation/browser QA.
+
 ## X. Appeals
 
 Appeals are planned but recommended for Phase 2 unless business requires them in MVP.

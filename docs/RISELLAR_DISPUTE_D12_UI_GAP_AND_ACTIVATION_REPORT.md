@@ -56,3 +56,9 @@ The following route groups are present but should remain mock-only/UI-pending un
 3. Add route-level tests proving mock components are absent from activated D12 paths.
 4. Redeploy production and verify root/role routes reflect the activated app.
 5. Rerun D12 browser QA with real customer, supplier, reseller, support/dispute-admin, finance-admin, and super-admin sessions.
+
+## D13-A Follow-Up
+
+D13-A completed the access and route architecture planning pass. Safe aggregate DEVELOPMENT audit still found no active support_staff or super_admin admin_staff bucket, so real support/super-admin browser QA remains blocked until verified Clerk-backed QA accounts are provided or approved for bootstrap.
+
+The final D13 route architecture, guard matrix, mock audit, data-access plan, shared component plan, navigation plan, implementation groups, and release gap report are captured in the D13-A documentation pack. No D13-A workflow UI, migration, RLS policy, finance/business logic, notification behavior, or mock activation was added.
