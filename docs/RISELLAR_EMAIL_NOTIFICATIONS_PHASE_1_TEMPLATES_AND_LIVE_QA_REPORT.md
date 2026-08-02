@@ -382,4 +382,20 @@ Automated template verification confirms:
 - unsafe payload fields are removed before rendering
 - customer, supplier, reseller, support/admin, and finance-admin templates avoid private notes, recipient emails, addresses, payout data, raw references, provider payloads, tokens, and secrets
 
-D11 live redirect-mode email QA is deferred until D11 is deployed. No D11-specific live emails were sent to real intended recipients during local implementation.
+D11 live redirect-mode email QA is now complete.
+
+Final D11 production redirect-mode addendum:
+
+- D1-D11 was pushed to `origin/main`; Vercel Production reported a successful deployment for commit `f8c3aee091523d2d49a6f87fec381fcf47c75ea1`.
+- `https://risellar.vercel.app` returned HTTP `200`.
+- Required notification environment names were present without printing values.
+- `EMAIL_SEND_MODE` remained `redirect`.
+- Five fresh notification-only D11 events were processed for customer, supplier, reseller, support/admin, and finance-admin representative templates.
+- All five messages were redirected to the configured development recipient.
+- All five subjects began with `[DEV]`.
+- All five messages had HTML and plain-text bodies.
+- All five CTA links used the Vercel HTTPS domain.
+- Body and payload scans found no recipient emails, private notes, payment references, payout data, bank/Mobile Money details, platform margin, reseller margin, provider payloads, tokens, cookies, passwords, or secrets.
+- Real provider-originated `email.sent` and `email.delivered` webhook events were stored for all five provider message IDs.
+- A duplicate production processor invocation claimed zero rows and sent no duplicates.
+- Notification processing and webhook handling changed no business table counts.

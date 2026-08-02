@@ -62,7 +62,20 @@ The mapper derives recipients from trusted database relationships and admin staf
 
 ## Live QA
 
-Live redirect-mode email QA for D11-specific events is deferred until a deployment that includes D11 is intentionally made. Existing Phase 1 provider-originated webhook compatibility remains reused and covered by automated tests.
+D11 live redirect-mode email QA passed after the D1-D11 commit range was pushed to `origin/main` and deployed on Vercel Production for DEVELOPMENT QA.
+
+- Vercel Production deployment for commit `f8c3aee091523d2d49a6f87fec381fcf47c75ea1` completed successfully.
+- `https://risellar.vercel.app` returned HTTP `200`.
+- Required notification environment names were present without printing values.
+- `EMAIL_SEND_MODE` remained `redirect`.
+- Five fresh notification-only D11 outbox rows were created for customer, supplier, reseller, support/admin, and finance-admin representative events.
+- All five D11 rows were sent/delivered with provider message IDs and `sent_at` populated.
+- Resend metadata confirmed all five messages were redirected to the configured development recipient and all subjects started with `[DEV]`.
+- All five rendered bodies contained Vercel HTTPS CTA links and passed the private-field scan.
+- Real provider-originated `email.sent` and `email.delivered` webhooks were stored for all five provider message IDs.
+- A duplicate processor invocation claimed zero rows and sent no duplicates.
+- The support/admin template was tested with `recipient_role = 'support_admin'`; the available verified recipient profile came from the active development finance-admin bucket because no active verified support/admin bucket was available.
+- No business table counts changed during notification processing or webhook handling.
 
 ## Safety
 

@@ -320,4 +320,14 @@ Development verification passed:
 - D11 concurrency harness: 10 scenarios, 13 invariant checks passed
 - existing notification outbox regression passed after fixture scoping was corrected for the expanded event catalog
 
-Live D11 redirect-mode QA is deferred until D11 is deployed. No D11 UI was activated.
+Live D11 redirect-mode QA is complete on the Vercel Production deployment connected to the confirmed DEVELOPMENT Supabase project.
+
+- D1-D11 commit range pushed to `origin/main`; latest D11 commit: `f8c3aee0`.
+- Vercel Production deployment for commit `f8c3aee091523d2d49a6f87fec381fcf47c75ea1` completed successfully.
+- Five notification-only D11 QA events were processed for customer, supplier, reseller, support/admin, and finance-admin representative templates.
+- Redirect-mode delivery sent all five emails to the configured development inbox only.
+- All subjects used the `[DEV]` prefix.
+- Real provider-originated `email.sent` and `email.delivered` events were stored for all five provider message IDs.
+- Duplicate processor invocation claimed zero rows and sent no duplicates.
+- No order, payment, stock, delivery, settlement, commission, wallet, withdrawal, dispute, return, refund, finance-hold, product, reservation, inventory, liability, or allocation business table counts changed during D11 live notification QA.
+- No D11 UI was activated.
