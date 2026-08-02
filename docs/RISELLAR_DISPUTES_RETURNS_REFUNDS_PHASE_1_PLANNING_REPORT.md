@@ -273,3 +273,22 @@ D7 return workflow backend is complete in the confirmed DEVELOPMENT Supabase pro
 - No refund, payment, finance hold, settlement, commission, wallet, withdrawal, stock, reservation, delivery, evidence, notification, or UI side effect was activated
 
 D8 refund-obligation planning may proceed as a separate backend slice.
+
+## AT. D8 Refund Workflow Backend Follow-Up Status
+
+D8 refund workflow backend is complete in the confirmed DEVELOPMENT Supabase project as a backend-only foundation.
+
+- D8 migrations applied to DEVELOPMENT: `20260801180000_refund_workflow_backend_foundation.sql`, `20260801181000_fix_refund_customer_confirmation_idempotency.sql`, `20260801182000_enforce_refund_cumulative_component_caps.sql`, `20260801183000_scrub_refund_audit_reason_notes.sql`
+- D8 tables: `public.order_refunds`, `public.refund_actions`
+- D8 SQL boundary test passed 99 rollback-scoped assertions
+- D8 external concurrency harness passed 12 true multi-process races plus side-effect and cleanup checks
+- Refund amounts are capped from immutable order/order-item snapshots
+- Currency is derived from the order
+- Goodwill refunds remain deferred
+- Finance approval/verification requires active `admin_staff` finance authority
+- Supplier sent reporting is scoped to the responsible supplier
+- Customer confirmation is owner-scoped and does not verify accounting
+- Safe reads hide private notes, raw references, supplier payout data, settlement data, commission data, wallet data, and withdrawal data
+- No UI, provider refund, automatic payout, finance hold, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, stock mutation, delivery mutation, order/payment status mutation, evidence upload, or notification event was activated
+
+D9 may begin only after explicit approval for finance holds and accounting interactions.

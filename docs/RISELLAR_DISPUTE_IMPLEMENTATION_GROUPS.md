@@ -162,9 +162,34 @@ Stop conditions preserved: auto-restock, stock mutation, delivery-provider booki
 
 ## D8 - Refund Obligation and Manual Refund Recording
 
-Scope: refund obligation model, manual refund reported/verified states, proof metadata.
+Status: completed in DEVELOPMENT as backend-only controlled RPCs.
 
-Stop conditions: provider refund, amount above snapshot max, unverified refund marked final.
+Scope: refund obligation model, manual refund reported/verified states, customer confirmation, finance verification/rejection/completion, role-safe reads, idempotency, cumulative caps, and no-side-effect verification.
+
+Applied migrations:
+
+- `20260801180000_refund_workflow_backend_foundation.sql`
+- `20260801181000_fix_refund_customer_confirmation_idempotency.sql`
+- `20260801182000_enforce_refund_cumulative_component_caps.sql`
+- `20260801183000_scrub_refund_audit_reason_notes.sql`
+
+RPCs:
+
+- `admin_approve_refund_obligation`
+- `supplier_report_refund_sent`
+- `admin_report_platform_refund_sent`
+- `customer_confirm_refund_received`
+- `admin_verify_refund_report`
+- `admin_reject_refund_report`
+- `admin_complete_refund`
+
+Verification:
+
+- `scripts/rpc/refund-workflow-backend-tests-dev-only.sql` passed 99 rollback-scoped assertions.
+- `scripts/rpc/refund-workflow-d8-concurrency-dev-only.mjs` passed 12 true multi-process race scenarios plus side-effect and cleanup checks.
+- D4, D5, D6 SQL, D7 SQL, and D7 external regressions passed during D8 verification.
+
+Stop conditions preserved: provider refund, amount above immutable snapshot max, cumulative over-refund, unverified refund marked final, finance holds, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, stock mutation, order/payment status mutation, notification outbox, evidence upload, and UI activation.
 
 ## D9 - Finance Holds, Commission Adjustments, Settlement Interaction
 

@@ -148,3 +148,11 @@ Tests must prove:
 ## No Self-Promotion
 
 No dispute, finance, or support UI may let users grant themselves customer/supplier/reseller/admin/finance roles.
+
+## D8 Refund Workflow Security Addendum
+
+D8 implements `public.order_refunds` and `public.refund_actions` with RLS enabled and forced. Direct table privileges are revoked from `public`, `anon`, and `authenticated`; browser roles mutate refund state only through explicit RPCs and read only through role-shaped safe-read RPCs.
+
+Finance-only refund mutations require active `admin_staff` membership with `finance_staff` or `super_admin`. Support/admin investigation roles cannot approve or verify monetary refunds. Supplier refund-sent reporting is scoped to the affected active approved supplier. Customer confirmation is scoped to the refund owner.
+
+D8 also adds a SECURITY DEFINER cumulative-cap trigger that rechecks immutable item, delivery-fee, and order caps on cap-bearing refund rows. It does not grant direct table access and does not weaken RLS, RPC, storage, settlement, commission, wallet, withdrawal, stock, notification, order, or payment boundaries.

@@ -151,3 +151,18 @@ D7 adds a separate return-item state machine in `public.order_item_returns`:
 Return request creation may move the parent dispute to `return_review` only when the existing D6 transition matrix allows it. Otherwise D7 records `return_review_required = true` without forcing an invalid dispute transition.
 
 D7 return completion does not close the dispute, issue a refund, mutate stock, mutate settlement/commission/wallet/withdrawal records, book delivery, or notify users.
+
+## D8 Refund Workflow Addendum
+
+D8 adds a separate refund-obligation state machine in `public.order_refunds`:
+
+- `awaiting_responsible_party`
+- `reported_sent`
+- `under_verification`
+- `verified`
+- `rejected`
+- `completed`
+
+Refund approval may move the parent dispute to `refund_review` and set finance review flags, but refund verification/completion does not automatically close the dispute. A terminal dispute cannot receive a new refund obligation.
+
+Accepted or completed returns may be linked to a refund obligation, but D8 does not create returns, complete returns, mutate return inventory outcomes, or restock inventory.

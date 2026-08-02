@@ -245,3 +245,27 @@ The runner verifies two independent database backend sessions, overlapping call 
 `scripts/rpc/return-workflow-d7-concurrency-dev-only.mjs` covers 11 true two-session return races and passed with side-effect and cleanup checks.
 
 The D4 customer dispute regression harness was refreshed to the current D5-A target-aware seven-argument `customer_open_order_dispute` signature. No D4 RPC or policy was changed.
+
+## D8 Refund Workflow Coverage
+
+`scripts/rpc/refund-workflow-backend-tests-dev-only.sql` covers the D8 refund workflow boundary with 99 passing DEVELOPMENT assertions:
+
+- anonymous and wrong-role callers are blocked
+- finance authority uses active `admin_staff` finance roles, not `profiles.primary_role`
+- support-only staff cannot approve or verify money
+- disputes and optional returns must be eligible and related
+- customer, supplier, order, item, supplier, amount caps, and currency are derived server-side
+- current product price cannot affect refund maximums
+- item, delivery-fee, order, active, verified, and completed obligations count against cumulative caps
+- goodwill refunds remain deferred
+- supplier sent reporting is scoped to the responsible supplier
+- platform sent reporting requires finance authority
+- customer confirmation/dispute is owner-scoped and does not verify accounting
+- finance verification, rejection, and completion are controlled and idempotent
+- safe reads hide private notes, raw references, and finance internals according to role
+- direct table insert/update/delete remains blocked
+- no order/payment/return/stock/reservation/delivery/settlement/commission/wallet/withdrawal/notification/provider side effects occur
+
+`scripts/rpc/refund-workflow-d8-concurrency-dev-only.mjs` covers 12 true multi-process refund races and passed with side-effect and cleanup checks.
+
+D8 verification also reran D4, D5, D6 SQL, D7 SQL, D7 external concurrency, and D8 SQL/external suites. D6 external concurrency was retried separately because the legacy harness can fail on timing-only overlap assertions or transient Supabase Management API 5xx responses.

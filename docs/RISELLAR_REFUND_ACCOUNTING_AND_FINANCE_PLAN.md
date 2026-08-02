@@ -179,3 +179,22 @@ The present withdrawal model can reserve/pay reseller withdrawal balances withou
 - treat paid withdrawal impacts as separate liabilities/recovery records.
 
 Do not build a refund system that assumes exact commission reversals are provable when they are not.
+
+## D8 Implemented Boundary
+
+D8 implements manual refund obligations only. `public.order_refunds` records the approved amount, responsibility, manual sent report, customer confirmation, finance verification/rejection, and completion state. `public.refund_actions` records idempotency fingerprints for state-changing refund actions.
+
+D8 keeps the following deferred:
+
+- finance holds
+- settlement reversals
+- commission reversals
+- reseller wallet adjustments
+- withdrawal recovery
+- provider refunds
+- automatic payouts
+- refund notifications
+
+Goodwill refunds are also deferred in D8 because no approved platform-liability cap exists yet.
+
+The backend derives currency and caps from immutable order/order-item snapshots and enforces cumulative item, delivery-fee, and order caps across active, verified, and completed refund obligations.

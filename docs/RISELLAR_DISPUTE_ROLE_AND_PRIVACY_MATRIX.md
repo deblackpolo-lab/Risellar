@@ -117,3 +117,17 @@ D7 safe reads are role-shaped:
 Supplier inventory managers cannot act as supplier owners for D7 return receipt or inspection. Finance-only admin staff cannot approve/reject/accept/decline/complete returns.
 
 Audit metadata excludes customer, supplier, and internal admin note bodies.
+
+## D8 Refund Workflow Addendum
+
+D8 refund reads are role-shaped:
+
+- customers can read only their own customer-safe refund progress, approved amount, currency, responsible party role, and public status timestamps
+- suppliers can read only refund obligations assigned to their own active approved supplier account
+- resellers receive minimal impact labels and cannot see approved refund amounts, references, private notes, settlement data, commission data, wallet data, or withdrawal data
+- support/admin reads exclude finance-only internal notes and masked payment references
+- finance reads include the approved finance context needed to verify or reject reported manual refunds
+
+D8 monetary mutation RPCs require active `admin_staff` finance authority (`finance_staff` or `super_admin`). Support-only staff cannot approve or verify refund money. Supplier reporting is limited to the affected supplier, and customer confirmation is limited to the refund owner.
+
+No D8 safe read exposes raw account numbers, Mobile Money details, supplier payout fields, private evidence, internal notes, raw provider payloads, settlement internals, commission internals, wallet internals, withdrawal internals, or secrets.
