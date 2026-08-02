@@ -230,3 +230,16 @@ Do not combine D8, D9, and D10 until refund responsibility, commission reversal,
 ## D5-A Inserted Group
 
 D5-A was inserted between D4 customer mutation and D5 supplier response. Scope: add supplier/item targets to `order_disputes`, update customer dispute creation to derive targets from `order_items.supplier_id`, repair supplier safe reads, and preserve all order/payment/finance/stock/notification boundaries. Supplier response remains a later group.
+## D9 Completion Update
+
+D9 is implemented as a backend-only finance control layer:
+
+- Finance holds.
+- Finance adjustments.
+- Settlement interaction guards.
+- Commission hold projection.
+- Withdrawal review guard.
+- Safe role-based reads.
+- SQL and concurrency test coverage.
+
+D10 can begin only as a planning/UI-safe-read phase. D10 must not implement paid-withdrawal reversal, provider payments/refunds, negative wallet balances, future-earnings offsets, stock mutation, or customer-facing purchase/refund automation unless separately approved.

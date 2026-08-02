@@ -269,3 +269,13 @@ The D4 customer dispute regression harness was refreshed to the current D5-A tar
 `scripts/rpc/refund-workflow-d8-concurrency-dev-only.mjs` covers 12 true multi-process refund races and passed with side-effect and cleanup checks.
 
 D8 verification also reran D4, D5, D6 SQL, D7 SQL, D7 external concurrency, and D8 SQL/external suites. D6 external concurrency was retried separately because the legacy harness can fail on timing-only overlap assertions or transient Supabase Management API 5xx responses.
+## D9 Finance Holds QA Update
+
+D9 adds the following backend-only QA assets:
+
+- `scripts/rpc/dispute-finance-holds-d9-tests-dev-only.sql`
+- `scripts/rpc/dispute-finance-holds-d9-concurrency-dev-only.mjs`
+
+Coverage includes finance authorization, settlement blockers, commission holds, withdrawal boundaries, supplier/platform liabilities, direct grant posture, audit privacy, no stock/notification/provider side effects, and multi-process races.
+
+Regression coverage includes D6 admin dispute, D7 return workflow, D8 refund workflow, reseller withdrawal, and finance visibility. Existing settlement verification regressions require a pending development settlement fixture; when none exists, they are fixture-blocked rather than D9-failed.

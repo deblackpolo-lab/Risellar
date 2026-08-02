@@ -471,7 +471,7 @@ begin
   perform pg_temp.refund_d8_expect_count_root('no settlement rows created', $sql$select count(*) from public.settlements where order_id in (select id from public.orders where order_number like 'D8-%')$sql$, 0);
   perform pg_temp.refund_d8_expect_count_root('no commission rows created', $sql$select count(*) from public.commissions where order_id in (select id from public.orders where order_number like 'D8-%')$sql$, 0);
   perform pg_temp.refund_d8_expect_count_root('no withdrawal rows created', $sql$select count(*) from public.withdrawals where reseller_id = (select id from public.resellers where profile_id = '00000000-0000-0000-0000-000000000000'::uuid)$sql$, 0);
-  perform pg_temp.refund_d8_expect_count_root('no finance hold table created in D8', $sql$select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'finance_holds'$sql$, 0);
+  perform pg_temp.refund_d8_expect_count_root('D8 refund workflow creates no finance hold rows', $sql$select count(*) from public.finance_holds where order_id in (select id from public.orders where order_number like 'D8-%')$sql$, 0);
   perform pg_temp.refund_d8_expect_count_root('no notification outbox rows created', $sql$select count(*) from public.notification_outbox where event_key like 'd8-%'$sql$, 0);
   perform pg_temp.refund_d8_expect_true_root('fixture refund action rows exist for idempotency', $sql$select count(*) >= 8 from public.refund_actions$sql$);
 

@@ -198,3 +198,22 @@ D8 keeps the following deferred:
 Goodwill refunds are also deferred in D8 because no approved platform-liability cap exists yet.
 
 The backend derives currency and caps from immutable order/order-item snapshots and enforces cumulative item, delivery-fee, and order caps across active, verified, and completed refund obligations.
+## D9 Implementation Update
+
+D9 backend finance holds are now implemented for the development project. Dispute-linked finance review uses append-only `finance_holds`, `finance_adjustments`, and `finance_actions`.
+
+Implemented:
+
+- Settlement verification blockers for unresolved dispute/refund finance review.
+- Commission availability holds that reduce reseller withdrawable projection without mutating historical commission rows.
+- Supplier/platform liability records as review/accounting records, not collection workflows.
+- Withdrawal review guard for outstanding requested withdrawals.
+
+Still deferred:
+
+- Paid-withdrawal reversal.
+- Negative wallet balances.
+- Future-earnings offsets.
+- Provider refund/payment integration.
+- Stock mutation.
+- Notification sending.

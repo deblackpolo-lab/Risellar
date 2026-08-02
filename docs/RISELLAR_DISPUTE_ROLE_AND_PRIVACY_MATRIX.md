@@ -131,3 +131,10 @@ D8 refund reads are role-shaped:
 D8 monetary mutation RPCs require active `admin_staff` finance authority (`finance_staff` or `super_admin`). Support-only staff cannot approve or verify refund money. Supplier reporting is limited to the affected supplier, and customer confirmation is limited to the refund owner.
 
 No D8 safe read exposes raw account numbers, Mobile Money details, supplier payout fields, private evidence, internal notes, raw provider payloads, settlement internals, commission internals, wallet internals, withdrawal internals, or secrets.
+## D9 Finance Role Update
+
+D9 finance hold and adjustment mutations are restricted to active `admin_staff` roles `finance_staff` and `super_admin`.
+
+Support staff may read only the finance review summary for a dispute. Support staff cannot list full finance holds or adjustments and cannot mutate finance controls.
+
+Suppliers may read only their own safe liability records. Resellers may read only their own hold-impact summary. Customers receive no finance/private payout, commission, settlement, or internal accounting data.

@@ -292,3 +292,10 @@ D8 refund workflow backend is complete in the confirmed DEVELOPMENT Supabase pro
 - No UI, provider refund, automatic payout, finance hold, settlement mutation, commission mutation, wallet mutation, withdrawal mutation, stock mutation, delivery mutation, order/payment status mutation, evidence upload, or notification event was activated
 
 D9 may begin only after explicit approval for finance holds and accounting interactions.
+## D9 Planning Status
+
+D9 finance holds, settlement interaction, and commission hold backend controls were implemented and applied to the confirmed development Supabase project.
+
+Forward fixes were required for audit role casting, reseller hold projection, and withdrawal review race guarding. The final D9 SQL and concurrency checks passed.
+
+No UI was activated, and no production data or production Supabase connection was used.
