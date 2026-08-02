@@ -268,7 +268,7 @@ The D4 customer dispute regression harness was refreshed to the current D5-A tar
 
 `scripts/rpc/refund-workflow-d8-concurrency-dev-only.mjs` covers 12 true multi-process refund races and passed with side-effect and cleanup checks.
 
-D8 verification also reran D4, D5, D6 SQL, D7 SQL, D7 external concurrency, and D8 SQL/external suites. D6 external concurrency was retried separately because the legacy harness can fail on timing-only overlap assertions or transient Supabase Management API 5xx responses.
+D8 verification also reran D4, D5, D6 SQL, D7 SQL, D7 external concurrency, and D8 SQL/external suites. The earlier D6 external concurrency caveat was resolved during D10 by replacing the timing-only overlap proof with a committed database-barrier proof.
 ## D9 Finance Holds QA Update
 
 D9 adds the following backend-only QA assets:
@@ -279,3 +279,23 @@ D9 adds the following backend-only QA assets:
 Coverage includes finance authorization, settlement blockers, commission holds, withdrawal boundaries, supplier/platform liabilities, direct grant posture, audit privacy, no stock/notification/provider side effects, and multi-process races.
 
 Regression coverage includes D6 admin dispute, D7 return workflow, D8 refund workflow, reseller withdrawal, and finance visibility. Existing settlement verification regressions require a pending development settlement fixture; when none exists, they are fixture-blocked rather than D9-failed.
+
+## D10 Reseller Liability And Withdrawal Recovery Coverage
+
+`scripts/rpc/reseller-liability-withdrawal-recovery-d10-tests-dev-only.sql` covers the D10 backend-only recovery boundary with 49 passing DEVELOPMENT assertions:
+
+- finance-only authorization through active `admin_staff`
+- paid-withdrawal liability creation without silent reversal
+- liability target immutability
+- manual recovery recording with idempotency
+- duplicate recovery blocking
+- future-earnings offset disabled by default and finance-enabled explicitly
+- same-key/same-payload retry compatibility
+- same-key/different-payload conflict handling
+- direct table grants blocked
+- no notification outbox enqueue for withdrawal allocation reservation events
+- no order, payment, refund, return, stock, reservation, delivery, settlement payout, commission payout, withdrawal payout, or provider side effects
+
+`scripts/rpc/reseller-liability-withdrawal-recovery-d10-concurrency-dev-only.mjs` covers true external multi-session races for same-key liability creation, same-scope different-key liability creation, duplicate future offsets, duplicate withdrawal allocation, and allocation dispute versus payout-style withdrawal behavior.
+
+The full required D10 regression batch passed after harness/fixture stabilization: D6 SQL, D6 external concurrency, D7 SQL, D7 external concurrency, D8 SQL, D8 external concurrency, D9 SQL, D9 external concurrency, D10 SQL, D10 external concurrency, settlement SQL/concurrency, reseller withdrawal SQL/concurrency, and finance-history safe reads.

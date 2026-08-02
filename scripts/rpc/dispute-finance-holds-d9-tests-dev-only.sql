@@ -120,6 +120,7 @@ declare
   v_reservation_b_id uuid := gen_random_uuid();
   v_settlement_b_id uuid := gen_random_uuid();
   v_commission_b_id uuid := gen_random_uuid();
+  v_commission_c_id uuid := gen_random_uuid();
 
   v_hold_id uuid;
   v_retry_hold_id uuid;
@@ -224,7 +225,8 @@ begin
   insert into public.commissions(id, reseller_id, order_id, order_item_id, settlement_id, commission_status, commission_amount)
   values
     (v_commission_id, v_reseller_id, v_order_id, v_item_id, v_settlement_id, 'awaiting_supplier_settlement', 30.00),
-    (v_commission_b_id, v_reseller_id, v_order_b_id, v_item_b_id, v_settlement_b_id, 'awaiting_supplier_settlement', 25.00);
+    (v_commission_b_id, v_reseller_id, v_order_b_id, v_item_b_id, v_settlement_b_id, 'awaiting_supplier_settlement', 25.00),
+    (v_commission_c_id, v_reseller_id, v_order_b_id, v_item_b_id, v_settlement_b_id, 'available', 50.00);
 
   insert into public.order_disputes(id, order_id, opened_by_profile_id, opened_by_role, dispute_category, reason_code, requested_outcome, status, finance_review_required, scope_type, affected_supplier_id, affected_order_item_id)
   values (v_dispute_id, v_order_id, v_customer_profile, 'customer', 'post_completion', 'refund_requested', 'partial_refund', 'under_review', true, 'order_item', v_supplier_id, v_item_id);

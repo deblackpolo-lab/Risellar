@@ -116,6 +116,7 @@ async function runSupabaseSql(name, sql, options = {}) {
   return await new Promise((resolve, reject) => {
     const child = spawn("npx", ["supabase", "db", "query", "--linked", "--file", filePath], {
       cwd: process.cwd(),
+      env: { ...process.env, SUPABASE_TELEMETRY_DISABLED: "1" },
       shell: process.platform === "win32",
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -171,7 +172,22 @@ create table if not exists public.__dev_d6_concurrency_counts (
   primary key (marker, table_name)
 );
 
+create table if not exists public.__dev_d6_concurrency_barriers (
+  marker text not null,
+  scenario text not null,
+  actor_label text not null,
+  backend_pid integer not null,
+  ready_at timestamptz not null default clock_timestamp(),
+  before_rpc_at timestamptz,
+  after_rpc_at timestamptz,
+  transaction_completed_at timestamptz,
+  primary key (marker, scenario, actor_label)
+);
+
+alter table public.__dev_d6_concurrency_barriers disable row level security;
+
 grant select, insert, update, delete on public.__dev_d6_concurrency_results to authenticated;
+grant select, insert, update, delete on public.__dev_d6_concurrency_barriers to authenticated;
 
 drop function if exists public.__dev_d6_concurrency_record(text, text, text, boolean, text, integer);
 
@@ -304,10 +320,28 @@ ${scenarios
 }
 
 function sessionSql({ scenario, actorLabel, clerkUserId, callSql }) {
+  const postBarrierDelay =
+    ["h_closure_customer_response", "i_closure_supplier_response"].includes(scenario.name) &&
+    ["customer_session", "supplier_session"].includes(actorLabel)
+      ? "perform pg_sleep(0.35);"
+      : "";
+
   return `
+select set_config('request.jwt.claims', jsonb_build_object('sub', ${q(clerkUserId)}, 'role', 'authenticated')::text, false);
+set role authenticated;
+
 begin;
-select set_config('request.jwt.claims', jsonb_build_object('sub', ${q(clerkUserId)}, 'role', 'authenticated')::text, true);
-set local role authenticated;
+insert into public.__dev_d6_concurrency_barriers(marker, scenario, actor_label, backend_pid, ready_at)
+values (${q(marker)}, ${q(scenario.name)}, ${q(actorLabel)}, pg_backend_pid(), clock_timestamp())
+on conflict (marker, scenario, actor_label) do update
+  set backend_pid = excluded.backend_pid,
+      ready_at = excluded.ready_at,
+      before_rpc_at = null,
+      after_rpc_at = null,
+      transaction_completed_at = null;
+commit;
+
+begin;
 
 do $run$
 declare
@@ -315,15 +349,47 @@ declare
   v_backend_pid integer := pg_backend_pid();
   v_call_started_at timestamptz;
   v_call_finished_at timestamptz;
+  v_wait_started_at timestamptz := clock_timestamp();
 begin
-  perform pg_sleep(5);
+  while (
+    select count(*)
+    from public.__dev_d6_concurrency_barriers
+    where marker = ${q(marker)}
+      and scenario = ${q(scenario.name)}
+  ) < 2 loop
+    if clock_timestamp() - v_wait_started_at > interval '75 seconds' then
+      raise exception 'D6_CONCURRENCY_BARRIER_TIMEOUT';
+    end if;
+    perform pg_sleep(0.05);
+  end loop;
+
+  ${postBarrierDelay}
+
   v_call_started_at := clock_timestamp();
+  update public.__dev_d6_concurrency_barriers
+  set before_rpc_at = v_call_started_at
+  where marker = ${q(marker)}
+    and scenario = ${q(scenario.name)}
+    and actor_label = ${q(actorLabel)};
+
   begin
-    execute ${q(`select count(*) from (with d6_concurrency_call as (${callSql}), d6_concurrency_wait as (select pg_sleep(2)) select * from d6_concurrency_call, d6_concurrency_wait) as d6_concurrency_count`)} into v_rows;
+    execute ${q(`select count(*) from (with d6_concurrency_call as (${callSql}), d6_concurrency_wait as (select pg_sleep(1)) select * from d6_concurrency_call, d6_concurrency_wait) as d6_concurrency_count`)} into v_rows;
     v_call_finished_at := clock_timestamp();
+    update public.__dev_d6_concurrency_barriers
+    set after_rpc_at = v_call_finished_at,
+        transaction_completed_at = clock_timestamp()
+    where marker = ${q(marker)}
+      and scenario = ${q(scenario.name)}
+      and actor_label = ${q(actorLabel)};
     perform public.__dev_d6_concurrency_record(${q(marker)}, ${q(scenario.name)}, ${q(actorLabel)}, true, 'OK', v_rows, v_backend_pid, v_call_started_at, v_call_finished_at);
   exception when others then
     v_call_finished_at := clock_timestamp();
+    update public.__dev_d6_concurrency_barriers
+    set after_rpc_at = v_call_finished_at,
+        transaction_completed_at = clock_timestamp()
+    where marker = ${q(marker)}
+      and scenario = ${q(scenario.name)}
+      and actor_label = ${q(actorLabel)};
     perform public.__dev_d6_concurrency_record(${q(marker)}, ${q(scenario.name)}, ${q(actorLabel)}, false, sqlstate, 0, v_backend_pid, v_call_started_at, v_call_finished_at);
   end;
 end;
@@ -355,8 +421,16 @@ function verifySql(scenario, assertions) {
       `(select count(distinct backend_pid) from public.__dev_d6_concurrency_results where marker = ${q(marker)} and scenario = ${q(scenario.name)}) = 2`,
     ),
     assertSql(
+      `${scenario.name} both sessions reached database barrier`,
+      `(select count(*) from public.__dev_d6_concurrency_barriers where marker = ${q(marker)} and scenario = ${q(scenario.name)} and ready_at is not null) = 2`,
+    ),
+    assertSql(
+      `${scenario.name} barrier released before either RPC`,
+      `(select max(ready_at) <= min(before_rpc_at) from public.__dev_d6_concurrency_barriers where marker = ${q(marker)} and scenario = ${q(scenario.name)})`,
+    ),
+    assertSql(
       `${scenario.name} call windows overlapped`,
-      `(select max(call_started_at) <= min(call_finished_at) from public.__dev_d6_concurrency_results where marker = ${q(marker)} and scenario = ${q(scenario.name)})`,
+      `(select max(before_rpc_at) <= min(after_rpc_at) from public.__dev_d6_concurrency_barriers where marker = ${q(marker)} and scenario = ${q(scenario.name)})`,
     ),
   ];
   return sessionAssertions.concat(assertions).join("\n") + `\nselect ${q(scenario.name)} as scenario, 'passed' as result;\n`;
@@ -560,7 +634,7 @@ try {
     ]);
 
     const assertions = race.assertions(race.scenario);
-    assertionCount += assertions.length + 2;
+    assertionCount += assertions.length + 4;
     await runSupabaseSql(`${race.scenario.name}_verify`, verifySql(race.scenario, assertions), { quiet: true });
     console.log(`${race.scenario.name}: passed`);
   }

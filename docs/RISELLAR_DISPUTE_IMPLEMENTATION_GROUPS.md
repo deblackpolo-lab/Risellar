@@ -199,11 +199,24 @@ Stop conditions: deleting commissions, negative wallet, general admin finance ac
 
 ## D10 - Withdrawal Interaction and Recovery/Liability Model
 
-Scope: pending withdrawal holds/rejections and paid-withdrawal liability/recovery records.
+Status: completed in DEVELOPMENT as backend-only controlled finance/RPC work.
 
-Dependencies: business decision on paid withdrawal treatment and withdrawal allocation.
+Scope: pending withdrawal interaction, paid-withdrawal liability records, manual recovery records, and finance-controlled future-earnings offset behavior.
 
-Stop conditions: silently reversing paid withdrawal or claiming exact allocation without data.
+Applied migrations:
+
+- `20260801200000_reseller_liability_and_recovery_core.sql`
+- `20260801201000_reseller_liability_recovery_rpcs.sql`
+- `20260801202000_fix_d10_non_finance_audit_actor.sql`
+- `20260801203000_fix_d10_recovery_idempotency_and_notification_boundary.sql`
+
+Verification:
+
+- `scripts/rpc/reseller-liability-withdrawal-recovery-d10-tests-dev-only.sql` passed 49 rollback-scoped assertions.
+- `scripts/rpc/reseller-liability-withdrawal-recovery-d10-concurrency-dev-only.mjs` passed all external multi-session race scenarios.
+- Full D6, D7, D8, D9, D10, settlement, withdrawal, and finance-history regression batch passed after stabilizing fixture/harness issues.
+
+Stop conditions preserved: no silent paid-withdrawal reversal, no guessed historical allocation, no negative wallet, no provider collection, no payment/refund/delivery/stock/order mutation, no notification send path, and no UI activation.
 
 ## D11 - Notifications
 

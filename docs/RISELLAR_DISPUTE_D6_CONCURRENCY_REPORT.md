@@ -35,9 +35,11 @@ Added and ran:
 
 - `scripts/rpc/admin-dispute-d6-concurrency-dev-only.mjs`
 
-The harness uses two independent `npx supabase db query --linked` child processes for every race scenario. Each process opens its own database backend session, records a distinct backend PID, waits inside its transaction, executes the target RPC, and records safe result codes only. Verification asserts distinct backend sessions and overlapping call windows for each scenario.
+The harness uses two independent `npx supabase db query --linked` child processes for every race scenario. Each process opens its own database backend session, records a distinct backend PID, reaches a committed development-only database barrier, records database-side timestamps immediately before and after the target RPC, and records safe result codes only.
 
-Result: 12 scenarios passed with 61 invariant checks.
+The previous overlap proof was timing-sensitive because child-process startup jitter could make the database call windows fail to overlap even when the business state was safe. A first barrier attempt also timed out because each session inserted its ready marker inside the same still-open transaction that was waiting for the other session, so the other backend could not see it. The stabilized harness now commits readiness before opening the RPC transaction, verifies both backends reached the barrier, verifies the barrier released before either RPC window began, and verifies the call windows overlap using database timestamps rather than client-side timing.
+
+Result after stabilization: 12 scenarios passed with 85 invariant checks in five consecutive focused runs and again in the full D10 regression batch.
 
 ## Race Results
 
@@ -58,7 +60,7 @@ Result: 12 scenarios passed with 61 invariant checks.
 
 ## Cleanup And Side Effects
 
-The harness created isolated DEVELOPMENT-only profiles, admin staff, supplier, reseller, product/listing, order/item, and dispute fixtures under one run marker. It removed all fixture rows, D6 messages, status history, audit rows, and admin idempotency rows after verification.
+The harness created isolated DEVELOPMENT-only profiles, admin staff, supplier, reseller, product/listing, order/item, and dispute fixtures under one run marker. It removed all fixture rows, D6 messages, status history, audit rows, admin idempotency rows, and development-only barrier rows after verification.
 
 After cleanup, the harness verified no count changes for orders, order items, stock reservations, delivery arrangements, supplier payment reports, settlements, commissions, withdrawals, returns, notification outbox, or notification provider events.
 

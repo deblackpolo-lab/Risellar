@@ -118,6 +118,14 @@ Planned audit events cover dispute, return, refund, finance hold, commission adj
 
 Future transactional email events should use existing outbox patterns and safe payloads. No notification implementation was added.
 
+## AC. D10 Completion Update
+
+D10 was implemented and verified in DEVELOPMENT as backend-only reseller liability and withdrawal recovery controls. It adds explicit liability/recovery records, finance-controlled future-earnings offsets, idempotent recovery behavior, and concurrency-safe withdrawal allocation boundaries.
+
+No paid withdrawal was silently reversed, no historical allocation was guessed, and no provider collection, payment, refund, delivery, stock, order, settlement payout, commission payout, withdrawal payout, notification send, UI, or production behavior was added.
+
+The final D10 regression batch passed after stabilizing development-only fixture and concurrency harness issues. The batch covered D6, D7, D8, D9, D10, settlement verification, reseller withdrawal, and finance-history regressions.
+
 ## AC. Test Plan
 
 SQL boundary tests cover ownership, roles, reason/window validation, safe fields, refund max, holds, withdrawals, stock inspection, idempotency, and fixture cleanup.

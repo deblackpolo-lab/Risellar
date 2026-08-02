@@ -492,10 +492,32 @@ try {
     "side_effect_verify",
     `
 do $$
+declare
+  v_deltas jsonb;
 begin
+  select jsonb_object_agg(c.table_name, jsonb_build_object('before', c.row_count, 'after',
+    case c.table_name
+      when 'orders' then (select count(*) from public.orders)
+      when 'order_items' then (select count(*) from public.order_items)
+      when 'stock_reservations' then (select count(*) from public.stock_reservations)
+      when 'inventory_movements' then (select count(*) from public.inventory_movements)
+      when 'delivery_arrangements' then (select count(*) from public.delivery_arrangements)
+      when 'supplier_payment_reports' then (select count(*) from public.supplier_payment_reports)
+      when 'settlements' then (select count(*) from public.settlements)
+      when 'commissions' then (select count(*) from public.commissions)
+      when 'withdrawals' then (select count(*) from public.withdrawals)
+      when 'returns' then (select count(*) from public.returns)
+      when 'notification_outbox' then (select count(*) from public.notification_outbox)
+      when 'notification_provider_events' then (select count(*) from public.notification_provider_events)
+      else null
+    end))
+  into v_deltas
+  from public.__dev_d7_concurrency_counts c
+  where c.marker = ${q(marker)};
+
   if not (
-    (select count(*) from public.orders) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'orders') + 11
-    and (select count(*) from public.order_items) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'order_items') + 11
+    (select count(*) from public.orders) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'orders') + ${scenarios.length}
+    and (select count(*) from public.order_items) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'order_items') + ${scenarios.length}
     and (select count(*) from public.stock_reservations) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'stock_reservations')
     and (select count(*) from public.inventory_movements) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'inventory_movements')
     and (select count(*) from public.delivery_arrangements) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'delivery_arrangements')
@@ -507,7 +529,7 @@ begin
     and (select count(*) from public.notification_outbox) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'notification_outbox')
     and (select count(*) from public.notification_provider_events) = (select row_count from public.__dev_d7_concurrency_counts where marker = ${q(marker)} and table_name = 'notification_provider_events')
   ) then
-    raise exception 'D7 side-effect invariant failed';
+    raise exception 'D7 side-effect invariant failed: %', v_deltas;
   end if;
 end;
 $$;`,
