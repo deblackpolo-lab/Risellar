@@ -218,6 +218,26 @@ Verification:
 
 Stop conditions preserved: no silent paid-withdrawal reversal, no guessed historical allocation, no negative wallet, no provider collection, no payment/refund/delivery/stock/order mutation, no notification send path, and no UI activation.
 
+## D12 - End-to-End Verification and Release Readiness
+
+Status: completed as a verification/reporting pass with release blockers documented.
+
+Scope: verify D1-D11 backend, role, concurrency, notification, finance, route, browser, production, and security posture before deciding whether dispute/return/refund/support UI can be activated.
+
+Verification:
+
+- D3-D11 SQL regression suites passed in the confirmed DEVELOPMENT project.
+- D6-D11 external concurrency runners passed.
+- One development-only D3 safe-read test harness was repaired for current D5-A target columns and fixture-scoped support-list assertions.
+- No migration, RPC, RLS, grant, storage policy, application business logic, or production Supabase change was made in D12.
+- Production `https://risellar.vercel.app` returned HTTP 200, but the root page still displays a Phase 1 design-shell message.
+- Active customer, supplier, reseller, and finance-staff QA populations exist; active support/dispute-admin and super-admin browser QA identities were not available.
+- Several dispute/return/refund/support route groups still render preserved mock-only Phase 13 screens.
+
+Release classification: **B. Backend and partial UI complete, more UI required.**
+
+Activation recommendation: keep verified live finance/order/dashboard/notification surfaces guarded as-is; do not activate mock-only dispute/return/refund/support routes as MVP workflow UI until live RPC-backed screens and support/super-admin browser QA are completed.
+
 ## D11 - Notifications
 
 Status: completed locally as backend-only notification mapping work.

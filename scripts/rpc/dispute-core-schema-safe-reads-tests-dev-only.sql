@@ -252,15 +252,18 @@ begin
 
   insert into public.order_disputes(
     id, order_id, opened_by_profile_id, opened_by_role, dispute_category, reason_code,
+    scope_type, affected_supplier_id, affected_order_item_id,
     description, requested_outcome, status, priority, assigned_admin_profile_id,
     customer_action_required, supplier_action_required, finance_review_required,
     public_resolution_message, internal_resolution_notes, idempotency_key
   )
   values
     (v_dispute_a_id, v_order_a_id, v_customer_a_profile_id, 'customer', 'delivery', 'delivery_delay',
+     'supplier', v_supplier_a_id, null,
      'Customer safe complaint for D3 verification', 'redelivery', 'under_review', 'high', v_support_profile_id,
      false, true, true, 'Public update for D3 verification', 'Internal admin-only D3 note', 'd3-dispute-a-' || left(v_suffix, 16)),
     (v_dispute_b_id, v_order_b_id, v_customer_b_profile_id, 'customer', 'post_completion', 'wrong_item_received',
+     'order_item', v_supplier_b_id, v_order_item_b_id,
      'Other customer complaint for D3 verification', 'replacement', 'open', 'normal', null,
      true, false, false, null, 'Other internal admin-only D3 note', 'd3-dispute-b-' || left(v_suffix, 16));
 
@@ -341,13 +344,19 @@ begin
   perform pg_temp.dispute_d2_expect_count('reseller empty-state impact returns zero safely', 'select count(*) from public.get_reseller_dispute_impact_safe()', 0);
 
   perform pg_temp.dispute_d2_set_context('dev_dispute_d3_support_' || v_suffix);
-  perform pg_temp.dispute_d2_expect_count('support admin lists disputes', 'select count(*) from public.list_admin_disputes_safe()', 2);
+  perform pg_temp.dispute_d2_expect_count('support admin lists fixture disputes', format(
+    'select count(*) from public.list_admin_disputes_safe() where dispute_id in (%L, %L)',
+    v_dispute_a_id, v_dispute_b_id
+  ), 2);
   perform pg_temp.dispute_d2_expect_count('support admin unknown dispute detail returns zero safely', 'select count(*) from public.get_admin_dispute_safe(gen_random_uuid())', 0);
   perform pg_temp.dispute_d2_expect_true('support admin finance context is hidden', format($sql$
     select coalesce((select finance_context ->> 'financeReviewVisible' from public.get_admin_dispute_safe(%L)), 'false') = 'false'
   $sql$, v_dispute_a_id));
   perform pg_temp.dispute_d2_expect_blocked('support admin invalid category filter fails safely', 'select count(*) from public.list_admin_disputes_safe(null, ''not_valid'')');
-  perform pg_temp.dispute_d2_expect_count('support admin assigned-only filter works', 'select count(*) from public.list_admin_disputes_safe(null, null, null, true)', 1);
+  perform pg_temp.dispute_d2_expect_count('support admin assigned-only filter works for fixture dispute', format(
+    'select count(*) from public.list_admin_disputes_safe(null, null, null, true) where dispute_id = %L',
+    v_dispute_a_id
+  ), 1);
 
   perform pg_temp.dispute_d2_set_context('dev_dispute_d3_finance_' || v_suffix);
   perform pg_temp.dispute_d2_expect_count('finance staff can read admin dispute detail', format('select count(*) from public.get_admin_dispute_safe(%L)', v_dispute_a_id), 1);
@@ -417,13 +426,19 @@ $$;
 do $$
 declare
   v_failed_count integer;
+  v_failed_details text;
 begin
   select count(*) into v_failed_count
   from dispute_d2_test_results
   where not passed;
 
+  select string_agg(assertion || ' [' || coalesce(details, 'no details') || ']', '; ' order by assertion)
+  into v_failed_details
+  from dispute_d2_test_results
+  where not passed;
+
   if v_failed_count > 0 then
-    raise exception 'DISPUTE_D2_BOUNDARY_TEST_FAILED: % assertion(s) failed', v_failed_count
+    raise exception 'DISPUTE_D2_BOUNDARY_TEST_FAILED: % assertion(s) failed: %', v_failed_count, v_failed_details
       using errcode = '23514';
   end if;
 end;

@@ -165,6 +165,42 @@ Each implementation group should run:
 
 SQL groups should also run dry-run first, development apply only after approval, and development-only RPC boundary tests after apply.
 
+## D12 Verification Addendum
+
+D12 ran the system-wide regression pass for the completed D1-D11 backend work.
+
+Passed SQL suites:
+
+- dispute core/safe reads
+- customer dispute open/respond
+- supplier item scoping
+- supplier dispute response
+- admin investigation and non-financial resolution
+- return workflow
+- refund workflow
+- finance holds
+- reseller liability/withdrawal recovery
+- dispute notifications
+- admin settlement verification
+- reseller withdrawal
+- finance-history safe reads
+
+Passed external concurrency:
+
+- D6 admin investigation
+- D7 return workflow
+- D8 refund workflow
+- D9 finance holds
+- D10 reseller liability/withdrawal recovery
+- D11 notifications
+
+D12 browser/production release blockers:
+
+- Active support/dispute-admin and super-admin QA browser sessions were unavailable.
+- Production root still shows the Phase 1 design-shell message.
+- Dispute/return/refund/support route groups still include mock-only Phase 13 UI.
+- These blockers prevent classifying the system as browser-complete or MVP-release-ready.
+
 ## D5-A Test Addendum
 
 D5-A adds `scripts/rpc/dispute-supplier-item-scoping-tests-dev-only.sql` for target shape, backend supplier derivation, target immutability, target-aware idempotency and uniqueness, multi-supplier supplier read isolation, customer ownership, reseller/admin privacy, direct grant posture, fixture cleanup, and no business side effects.

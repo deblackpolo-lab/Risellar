@@ -247,6 +247,23 @@ The next implementation group may begin only after explicit request.
 
 Next: "Start Disputes D5 supplier dispute view/respond backend. Do not implement admin resolution, returns, refunds, finance holds, stock changes, or notifications."
 
+## AT. D12 Verification Follow-Up Status
+
+D12 verified the completed D1-D11 backend stack in the confirmed DEVELOPMENT project. SQL regressions and D6-D11 external concurrency runners passed after a development-only D3 safe-read test-harness repair for target-aware dispute fixtures and fixture-scoped support-list assertions.
+
+No production Supabase connection, destructive reset, blind migration repair, RLS/RPC weakening, service-role UI exposure, or real recipient email mode was used.
+
+D12 release readiness is blocked for full browser/MVP activation because:
+
+- No active support/dispute-admin QA browser account was available.
+- No active super-admin QA browser account was available.
+- Production `https://risellar.vercel.app` still displays the Phase 1 design-shell message.
+- Several D12 dispute/return/refund/support UI routes remain preserved mock-only Phase 13 screens.
+
+Updated release classification: **B. Backend and partial UI complete, more UI required.**
+
+Recommended next prompt: "Start D13 live dispute/return/refund/support UI activation using the verified D1-D12 backend, first creating real DEVELOPMENT support and super-admin QA identities. Do not activate mock-only routes as live workflows."
+
 ## D5-A Addendum
 
 D5-A updates the plan before supplier response. `customer_open_order_dispute` now uses the target-aware seven-argument contract with optional `p_order_item_id`. The old ambiguous browser-callable signature is revoked. Supplier response may resume after D5-A because the affected supplier/order-item target is now explicit and immutable.
