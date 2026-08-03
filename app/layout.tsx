@@ -5,8 +5,8 @@ import "react-photo-view/dist/react-photo-view.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Risellar Design Foundation",
-  description: "Phase 1 design tokens and component gallery shell for Risellar."
+  title: "Risellar",
+  description: "Secure Risellar marketplace workspace."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

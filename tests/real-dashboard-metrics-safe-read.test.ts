@@ -175,10 +175,11 @@ describe("real dashboard metrics safe-read phase", () => {
     const adminAccess = read(adminAccessPath);
     const routeBoundary = read(routeAccessBoundaryPath);
 
+    expect(adminAccess).toContain("getRootAdminDashboardAccess");
     expect(adminAccess).toContain("getFinanceDashboardAdminAccess");
     expect(adminAccess).toContain('required_role: "finance_staff"');
     expect(routeBoundary).toContain('pathname === "/admin/dashboard"');
-    expect(routeBoundary).toContain("getFinanceDashboardAdminAccess");
+    expect(routeBoundary).toContain("getRootAdminDashboardAccess");
     expect(routeBoundary).toContain("getRoleOnboardingAdminAccess");
   });
 
