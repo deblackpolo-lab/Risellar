@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
-import { CheckCircle2, Clock, PackageCheck, ShieldCheck, Truck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import { MobileShell } from "@/components/layout";
 import { Card } from "@/components/ui";
 import { getCurrentSyncedProfile } from "@/lib/auth/profile-sync";
@@ -234,6 +234,13 @@ function CustomerOrderDetailScreen({ order, placed }: { order: CustomerOrderSafe
         >
           <PackageCheck className="h-4 w-4" aria-hidden="true" />
           Back to orders
+        </Link>
+        <Link
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 text-sm font-semibold text-white"
+          href={`/customer/orders/${order.orderId}/report-problem`}
+        >
+          <AlertCircle className="h-4 w-4" aria-hidden="true" />
+          Report a problem
         </Link>
         <button
           className="inline-flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-muted-soft)] px-5 text-sm font-semibold text-[var(--color-muted)]"

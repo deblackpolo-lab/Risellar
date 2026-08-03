@@ -360,3 +360,17 @@ Live D11 redirect-mode QA is complete on the Vercel Production deployment connec
 - Duplicate processor invocation claimed zero rows and sent no duplicates.
 - No order, payment, stock, delivery, settlement, commission, wallet, withdrawal, dispute, return, refund, finance-hold, product, reservation, inventory, liability, or allocation business table counts changed during D11 live notification QA.
 - No D11 UI was activated.
+
+## D13-B Customer Disputes UI Status
+
+D13-B local implementation connects customer dispute list/detail/report/response UI to the verified customer dispute RPCs:
+
+- `list_customer_disputes_safe`
+- `get_customer_dispute_safe`
+- `customer_open_order_dispute`
+- `customer_add_dispute_response`
+- `list_customer_order_items_for_dispute_safe`
+
+The implementation intentionally does not add return, refund, evidence upload, payment, stock, delivery, settlement, commission, withdrawal, or notification mutations. Item-specific browser dispute reasons now use the safe customer-owned order item selector RPC.
+
+Authenticated customer browser QA passed for the pure-customer list, detail, item-specific report-problem, order-wide report-problem, response, terminal-state, responsive, side-effect, and marker-scoped cleanup checks. Final verification, commit, push, and production smoke remain pending.

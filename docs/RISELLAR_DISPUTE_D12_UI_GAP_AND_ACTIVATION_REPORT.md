@@ -21,10 +21,8 @@ Routes with live or previously verified RPC-backed behavior may remain under exi
 
 The following route groups are present but should remain mock-only/UI-pending until a live RPC-backed implementation and browser QA pass are completed:
 
-- `/customer/orders/[id]/report-issue`
 - `/customer/orders/[id]/return-request`
 - `/customer/orders/[id]/refund-status`
-- `/customer/disputes/[id]`
 - `/customer/support`
 - `/customer/support/tickets`
 - `/supplier/support`
@@ -62,3 +60,14 @@ The following route groups are present but should remain mock-only/UI-pending un
 D13-A completed the access and route architecture planning pass. Safe aggregate DEVELOPMENT audit still found no active support_staff or super_admin admin_staff bucket, so real support/super-admin browser QA remains blocked until verified Clerk-backed QA accounts are provided or approved for bootstrap.
 
 The final D13 route architecture, guard matrix, mock audit, data-access plan, shared component plan, navigation plan, implementation groups, and release gap report are captured in the D13-A documentation pack. No D13-A workflow UI, migration, RLS policy, finance/business logic, notification behavior, or mock activation was added.
+
+## D13-B Customer Disputes Follow-Up
+
+D13-B source implementation has replaced the customer dispute mock routes locally:
+
+- `/customer/disputes`
+- `/customer/disputes/[id]`
+- `/customer/orders/[id]/report-problem`
+- `/customer/orders/[id]/report-issue` redirects to `/customer/orders/[id]/report-problem`
+
+These routes use the customer-safe dispute RPCs and no longer import `lib/mock/support-disputes`. The safe customer order-item selector RPC is applied in development and item-specific browser QA has passed. Final verification, commit, push, and production smoke remain before this route group can be considered release-ready.

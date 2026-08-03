@@ -4,11 +4,14 @@ Date: 2026-08-02
 
 ## D13-B - Customer Disputes UI
 
+Status: source implementation, safe item selector migration, focused automated tests, SQL boundary tests, and authenticated customer browser QA completed locally; final verification, commit, push, and production smoke are still pending.
+
 Routes:
 
 - /customer/disputes
 - /customer/disputes/[id]
 - /customer/orders/[id]/report-issue
+- /customer/orders/[id]/report-problem
 
 RPCs:
 
@@ -16,6 +19,7 @@ RPCs:
 - get_customer_dispute_safe
 - customer_open_order_dispute
 - customer_add_dispute_response
+- list_customer_order_items_for_dispute_safe
 
 Tests:
 
@@ -28,6 +32,12 @@ Stop conditions:
 
 - direct table mutation
 - refund, payment, stock, settlement, commission, withdrawal, or notification mutation
+
+Implementation notes:
+
+- `/customer/orders/[id]/report-issue` redirects to the real `/customer/orders/[id]/report-problem` route.
+- Item-specific browser reasons use the safe customer-owned order item selector.
+- Supplier targeting remains backend-derived by the D5-A `customer_open_order_dispute` RPC.
 
 ## D13-C - Customer Returns And Refunds UI
 
@@ -207,4 +217,3 @@ Scope:
 Commit boundary:
 
 - one commit after all route groups pass local verification and safe development browser QA
-

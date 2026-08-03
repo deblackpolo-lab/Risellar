@@ -49,3 +49,9 @@ Start a D13 UI activation phase that replaces the mock-only dispute/return/refun
 D13-A has now prepared the frontend activation architecture without changing workflow business logic. The project remains not release-ready for dispute/return/refund browser workflows because support_staff and super_admin browser QA identities are still not verified and several route groups remain missing or mock-only.
 
 The next executable build phase should follow the D13-A group plan, beginning with customer disputes only or with support account bootstrap first if the user provides verified development support/super-admin account details.
+
+## D13-B Customer Disputes Follow-Up
+
+D13-B has a local customer dispute UI implementation connected to the customer-safe dispute RPCs. It replaces the customer dispute detail mock route, moves customer problem reporting to `/customer/orders/[id]/report-problem`, redirects the old report-issue route there, and adds the safe customer-owned order item selector for item-specific reporting.
+
+Authenticated development customer browser QA has passed locally. Release readiness is still blocked until final automated verification, security scan, commit, push, and production smoke pass.
