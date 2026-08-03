@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { ArrowUpRight, BadgeDollarSign, PackageCheck, ReceiptText, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowUpRight, BadgeDollarSign, Bell, PackageCheck, ReceiptText, ShieldCheck, ShoppingBag, UserRound, Wallet } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminSidebar";
-import { MobileShell } from "@/components/layout";
+import { BottomNav, MobileShell } from "@/components/layout";
 import { Card, StatusBadge } from "@/components/ui";
 import type {
   AdminDashboardSummary,
@@ -151,48 +151,148 @@ export function ResellerDashboardMetricsScreen({
   const currency = summary?.current.currencyCode ?? "GHS";
 
   return (
-    <MobileShell title="Reseller dashboard">
-      <div className="space-y-4">
-        <header className="rounded-[var(--radius-lg)] bg-[var(--color-primary)] p-5 text-white shadow-[var(--shadow-md)]">
-          <p className="text-sm font-semibold text-[var(--color-accent)]">Reseller account</p>
-          <h1 className="mt-1 text-[28px] font-bold leading-tight">Sales and wallet dashboard</h1>
-          <p className="mt-2 text-sm leading-6 text-white/85">Current balances are separate from selected-period activity.</p>
+    <MobileShell footer={<BottomNav active="Home" />} className="pb-36">
+      <div className="space-y-5">
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-[var(--color-muted)]">Welcome back</p>
+            <h1 className="mt-1 text-2xl font-bold leading-tight text-[var(--color-charcoal)]">Your reseller home</h1>
+            <p className="mt-1 text-sm leading-6 text-[var(--color-muted)]">Live wallet and sales metrics for your approved reseller account.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              aria-label="Notifications"
+              className="grid h-11 w-11 place-items-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-charcoal)] shadow-[var(--shadow-sm)]"
+              href="/reseller/notifications"
+            >
+              <Bell className="h-5 w-5" aria-hidden />
+            </Link>
+            <Link
+              aria-label="Profile"
+              className="grid h-11 w-11 place-items-center rounded-full bg-[var(--color-primary)] text-white shadow-[var(--shadow-sm)]"
+              href="/reseller/settings"
+            >
+              <UserRound className="h-5 w-5" aria-hidden />
+            </Link>
+          </div>
         </header>
         <DashboardError state={state} />
-        <div className="grid grid-cols-2 gap-3">
-          <MetricCard label="Locked commission" value={formatDashboardMoney(summary?.current.lockedCommissionAmount, currency)} detail="Waiting for supplier settlement verification." />
-          <MetricCard label="Available balance" value={formatDashboardMoney(summary?.current.availableBalanceAmount, currency)} detail="Ready to request for withdrawal." />
-          <MetricCard label="Pending withdrawal" value={formatDashboardMoney(summary?.current.pendingWithdrawalAmount, currency)} detail="Requested but not paid yet." />
-          <MetricCard label="Withdrawn total" value={formatDashboardMoney(summary?.current.withdrawnAmount, currency)} detail="Paid withdrawals at wallet level." />
-        </div>
+
+        <section className="rounded-[var(--radius-xl)] bg-[var(--color-primary)] p-5 text-white shadow-[var(--shadow-md)]">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-white/80">Available balance</p>
+              <p className="mt-1 break-words text-3xl font-extrabold">{formatDashboardMoney(summary?.current.availableBalanceAmount, currency)}</p>
+            </div>
+            <Wallet className="h-8 w-8 text-white/80" aria-hidden />
+          </div>
+          <p className="mt-3 text-xs leading-5 text-white/75">Locked commission stays separate until supplier settlement is verified.</p>
+          <div className="mt-4 grid gap-2 rounded-[var(--radius-lg)] bg-white/10 p-3 text-xs sm:grid-cols-3">
+            <WalletMiniStat label="Locked" value={formatDashboardMoney(summary?.current.lockedCommissionAmount, currency)} />
+            <WalletMiniStat label="Pending withdrawal" value={formatDashboardMoney(summary?.current.pendingWithdrawalAmount, currency)} />
+            <WalletMiniStat label="Withdrawn" value={formatDashboardMoney(summary?.current.withdrawnAmount, currency)} />
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold">Quick actions</h2>
+            <StatusBadge tone="neutral">Real routes</StatusBadge>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickActionLink href="/reseller/products" icon={ShoppingBag} label="Browse products" />
+            <QuickActionLink href="/reseller/orders" icon={ReceiptText} label="View orders" />
+            <QuickActionLink href="/reseller/withdraw" icon={Wallet} label="Request withdrawal" />
+            <QuickActionLink href="/reseller/wallet" icon={BadgeDollarSign} label="View wallet" />
+          </div>
+        </section>
+
         <Card title="Selected period">
           <PeriodLinks basePath="/reseller/dashboard" period={period} />
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <MetricCard label="Sales" value={String(summary?.period.completedSalesCount ?? 0)} detail="Completed sales in the selected period." />
-            <MetricCard label="Commission earned" value={formatDashboardMoney(summary?.period.commissionEarnedAmount, currency)} detail="Commission rows created in the selected period." />
-            <MetricCard label="Orders attributed" value={String(summary?.period.attributedOrdersCount ?? 0)} detail="Orders tied to this reseller in the selected period." />
-            <MetricCard label="Rejected orders" value={String(summary?.period.rejectedOrdersCount ?? 0)} detail="Supplier-rejected, cancelled, or failed attributed orders." />
+            <CompactMetric label="Sales" value={String(summary?.period.completedSalesCount ?? 0)} />
+            <CompactMetric label="Commission earned" value={formatDashboardMoney(summary?.period.commissionEarnedAmount, currency)} />
+            <CompactMetric label="Orders attributed" value={String(summary?.period.attributedOrdersCount ?? 0)} />
+            <CompactMetric label="Rejected orders" value={String(summary?.period.rejectedOrdersCount ?? 0)} />
           </div>
         </Card>
+
         <Card title="Recent activity">
           <div className="space-y-3">
             {earnings.slice(0, 3).map((earning) => (
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-3" key={earning.commissionId}>
-                <p className="font-bold">{earning.productName}</p>
-                <p className="text-sm text-[var(--color-muted)]">{earning.orderNumber} - {formatDashboardMoney(earning.commissionAmount, earning.currencyCode)}</p>
-              </div>
+              <Link className="block rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3 transition hover:border-[var(--color-primary)]" href="/reseller/earnings" key={earning.commissionId}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-bold">{earning.productName}</p>
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">{earning.orderNumber}</p>
+                  </div>
+                  <p className="shrink-0 text-sm font-extrabold text-[var(--color-primary)]">{formatDashboardMoney(earning.commissionAmount, earning.currencyCode)}</p>
+                </div>
+              </Link>
             ))}
             {withdrawals.slice(0, 2).map((withdrawal) => (
-              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-3" key={withdrawal.withdrawalId}>
-                <p className="font-bold">{withdrawal.requestReference ?? "Withdrawal request"}</p>
-                <p className="text-sm text-[var(--color-muted)]">{formatDashboardMoney(withdrawal.requestedAmount, withdrawal.currencyCode)} - {withdrawal.withdrawalStatus}</p>
-              </div>
+              <Link className="block rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3 transition hover:border-[var(--color-primary)]" href={`/reseller/withdrawals/${withdrawal.withdrawalId}`} key={withdrawal.withdrawalId}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-bold">{withdrawal.requestReference ?? "Withdrawal request"}</p>
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">{withdrawal.withdrawalStatus}</p>
+                  </div>
+                  <p className="shrink-0 text-sm font-extrabold text-[var(--color-charcoal)]">{formatDashboardMoney(withdrawal.requestedAmount, withdrawal.currencyCode)}</p>
+                </div>
+              </Link>
             ))}
             {!earnings.length && !withdrawals.length ? <EmptyRecent /> : null}
           </div>
         </Card>
+
+        <Card className="bg-[var(--color-accent-soft)] p-4">
+          <div className="flex gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 flex-none text-[var(--color-primary)]" aria-hidden />
+            <p className="text-sm leading-6 text-[var(--color-muted)]">Dashboard viewing is read-only. Locked commission is not available for withdrawal, and pending withdrawals stay separate from paid withdrawals.</p>
+          </div>
+        </Card>
       </div>
     </MobileShell>
+  );
+}
+
+function WalletMiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-white/70">{label}</p>
+      <p className="mt-1 break-words font-extrabold text-white">{value}</p>
+    </div>
+  );
+}
+
+function CompactMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-white p-3">
+      <p className="text-xs font-semibold text-[var(--color-muted)]">{label}</p>
+      <p className="mt-2 break-words text-lg font-extrabold text-[var(--color-charcoal)]">{value}</p>
+    </div>
+  );
+}
+
+function QuickActionLink({
+  href,
+  icon: Icon,
+  label
+}: {
+  href: string;
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  label: string;
+}) {
+  return (
+    <Link
+      className="flex min-h-14 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-white p-3 text-sm font-bold text-[var(--color-charcoal)] shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+      href={href}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--color-primary-subtle)] text-[var(--color-primary)]">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="min-w-0 break-words">{label}</span>
+    </Link>
   );
 }
 
